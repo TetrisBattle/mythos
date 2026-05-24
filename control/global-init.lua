@@ -3,6 +3,11 @@ local function init_globals()
   storage.mythos_uid_counter = storage.mythos_uid_counter or 0
   storage.player_in_mythos = storage.player_in_mythos or {}
   storage.mythos_entities = storage.mythos_entities or {}
+  -- Per-instance connections table is initialised lazily inside connections.lua,
+  -- but we ensure the parent table always exists here.
+  for _, data in pairs(storage.mythos) do
+    data.connections = data.connections or {}
+  end
 end
 
 script.on_init(init_globals)

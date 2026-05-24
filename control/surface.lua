@@ -1,3 +1,5 @@
+local connections = require("control.connections")
+
 function get_or_create_surface(uid)
   local name = "mythos_" .. uid
   local existing = game.get_surface(name)
@@ -51,6 +53,13 @@ script.on_event(defines.events.on_built_entity, function(event)
   end
   storage.mythos_entities = storage.mythos_entities or {}
   storage.mythos_entities[entity.unit_number] = uid
+  -- Store entity reference and outside position for the connection system
+  local m = storage.mythos[uid]
+  if m then
+    m.entity      = entity
+    m.outside_pos = {x = entity.position.x, y = entity.position.y}
+    m.connections = m.connections or {}
+  end
 end, {{filter = "name", name = "mythos-entity"}})
 
 -- When mined by a player: restore uid tags on the returned item
@@ -58,6 +67,7 @@ script.on_event(defines.events.on_player_mined_entity, function(event)
   storage.mythos_entities = storage.mythos_entities or {}
   local uid = storage.mythos_entities[event.entity.unit_number]
   if not uid then return end
+  connections.destroy_all(uid)
   storage.mythos_entities[event.entity.unit_number] = nil
 
   local inv = game.players[event.player_index].get_main_inventory()
@@ -76,5 +86,7 @@ end, {{filter = "name", name = "mythos-entity"}})
 -- When destroyed (died): just clean up the mapping
 script.on_event(defines.events.on_entity_died, function(event)
   storage.mythos_entities = storage.mythos_entities or {}
+  local uid = storage.mythos_entities[event.entity.unit_number]
+  if uid then connections.destroy_all(uid) end
   storage.mythos_entities[event.entity.unit_number] = nil
 end, {{filter = "name", name = "mythos-entity"}})
