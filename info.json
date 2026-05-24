@@ -1,0 +1,9 @@
+{
+  "name": "mythos",
+  "version": "0.1.0",
+  "title": "Mythos",
+  "author": "TetrisBattle",
+  "description": "A portable pocket dimension.",
+  "factorio_version": "2.0",
+  "dependencies": ["base >= 2.0"]
+}
