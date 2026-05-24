@@ -60,6 +60,29 @@ local CONNECTIONS = {
 }
 
 -- ---------------------------------------------------------------------------
+-- Connectable entity-type sets and dispatch map
+-- ---------------------------------------------------------------------------
+
+-- Maps entity.type  →  connection category string
+local CONN_TYPE_MAP = {}
+
+local FLUID_ENTITY_TYPES = {
+    ["pipe"]          = true,
+    ["pipe-to-ground"]= true,
+    ["pump"]          = true,
+    ["storage-tank"]  = true,
+    ["infinity-pipe"] = true,
+    ["offshore-pump"] = true,
+    ["elevated-pipe"] = true,
+}
+for t in pairs(FLUID_ENTITY_TYPES) do CONN_TYPE_MAP[t] = "fluid" end
+
+local HEAT_ENTITY_TYPES = {
+    ["heat-pipe"] = true,
+}
+for t in pairs(HEAT_ENTITY_TYPES) do CONN_TYPE_MAP[t] = "heat" end
+
+-- ---------------------------------------------------------------------------
 -- Belt-type helpers  (mirror factorissimo's logic)
 -- ---------------------------------------------------------------------------
 
@@ -73,6 +96,8 @@ local BELT_ENTITY_TYPES = {
     ["lane-splitter"]   = true,
     ["inserter"]        = true,
 }
+
+for t in pairs(BELT_ENTITY_TYPES) do CONN_TYPE_MAP[t] = "belt" end
 
 local DIRECTION_AGNOSTIC = {
     ["transport-belt"] = true,
@@ -133,11 +158,29 @@ end
 -- ---------------------------------------------------------------------------
 
 local function destroy_connection(conn)
-    if conn.from_link and conn.from_link.valid then
-        conn.from_link.destroy()
+    if conn.conn_type == "fluid" or conn.conn_type == "heat" then
+        if conn.inside_connector  and conn.inside_connector.valid  then conn.inside_connector.destroy()  end
+        if conn.outside_connector and conn.outside_connector.valid then conn.outside_connector.destroy() end
+    else  -- belt
+        if conn.from_link and conn.from_link.valid then conn.from_link.destroy() end
+        if conn.to_link   and conn.to_link.valid   then conn.to_link.destroy()   end
     end
-    if conn.to_link and conn.to_link.valid then
-        conn.to_link.destroy()
+end
+
+local function conn_still_valid(conn, cpos)
+    if conn.conn_type == "fluid" or conn.conn_type == "heat" then
+        return conn.inside_connector.valid and conn.outside_connector.valid
+            and conn.outside_entity.valid  and conn.inside_entity.valid
+    else  -- belt
+        if not (conn.from_link.valid and conn.to_link.valid
+                and conn.outside_entity.valid and conn.inside_entity.valid) then
+            return false
+        end
+        local facing = get_conn_facing(
+            conn.outside_entity, conn.inside_entity,
+            cpos.direction_out, cpos.direction_in
+        )
+        return facing == conn.facing
     end
 end
 
@@ -231,12 +274,134 @@ local function connect_belt_pair(mythos_data, cpos, outside_entity, inside_entit
     to_link.direction   = from_dir
 
     return {
-        from_link        = from_link,
-        to_link          = to_link,
-        outside_entity   = outside_entity,
-        inside_entity    = inside_entity,
-        facing           = facing,
-        cid              = cpos.id,
+        conn_type      = "belt",
+        from_link      = from_link,
+        to_link        = to_link,
+        outside_entity = outside_entity,
+        inside_entity  = inside_entity,
+        facing         = facing,
+        cid            = cpos.id,
+    }
+end
+
+-- ---------------------------------------------------------------------------
+-- Fluid connection
+-- ---------------------------------------------------------------------------
+-- Creates two hidden pump proxies (one per surface) joined via linked fluidbox.
+-- Default flow: outside → inside (pump resources INTO the pocket dimension).
+-- `flow_in` = true  means outside→inside  (outside-pump-input, inside-pump-output)
+-- `flow_in` = false means inside→outside  (inside-pump-input,  outside-pump-output)
+
+local function connect_fluid_pair(mythos_data, cpos, outside_entity, inside_entity, flow_in)
+    local outside_pos     = mythos_data.outside_pos
+    local inside_surface  = game.get_surface(mythos_data.surface_name)
+    local outside_surface = mythos_data.entity.surface
+    if not inside_surface then return nil end
+
+    local inside_pos  = {
+        x = cpos.inside_x  + cpos.indicator_dx,
+        y = cpos.inside_y  + cpos.indicator_dy,
+    }
+    local outside_pos_adj = {
+        x = outside_pos.x + cpos.outside_x - cpos.indicator_dx,
+        y = outside_pos.y + cpos.outside_y - cpos.indicator_dy,
+    }
+
+    -- flow_in=true: outside pumps IN, inside delivers OUT
+    local inside_pump_name  = flow_in and "mythos-inside-pump-output"  or "mythos-inside-pump-input"
+    local outside_pump_name = flow_in and "mythos-outside-pump-input" or "mythos-outside-pump-output"
+
+    local inside_connector = inside_surface.create_entity {
+        name                     = inside_pump_name,
+        position                 = inside_pos,
+        direction                = cpos.direction_in,
+        create_build_effect_smoke = false,
+        raise_built              = false,
+        force                    = inside_entity.force,
+    }
+    if not inside_connector then return nil end
+    inside_connector.destructible = false
+    inside_connector.operable     = false
+    inside_connector.rotatable    = false
+
+    local outside_connector = outside_surface.create_entity {
+        name                     = outside_pump_name,
+        position                 = outside_pos_adj,
+        direction                = cpos.direction_out,
+        create_build_effect_smoke = false,
+        raise_built              = false,
+        force                    = outside_entity.force,
+    }
+    if not outside_connector then
+        inside_connector.destroy()
+        return nil
+    end
+    outside_connector.destructible = false
+    outside_connector.operable     = false
+    outside_connector.rotatable    = false
+
+    -- Link fluidboxes across surfaces
+    inside_connector.fluidbox.add_linked_connection(0, outside_connector, 0)
+
+    return {
+        conn_type         = "fluid",
+        inside_connector  = inside_connector,
+        outside_connector = outside_connector,
+        outside_entity    = outside_entity,
+        inside_entity     = inside_entity,
+        flow_in           = flow_in,
+        cid               = cpos.id,
+    }
+end
+
+-- ---------------------------------------------------------------------------
+-- Heat connection
+-- ---------------------------------------------------------------------------
+-- Creates two hidden heat-pipe dummy connectors (one per surface).
+-- Temperature is manually averaged on a timer in on_nth_tick below.
+
+local HEAT_TICK_RATE = 30  -- ticks between temperature sync
+
+local function connect_heat_pair(mythos_data, cpos, outside_entity, inside_entity)
+    local outside_pos     = mythos_data.outside_pos
+    local inside_surface  = game.get_surface(mythos_data.surface_name)
+    local outside_surface = mythos_data.entity.surface
+    if not inside_surface then return nil end
+
+    local inside_connector = inside_surface.create_entity {
+        name                     = "mythos-heat-connector",
+        position                 = {cpos.inside_x  + cpos.indicator_dx,
+                                    cpos.inside_y  + cpos.indicator_dy},
+        create_build_effect_smoke = false,
+        raise_built              = false,
+        force                    = inside_entity.force,
+    }
+    if not inside_connector then return nil end
+    inside_connector.destructible = false
+    inside_connector.active       = false
+
+    local outside_connector = outside_surface.create_entity {
+        name                     = "mythos-heat-connector",
+        position                 = {outside_pos.x + cpos.outside_x - cpos.indicator_dx,
+                                    outside_pos.y + cpos.outside_y - cpos.indicator_dy},
+        create_build_effect_smoke = false,
+        raise_built              = false,
+        force                    = outside_entity.force,
+    }
+    if not outside_connector then
+        inside_connector.destroy()
+        return nil
+    end
+    outside_connector.destructible = false
+    outside_connector.active       = false
+
+    return {
+        conn_type         = "heat",
+        inside_connector  = inside_connector,
+        outside_connector = outside_connector,
+        outside_entity    = outside_entity,
+        inside_entity     = inside_entity,
+        cid               = cpos.id,
     }
 end
 
@@ -267,16 +432,27 @@ local function try_init_connection(uid, mythos_data, cpos)
     if not inside_entities or not inside_entities[1] then return end
 
     for _, oe in pairs(outside_entities) do
-        if not BELT_ENTITY_TYPES[oe.type] then goto next_outside end
+        local oe_ctype = CONN_TYPE_MAP[oe.type]
+        if not oe_ctype then goto next_outside end
+
         for _, ie in pairs(inside_entities) do
-            if not BELT_ENTITY_TYPES[ie.type] then goto next_inside end
-            -- Types must match for a valid connection
-            if oe.type ~= ie.type and
-               not (oe.type == "inserter" or ie.type == "inserter") then
-                goto next_inside
+            local ie_ctype = CONN_TYPE_MAP[ie.type]
+            if oe_ctype ~= ie_ctype then goto next_inside end
+
+            local conn
+            if oe_ctype == "belt" then
+                -- Belt types must actually match (inserters are cross-compatible)
+                if oe.type ~= ie.type
+                   and not (oe.type == "inserter" or ie.type == "inserter") then
+                    goto next_inside
+                end
+                conn = connect_belt_pair(mythos_data, cpos, oe, ie)
+            elseif oe_ctype == "fluid" then
+                conn = connect_fluid_pair(mythos_data, cpos, oe, ie, true)
+            elseif oe_ctype == "heat" then
+                conn = connect_heat_pair(mythos_data, cpos, oe, ie)
             end
 
-            local conn = connect_belt_pair(mythos_data, cpos, oe, ie)
             if conn then
                 mythos_data.connections[cpos.id] = conn
                 return
@@ -296,22 +472,11 @@ local function drop_connection(mythos_data, cid)
 end
 
 -- Re-evaluate one connection slot: destroy it if either endpoint is gone or
--- has rotated incompatibly, then try to re-establish it.
+-- invalid, then try to re-establish it.
 local function recheck_connection(uid, mythos_data, cpos)
     local conn = mythos_data.connections and mythos_data.connections[cpos.id]
-    if conn then
-        local still_valid = conn.from_link.valid and conn.to_link.valid
-                         and conn.outside_entity.valid and conn.inside_entity.valid
-        if still_valid then
-            local facing = get_conn_facing(
-                conn.outside_entity, conn.inside_entity,
-                cpos.direction_out, cpos.direction_in
-            )
-            still_valid = (facing == conn.facing)
-        end
-        if not still_valid then
-            drop_connection(mythos_data, cpos.id)
-        end
+    if conn and not conn_still_valid(conn, cpos) then
+        drop_connection(mythos_data, cpos.id)
     end
     try_init_connection(uid, mythos_data, cpos)
 end
@@ -382,10 +547,9 @@ end
 local function on_entity_changed(event)
     local entity = event.entity
     if not entity.valid then return end
-    if not BELT_ENTITY_TYPES[entity.type] then return end
+    if not CONN_TYPE_MAP[entity.type] then return end
 
     local surface = entity.surface
-    -- Check if this is an inside surface of any mythos pocket
     if surface.name:find("^mythos_") then
         recheck_inside_nearby(surface, entity.position)
     else
@@ -393,26 +557,61 @@ local function on_entity_changed(event)
     end
 end
 
-local BELT_FILTERS = {}
-for t in pairs(BELT_ENTITY_TYPES) do
-    BELT_FILTERS[#BELT_FILTERS + 1] = {filter = "type", type = t}
+local CONNECTABLE_FILTERS = {}
+for t in pairs(CONN_TYPE_MAP) do
+    CONNECTABLE_FILTERS[#CONNECTABLE_FILTERS + 1] = {filter = "type", type = t}
 end
 
-script.on_event(defines.events.on_built_entity,         on_entity_changed, BELT_FILTERS)
-script.on_event(defines.events.on_robot_built_entity,   on_entity_changed, BELT_FILTERS)
-script.on_event(defines.events.on_player_mined_entity,  on_entity_changed, BELT_FILTERS)
-script.on_event(defines.events.on_robot_mined_entity,   on_entity_changed, BELT_FILTERS)
-script.on_event(defines.events.on_entity_died,          on_entity_changed, BELT_FILTERS)
+script.on_event(defines.events.on_built_entity,         on_entity_changed, CONNECTABLE_FILTERS)
+script.on_event(defines.events.on_robot_built_entity,   on_entity_changed, CONNECTABLE_FILTERS)
+script.on_event(defines.events.on_player_mined_entity,  on_entity_changed, CONNECTABLE_FILTERS)
+script.on_event(defines.events.on_robot_mined_entity,   on_entity_changed, CONNECTABLE_FILTERS)
+script.on_event(defines.events.on_entity_died,          on_entity_changed, CONNECTABLE_FILTERS)
 
 script.on_event(defines.events.on_player_rotated_entity, function(event)
     local entity = event.entity
     if not entity.valid then return end
-    if not BELT_ENTITY_TYPES[entity.type] then return end
+    if not CONN_TYPE_MAP[entity.type] then return end
     local surface = entity.surface
     if surface.name:find("^mythos_") then
         recheck_inside_nearby(surface, entity.position)
     else
         recheck_nearby(surface, entity.position)
+    end
+end)
+
+-- ---------------------------------------------------------------------------
+-- Heat tick: equalise temperatures across all active heat connections
+-- ---------------------------------------------------------------------------
+script.on_nth_tick(HEAT_TICK_RATE, function()
+    if not storage.mythos then return end
+    for _, mythos_data in pairs(storage.mythos) do
+        if not mythos_data.connections then goto next_instance end
+        for _, conn in pairs(mythos_data.connections) do
+            if conn.conn_type ~= "heat" then goto next_conn end
+            if not (conn.outside_entity.valid and conn.inside_entity.valid) then goto next_conn end
+
+            local t_out = conn.outside_entity.temperature
+            local t_in  = conn.inside_entity.temperature
+            if t_out == t_in then goto next_conn end
+
+            local avg     = (t_out + t_in) / 2
+            local max_out = conn.outside_entity.prototype.heat_buffer_prototype.max_temperature
+            local max_in  = conn.inside_entity.prototype.heat_buffer_prototype.max_temperature
+
+            if max_out < avg then
+                conn.outside_entity.temperature = max_out
+                conn.inside_entity.temperature  = t_in - (max_out - t_out)
+            elseif max_in < avg then
+                conn.inside_entity.temperature  = max_in
+                conn.outside_entity.temperature = t_out - (max_in - t_in)
+            else
+                conn.outside_entity.temperature = avg
+                conn.inside_entity.temperature  = avg
+            end
+            ::next_conn::
+        end
+        ::next_instance::
     end
 end)
 
