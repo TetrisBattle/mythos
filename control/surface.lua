@@ -68,6 +68,8 @@ script.on_event(defines.events.on_player_mined_entity, function(event)
   local uid = storage.mythos_entities[event.entity.unit_number]
   if not uid then return end
   connections.destroy_all(uid)
+  destroy_icon_render(uid)
+  close_entity_gui_for_unit(event.entity.unit_number)
   storage.mythos_entities[event.entity.unit_number] = nil
 
   local inv = game.players[event.player_index].get_main_inventory()
@@ -87,6 +89,10 @@ end, {{filter = "name", name = "mythos-entity"}})
 script.on_event(defines.events.on_entity_died, function(event)
   storage.mythos_entities = storage.mythos_entities or {}
   local uid = storage.mythos_entities[event.entity.unit_number]
-  if uid then connections.destroy_all(uid) end
+  if uid then
+    connections.destroy_all(uid)
+    destroy_icon_render(uid)
+    close_entity_gui_for_unit(event.entity.unit_number)
+  end
   storage.mythos_entities[event.entity.unit_number] = nil
 end, {{filter = "name", name = "mythos-entity"}})
