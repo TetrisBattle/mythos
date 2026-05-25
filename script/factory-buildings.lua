@@ -89,6 +89,41 @@ local function set_factory_active_or_inactive(factory)
     local position = building.position
 
     local function can_place_factory_here()
+        if not can_skip_factory_surface_check() then
+            -- Check if a player is trying to cheat by moving factories between surfaces.
+            local surface_name = factory.inside_surface.name
+            -- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/268
+            local surface_name = surface_name:gsub("%-factory%-floor%-factory%-floor", "-factory-floor")
+            if factory.inside_surface.valid and surface_name ~= which_surface_should_this_new_factory_be_placed_on(factory.layout, building) then
+                if not is_legacy_factory_floor(surface_name) then
+                    flying_text = {"factory-connection-text.invalid-placement-surface", surface_localised_name(factory.inside_surface), surface_localised_name(surface)}
+                    return false, flying_text, true
+                end
+            end
+        end
+
+        if settings.global["Factorissimo2-free-recursion"].value then
+            return true
+        end
+
+        local surrounding_factory = find_surrounding_factory(surface, position)
+        if not surrounding_factory then
+            return true
+        end
+
+        local has_tech_t2 = surrounding_factory.force.technologies["factory-recursion-t2"].researched
+        local has_tech_t1 = has_tech_t2 or surrounding_factory.force.technologies["factory-recursion-t1"].researched
+
+        local inner_tier = factory.layout.tier
+        local outer_tier = surrounding_factory.layout.tier
+        if not has_tech_t2 and inner_tier >= outer_tier then
+            return false, {"factory-connection-text.invalid-placement-recursion-2"}, false
+        end
+
+        if not has_tech_t1 then -- cannot do any recursion
+            return false, {"factory-connection-text.invalid-placement-recursion-1"}, false
+        end
+
         return true
     end
 
@@ -113,7 +148,9 @@ end
 
 local DEFAULT_FACTORY_UPGRADES = {
     {"factorissimo", "build_lights_upgrade"},
+    {"factorissimo", "build_greenhouse_upgrade"},
     {"factorissimo", "build_display_upgrade"},
+    {"factorissimo", "build_roboport_upgrade"}
 }
 
 local function build_factory_upgrades(factory)
@@ -138,7 +175,47 @@ local function activate_factories()
 end
 factorissimo.on_event(factorissimo.events.on_init(), activate_factories)
 
+factorissimo.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
+    if not storage.factories then return end -- In case any mod or scenario script calls LuaForce.research_all_technologies() during its on_init
+    local name = event.research.name
+    if name == "factory-recursion-t1" or name == "factory-recursion-t2" then
+        activate_factories()
+    else
+        for _, factory in pairs(storage.factories) do build_factory_upgrades(factory) end
+    end
+end)
 
+local function update_recursion_techs(force)
+    if settings.global["Factorissimo2-hide-recursion"] and settings.global["Factorissimo2-hide-recursion"].value then
+        force.technologies["factory-recursion-t1"].enabled = false
+        force.technologies["factory-recursion-t2"].enabled = false
+    elseif settings.global["Factorissimo2-hide-recursion-2"] and settings.global["Factorissimo2-hide-recursion-2"].value then
+        force.technologies["factory-recursion-t1"].enabled = true
+        force.technologies["factory-recursion-t2"].enabled = false
+    else
+        force.technologies["factory-recursion-t1"].enabled = true
+        force.technologies["factory-recursion-t2"].enabled = true
+    end
+end
+
+factorissimo.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
+    if event.setting_type == "runtime-global" then activate_factories() end
+
+    for _, force in pairs(game.forces) do
+        update_recursion_techs(force)
+    end
+end)
+
+factorissimo.on_event(defines.events.on_force_created, function(event)
+    local force = event.force
+    update_recursion_techs(force)
+end)
+
+factorissimo.on_event(factorissimo.events.on_init(), function()
+    for _, force in pairs(game.forces) do
+        update_recursion_techs(force)
+    end
+end)
 
 -- FACTORY GENERATION --
 
@@ -237,6 +314,7 @@ local function create_factory_position(layout, building)
         end
     end
     surface.destroy_decoratives {area = {{32 * (cx - 2), 32 * (cy - 2)}, {32 * (cx + 2), 32 * (cy + 2)}}}
+    factorissimo.spawn_maraxsis_water_shaders(surface, {x = cx, y = cy})
 
     local factory = {}
     factory.inside_surface = surface
@@ -337,6 +415,7 @@ local function create_factory_interior(layout, building)
     add_hidden_tile_rect(factory)
 
     factorissimo.get_or_create_inside_power_pole(factory)
+    factorissimo.spawn_cerys_entities(factory)
 
     local radar = factory.inside_surface.create_entity {
         name = "factory-hidden-radar",
@@ -395,6 +474,7 @@ end
 
 local function cleanup_factory_exterior(factory, building)
     factorissimo.cleanup_outside_energy_receiver(factory)
+    factorissimo.cleanup_factory_roboport_exterior_chest(factory)
 
     factorissimo.disconnect_factory_connections(factory)
     for _, render_id in pairs(factory.outside_overlay_displays) do
@@ -857,7 +937,7 @@ end)
 
 -- MISC --
 
-commands.add_command("mythos-give-lost-factory-buildings", {"command-help-message.give-lost-factory-buildings"}, function(event)
+commands.add_command("give-lost-factory-buildings", {"command-help-message.give-lost-factory-buildings"}, function(event)
     local player = game.get_player(event.player_index)
     if not (player and player.connected and player.admin) then return end
     local inventory = player.get_main_inventory()

@@ -1,4 +1,4 @@
-local F = "__mythos__"
+local F = "__factorissimo-2-notnotmelon__";
 
 require("circuit-connector-sprites")
 
@@ -6,7 +6,7 @@ local function cwc0c()
     return {shadow = {red = {0, 0}, green = {0, 0}, copper = {0, 0}}, wire = {red = {0, 0}, green = {0, 0}, copper = {0, 0}}}
 end
 
--- Factory power I/O (only size 8 for factory-1)
+-- Factory power I/O
 
 local function create_energy_interfaces(size, icon)
     local j = size / 2 - 0.3
@@ -39,6 +39,8 @@ local function create_energy_interfaces(size, icon)
 end
 
 create_energy_interfaces(8, F .. "/graphics/icon/factory-1.png")
+create_energy_interfaces(12, F .. "/graphics/icon/factory-2.png")
+create_energy_interfaces(16, F .. "/graphics/icon/factory-3.png")
 
 -- Connection indicators
 
@@ -90,7 +92,7 @@ end
 
 create_indicator("belt", "d0", "green-dir")
 
-create_indicator("chest", "d0", "brown-dir")
+create_indicator("chest", "d0", "brown-dir") -- 0 is catchall for "There isn't an entity for this exact value"
 create_indicator("chest", "d10", "brown-dir")
 create_indicator("chest", "d20", "brown-dir")
 create_indicator("chest", "d60", "brown-dir")
@@ -147,6 +149,7 @@ data:extend {{
     connection_points = {cwc0c(), cwc0c(), cwc0c(), cwc0c()},
 }}
 
+-- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/239
 data:extend {{
     type = "electric-pole",
     name = "factory-global-electric-network-pole",
@@ -166,6 +169,7 @@ data:extend {{
     connection_points = {cwc0c(), cwc0c(), cwc0c(), cwc0c()},
 }}
 
+-- This is required to allow the overlay controller to exist in blueprints.
 data:extend {{
     type = "item",
     name = "factory-overlay-controller-settings",

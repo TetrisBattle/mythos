@@ -156,4 +156,4 @@ remote_api.is_factorissimo_surface = function(surface)
     return not not storage.surface_factories[surface_index]
 end
 
-remote.add_interface("mythos", remote_api)
+remote.add_interface("factorissimo", remote_api)

@@ -1,2 +1,6 @@
-poc
-.worktrees/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+*.code-workspace
+*.zip

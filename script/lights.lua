@@ -7,7 +7,7 @@ function factorissimo.build_lights_upgrade(factory)
     if not factory.inside_surface.valid then return end
     local force = factory.force
     if not force.valid then return end
-    local has_tech = true
+    local has_tech = force.technologies["factory-interior-upgrade-lights"].researched
 
     if PERMABLACK_SURFACES[factory.inside_surface.name] then
         has_tech = false

@@ -1,10 +1,4 @@
-local F = "__mythos__"
-
-require("circuit-connector-sprites")
-
-local function cwc0c()
-    return {shadow = {red = {0, 0}, green = {0, 0}, copper = {0, 0}}, wire = {red = {0, 0}, green = {0, 0}, copper = {0, 0}}}
-end
+local F = "__factorissimo-2-notnotmelon__"
 
 -- Circuit connectors
 
@@ -14,7 +8,7 @@ data:extend {{
     icon = F .. "/graphics/icon/factory-circuit-connector.png",
     icon_size = 64,
     flags = {},
-    subgroup = "mythos-factories",
+    subgroup = "factorissimo2",
     order = "c-b",
     place_result = "factory-circuit-connector",
     stack_size = 50,
