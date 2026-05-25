@@ -62,9 +62,9 @@ local function update_borehole_smokestacks()
     end
 end
 
-factorissimo.on_nth_tick(33, update_borehole_smokestacks)
+mythos.on_nth_tick(33, update_borehole_smokestacks)
 
-factorissimo.on_event(factorissimo.events.on_built(), function(event)
+mythos.on_event(mythos.events.on_built(), function(event)
     local borehole = event.entity
     if not borehole.valid or borehole.name ~= "borehole-pump" then return end
 
@@ -76,7 +76,7 @@ factorissimo.on_event(factorissimo.events.on_built(), function(event)
     if not fixed_recipe then return end
 
     if fixed_recipe == NO_FLUID_ON_THIS_SURFACE then
-        factorissimo.cancel_creation(borehole, event.player_index, {"factory-connection-text.borehole-pump-no-fluid"})
+        mythos.cancel_creation(borehole, event.player_index, {"factory-connection-text.borehole-pump-no-fluid"})
         return
     end
 

@@ -1,7 +1,7 @@
 if mods["space-age"] then
     data:extend {{
         type = "bool-setting",
-        name = "Factorissimo2-cheap-research",
+        name = "mythos-cheap-research",
         setting_type = "startup",
         default_value = false,
         order = "a-c",
@@ -12,7 +12,7 @@ data:extend {
     -- Startup
     {
         type = "bool-setting",
-        name = "Factorissimo2-space-architecture",
+        name = "mythos-space-architecture",
         setting_type = "startup",
         default_value = true,
         hidden = not (mods["space-exploration"] or mods["space-age"]),
@@ -20,7 +20,7 @@ data:extend {
     },
     {
         type = "bool-setting",
-        name = "Factorissimo2-disable-new-tile-effects",
+        name = "mythos-disable-new-tile-effects",
         setting_type = "startup",
         default_value = false,
         order = "a-b",
@@ -28,28 +28,28 @@ data:extend {
     -- Global
     {
         type = "bool-setting",
-        name = "Factorissimo2-free-recursion",
+        name = "mythos-free-recursion",
         setting_type = "runtime-global",
         default_value = false,
         order = "a-a",
     },
     {
         type = "bool-setting",
-        name = "Factorissimo2-hide-recursion",
+        name = "mythos-hide-recursion",
         setting_type = "runtime-global",
         default_value = false,
         order = "a-b",
     },
     {
         type = "bool-setting",
-        name = "Factorissimo2-hide-recursion-2",
+        name = "mythos-hide-recursion-2",
         setting_type = "runtime-global",
         default_value = false,
         order = "a-b-a",
     },
     {
         type = "string-setting",
-        name = "Factorissimo2-factory-preview-mode",
+        name = "mythos-factory-preview-mode",
         setting_type = "runtime-per-user",
         default_value = "fancy",
         allowed_values = {"fancy", "subtle", "off"},

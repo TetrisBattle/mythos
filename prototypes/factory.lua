@@ -1,4 +1,4 @@
-local F = "__factorissimo-2-notnotmelon__";
+local F = "__mythos__";
 require("circuit-connector-sprites")
 
 local function cwc0()
@@ -67,7 +67,7 @@ data:extend {
                 icon_size = 64,
             }
         },
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "b-a",
         place_result = "factory-1",
         stack_size = 1,
@@ -81,7 +81,7 @@ data:extend {
         name = "factory-1",
         icon = F .. "/graphics/icon/factory-1.png",
         icon_size = 64,
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "b-a",
         weight = 100000000,
         place_result = "factory-1",
@@ -148,7 +148,7 @@ data:extend {
                 icon_size = 64,
             }
         },
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "b-b",
         place_result = "factory-2",
         stack_size = 1,
@@ -162,7 +162,7 @@ data:extend {
         name = "factory-2",
         icon = F .. "/graphics/icon/factory-2.png",
         icon_size = 64,
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "b-b",
         weight = 100000000,
         place_result = "factory-2",
@@ -229,7 +229,7 @@ data:extend {
                 icon_size = 64,
             }
         },
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "b-c",
         weight = 100000000,
         place_result = "factory-3",
@@ -243,7 +243,7 @@ data:extend {
         name = "factory-3",
         icon = F .. "/graphics/icon/factory-3.png",
         icon_size = 64,
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "b-c",
         weight = 100000000,
         place_result = "factory-3",
@@ -252,7 +252,7 @@ data:extend {
     }
 }
 
-if not settings.startup["Factorissimo2-space-architecture"].value then return end
+if not settings.startup["mythos-space-architecture"].value then return end
 
 data:extend {
     {
@@ -313,7 +313,7 @@ data:extend {
                 icon_size = 64,
             }
         },
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "a-a",
         place_result = "space-factory-1",
         stack_size = 1,
@@ -327,7 +327,7 @@ data:extend {
         name = "space-factory-1",
         icon = F .. "/graphics/icon/space-factory-1.png",
         icon_size = 64,
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "a-a",
         weight = 1000000,
         place_result = "space-factory-1",
@@ -394,7 +394,7 @@ data:extend {
                 icon_size = 64,
             }
         },
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "a-b",
         place_result = "space-factory-2",
         stack_size = 1,
@@ -408,7 +408,7 @@ data:extend {
         name = "space-factory-2",
         icon = F .. "/graphics/icon/space-factory-2.png",
         icon_size = 64,
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "a-b",
         weight = 1000000,
         place_result = "space-factory-2",
@@ -475,7 +475,7 @@ data:extend {
                 icon_size = 64,
             }
         },
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "a-c",
         weight = 1000000,
         place_result = "space-factory-3",
@@ -489,7 +489,7 @@ data:extend {
         name = "space-factory-3",
         icon = F .. "/graphics/icon/space-factory-3.png",
         icon_size = 64,
-        subgroup = "factorissimo2",
+        subgroup = "mythos",
         order = "a-c",
         weight = 1000000,
         place_result = "space-factory-3",

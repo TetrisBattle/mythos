@@ -1,22 +1,22 @@
-factorissimo.tints = {
+mythos.tints = {
     {r = 1.0,   g = 1.0,   b = 0.0,   a = 1.0},
     {r = 1.0,   g = 0.0,   b = 0.0,   a = 1.0},
     {r = 0.223, g = 0.490, b = 0.858, a = 1.0},
     {r = 1.0,   g = 0.0,   b = 1.0,   a = 1.0}
 }
 
-factorissimo.light_tints = {}
-for i, tint in pairs(factorissimo.tints) do
-    factorissimo.light_tints[i] = {}
+mythos.light_tints = {}
+for i, tint in pairs(mythos.tints) do
+    mythos.light_tints[i] = {}
     for color, amount in pairs(tint) do
-        factorissimo.light_tints[i][color] = (amount - 0.5) / 2 + 0.5
+        mythos.light_tints[i][color] = (amount - 0.5) / 2 + 0.5
     end
-    factorissimo.light_tints[i].a = 1
+    mythos.light_tints[i].a = 1
 end
 
 ---@param color Color
 ---@return Color
-function factorissimo.color_normalize(color)
+function mythos.color_normalize(color)
     local r = color.r or color[1]
     local g = color.g or color[2]
     local b = color.b or color[3]
@@ -32,9 +32,9 @@ end
 ---@param b Color
 ---@param percent number
 ---@return Color
-function factorissimo.color_combine(a, b, percent)
-    a = factorissimo.color_normalize(a)
-    b = factorissimo.color_normalize(b)
+function mythos.color_combine(a, b, percent)
+    a = mythos.color_normalize(a)
+    b = mythos.color_normalize(b)
 
     return {
         r = a.r * percent + b.r * (1 - percent),

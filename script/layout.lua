@@ -348,7 +348,7 @@ local layout_generators = {
 }
 
 local function add_space_factories()
-    if not settings.startup["Factorissimo2-space-architecture"].value then return end
+    if not settings.startup["mythos-space-architecture"].value then return end
 
     local tile_name_mapping = {
         ["factory-wall-1"] = "space-factory-wall-1",
@@ -380,7 +380,7 @@ local function add_space_factories()
 end
 
 --[[
-/c __factorissimo-2-notnotmelon__ reload_layouts()
+/c __mythos__ reload_layouts()
 --]]
 
 _G.reload_layouts = function()
@@ -391,4 +391,4 @@ _G.reload_layouts = function()
     add_space_factories()
 end
 
-factorissimo.on_event(factorissimo.events.on_init(), reload_layouts)
+mythos.on_event(mythos.events.on_init(), reload_layouts)

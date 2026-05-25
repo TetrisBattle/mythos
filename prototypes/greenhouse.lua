@@ -1,7 +1,7 @@
 if not mods["space-age"] then return end
 if mods["space-is-fake"] then return end
 
-local F = "__factorissimo-2-notnotmelon__"
+local F = "__mythos__"
 local pf = "p-q-"
 
 data:extend {{
@@ -30,7 +30,7 @@ for _, tower in pairs(data.raw["agricultural-tower"]) do
     })
 end
 
-if not mods["warptorio-space-age"] then -- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/255
+if not mods["warptorio-space-age"] then -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/255
     for _, plant in pairs {"jellystem", "yumako-tree"} do
         plant = data.raw.plant[plant]
         plant.surface_conditions = plant.surface_conditions or {}

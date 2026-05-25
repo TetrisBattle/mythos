@@ -1,6 +1,6 @@
 -- Fix common migration issues.
 
-factorissimo.on_event(factorissimo.events.on_init(), function()
+mythos.on_event(mythos.events.on_init(), function()
     for _, factory in pairs(storage.factories) do
         -- Fix issues when forces are deleted.
         if not factory.force or not factory.force.valid then

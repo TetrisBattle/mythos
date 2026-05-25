@@ -64,7 +64,7 @@ if data.raw["recipe-category"]["metallurgy-or-assembling"] then
     table.insert(data.raw["assembling-machine"]["assembling-machine-1"].crafting_categories or {}, "metallurgy-or-assembling")
 end
 
-if settings.startup["Factorissimo2-space-architecture"].value then
+if settings.startup["mythos-space-architecture"].value then
     data:extend {{
         type = "recipe",
         name = "space-factory-1",

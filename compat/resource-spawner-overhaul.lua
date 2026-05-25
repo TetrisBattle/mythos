@@ -1,4 +1,4 @@
-factorissimo.on_event(factorissimo.events.on_init(), function()
+mythos.on_event(mythos.events.on_init(), function()
     if not remote.interfaces["RSO"] then return end
 
     for surface_index, _ in pairs(storage.surface_factories or {}) do

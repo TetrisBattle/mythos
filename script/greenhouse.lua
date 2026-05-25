@@ -1,4 +1,4 @@
-function factorissimo.build_greenhouse_upgrade(factory)
+function mythos.build_greenhouse_upgrade(factory)
     local force = factory.force
     if not force.valid then return end
     if not factory.inside_surface.valid or not factory.outside_surface.valid then return end

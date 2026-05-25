@@ -131,7 +131,7 @@ local banned_entities = table.invert {
     "spider-vehicle"
 }
 
-factorissimo.on_event(factorissimo.events.on_built(), function(event)
+mythos.on_event(mythos.events.on_built(), function(event)
     if not script.active_mods["space-exploration"] then
         return
     end
@@ -146,7 +146,7 @@ factorissimo.on_event(factorissimo.events.on_built(), function(event)
 
     local entity_type = entity.type == "entity-ghost" and entity.ghost_type or entity.type
     if banned_entities[entity_type] then
-        factorissimo.cancel_creation(entity, event.player_index, {"factory-connection-text.se-cannot-build-in-spaceship-factory-building"})
+        mythos.cancel_creation(entity, event.player_index, {"factory-connection-text.se-cannot-build-in-spaceship-factory-building"})
         return
     end
 

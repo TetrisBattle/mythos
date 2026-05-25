@@ -14,7 +14,7 @@ local c_adjust = {}
 local c_tick = {}
 local c_destroy = {}
 local connection_indicator_names = {}
-factorissimo.connection_indicator_names = connection_indicator_names
+mythos.connection_indicator_names = connection_indicator_names
 
 local function register_connection_type(ctype, class)
     for _, etype in pairs(class.entity_types) do
@@ -37,21 +37,21 @@ end
 local function is_connectable(entity)
     return type_map[entity.type] or type_map[entity.name]
 end
-factorissimo.is_connectable = is_connectable
+mythos.is_connectable = is_connectable
 
 -- Connection data structure --
 
 local CYCLIC_BUFFER_SIZE = 600
-factorissimo.on_event(factorissimo.events.on_init(), function()
+mythos.on_event(mythos.events.on_init(), function()
     storage.connections = storage.connections or {}
     storage.delayed_connection_checks = storage.delayed_connection_checks or {}
     for i = 0, CYCLIC_BUFFER_SIZE - 1 do
         storage.connections[i] = storage.connections[i] or {}
     end
 
-    -- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/206
+    -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/206
     for _, factory in pairs(storage.factories) do
-        if factory.built then factorissimo.recheck_factory_connections(factory) end
+        if factory.built then mythos.recheck_factory_connections(factory) end
     end
 end)
 
@@ -67,7 +67,7 @@ local function get_connection_settings(factory, cid, ctype)
     factory.connection_settings[cid][ctype] = factory.connection_settings[cid][ctype] or {}
     return factory.connection_settings[cid][ctype]
 end
-factorissimo.get_connection_settings = get_connection_settings
+mythos.get_connection_settings = get_connection_settings
 
 -- Connection indicators --
 
@@ -136,8 +136,8 @@ local function init_connection(factory, cid, cpos) -- Only call this when factor
             end
 
             if not c_unlocked[outside_connection_type](factory.force) then
-                factorissimo.create_flying_text {position = inside_entity.position, text = {"research-required"}}
-                factorissimo.create_flying_text {position = outside_entity.position, text = {"research-required"}}
+                mythos.create_flying_text {position = inside_entity.position, text = {"research-required"}}
+                mythos.create_flying_text {position = outside_entity.position, text = {"research-required"}}
             end
 
             local settings = get_connection_settings(factory, cid, outside_connection_type)
@@ -153,7 +153,7 @@ local function init_connection(factory, cid, cpos) -- Only call this when factor
         ::continue::
     end
 end
-factorissimo.init_connection = init_connection
+mythos.init_connection = init_connection
 
 local function destroy_connection(conn)
     if conn and conn._valid then
@@ -163,7 +163,7 @@ local function destroy_connection(conn)
         delete_connection_indicator(conn._factory, conn._id, conn._type)
     end
 end
-factorissimo.destroy_connection = destroy_connection
+mythos.destroy_connection = destroy_connection
 
 local function in_area(x, y, area)
     return x >= area.left_top.x and x <= area.right_bottom.x and y >= area.left_top.y and y <= area.right_bottom.y
@@ -190,9 +190,9 @@ local function recheck_factory_connections(factory, outside_area, inside_area) -
         ::continue::
     end
 end
-factorissimo.recheck_factory_connections = recheck_factory_connections
+mythos.recheck_factory_connections = recheck_factory_connections
 
-factorissimo.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
+mythos.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
     if not storage.factories then return end -- In case any mod or scenario script calls LuaForce.research_all_technologies() during its on_init
     if event.research.name:find("factory%-connection%-type%-") then
         for _, factory in pairs(storage.factories) do
@@ -211,7 +211,7 @@ local function recheck_factory_connections_delayed(factory, outside_area, inside
     }
 end
 
-function factorissimo.disconnect_factory_connections(factory)
+function mythos.disconnect_factory_connections(factory)
     for cid, conn in pairs(factory.connections) do
         destroy_connection(conn)
     end
@@ -278,14 +278,14 @@ local function recheck_nearby_connections(entity, delayed)
     end
 end
 
-factorissimo.on_event(factorissimo.events.on_destroyed(), function(event)
+mythos.on_event(mythos.events.on_destroyed(), function(event)
     local entity = event.entity
     if entity.valid and is_connectable(entity) then
         recheck_nearby_connections(entity, true) -- Delay
     end
 end)
 
-factorissimo.on_event(factorissimo.events.on_built(), function(event)
+mythos.on_event(mythos.events.on_built(), function(event)
     local entity = event.entity
     if not entity.valid or not is_connectable(entity) then return end
     local entity_name = entity.name
@@ -305,7 +305,7 @@ end)
 -- Connection effects --
 
 CONNECTION_UPDATE_RATE = 5
-factorissimo.on_nth_tick(CONNECTION_UPDATE_RATE, function()
+mythos.on_nth_tick(CONNECTION_UPDATE_RATE, function()
     -- First let's run all them delayed connection checks
     for _, check in pairs(storage.delayed_connection_checks) do
         recheck_factory_connections(check.factory, check.outside_area, check.inside_area)
@@ -337,7 +337,7 @@ local function rotate(factory, indicator)
             if (ind2.unit_number == indicator.unit_number) then
                 local conn = factory.connections[cid]
                 local text, noop = c_rotate[conn._type](conn)
-                factorissimo.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
+                mythos.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
                 if noop then return end
                 local setting, dir = c_direction[conn._type](conn)
                 set_connection_indicator(factory, cid, conn._type, setting, dir)
@@ -347,10 +347,10 @@ local function rotate(factory, indicator)
     end
 end
 
-factorissimo.on_event("factory-rotate", function(event)
+mythos.on_event("factory-rotate", function(event)
     local player = game.get_player(event.player_index)
     local indicator = player.selected
-    if not indicator or not factorissimo.connection_indicator_names[indicator.name] then return end
+    if not indicator or not mythos.connection_indicator_names[indicator.name] then return end
     local factory = find_surrounding_factory(indicator.surface, indicator.position)
     if not factory then return end
     rotate(factory, indicator)
@@ -362,7 +362,7 @@ local function adjust(factory, indicator, positive)
             if (ind2.unit_number == indicator.unit_number) then
                 local conn = factory.connections[cid]
                 local text, noop = c_adjust[conn._type](conn, positive)
-                factorissimo.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
+                mythos.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
                 if noop then return end
                 local setting, dir = c_direction[conn._type](conn)
                 set_connection_indicator(factory, cid, conn._type, setting, dir)
@@ -373,7 +373,7 @@ local function adjust(factory, indicator, positive)
 end
 
 local beeps = {"Beep", "Boop", "Beep", "Boop", "Beeple"}
-factorissimo.beep = function()
+mythos.beep = function()
     local t = game.tick
     return beeps[t % 5 + 1], true
 end
@@ -384,17 +384,17 @@ register_connection_type("fluid", require("fluid"))
 register_connection_type("circuit", require("circuit"))
 register_connection_type("heat", require("heat"))
 
-factorissimo.on_event(defines.events.on_player_flipped_entity, function(event)
+mythos.on_event(defines.events.on_player_flipped_entity, function(event)
     local entity = event.entity
-    if not factorissimo.connection_indicator_names[entity.name] then return end
+    if not mythos.connection_indicator_names[entity.name] then return end
     entity.mirroring = false
     local factory = remote_api.find_surrounding_factory(entity.surface, entity.position)
     rotate(factory, entity)
 end)
 
-factorissimo.on_event(defines.events.on_player_rotated_entity, function(event)
+mythos.on_event(defines.events.on_player_rotated_entity, function(event)
     local entity = event.entity
-    if factorissimo.connection_indicator_names[entity.name] then
+    if mythos.connection_indicator_names[entity.name] then
         entity.direction = event.previous_direction
     elseif is_connectable(entity) then
         recheck_nearby_connections(entity)
@@ -407,19 +407,19 @@ factorissimo.on_event(defines.events.on_player_rotated_entity, function(event)
     end
 end)
 
-factorissimo.on_event("factory-increase", function(event)
+mythos.on_event("factory-increase", function(event)
     local entity = game.get_player(event.player_index).selected
     if not entity then return end
-    if factorissimo.connection_indicator_names[entity.name] then
+    if mythos.connection_indicator_names[entity.name] then
         local factory = find_surrounding_factory(entity.surface, entity.position)
         if factory then adjust(factory, entity, true) end
     end
 end)
 
-factorissimo.on_event("factory-decrease", function(event)
+mythos.on_event("factory-decrease", function(event)
     local entity = game.get_player(event.player_index).selected
     if not entity then return end
-    if factorissimo.connection_indicator_names[entity.name] then
+    if mythos.connection_indicator_names[entity.name] then
         local factory = find_surrounding_factory(entity.surface, entity.position)
         if factory then adjust(factory, entity, false) end
     end

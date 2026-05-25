@@ -3,7 +3,7 @@ local PERMABLACK_SURFACES = {
     ["maraxsis-trench-factory-floor"] = true,
 }
 
-function factorissimo.build_lights_upgrade(factory)
+function mythos.build_lights_upgrade(factory)
     if not factory.inside_surface.valid then return end
     local force = factory.force
     if not force.valid then return end

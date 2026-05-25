@@ -178,7 +178,7 @@ end
 ---Like normal pairs(), but in deterministic randomized order
 ---@param t table
 ---@return fun():any, any
-function factorissimo.shuffled_pairs(t)
+function mythos.shuffled_pairs(t)
     local shuffled_keys = shuffle(t)
     local i = 0
     return function()

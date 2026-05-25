@@ -85,10 +85,10 @@ local function unpause_construction_animation(top_animation, bottom_animation)
     bottom_animation.animation_offset = offset
 end
 
-factorissimo.register_delayed_function("start_construction_animation", start_construction_animation)
-factorissimo.register_delayed_function("pause_construction_animation", pause_construction_animation)
-factorissimo.register_delayed_function("unpause_construction_animation", unpause_construction_animation)
-factorissimo.register_delayed_function("destroy_entity", function(entity) entity.destroy() end)
+mythos.register_delayed_function("start_construction_animation", start_construction_animation)
+mythos.register_delayed_function("pause_construction_animation", pause_construction_animation)
+mythos.register_delayed_function("unpause_construction_animation", unpause_construction_animation)
+mythos.register_delayed_function("destroy_entity", function(entity) entity.destroy() end)
 
 local TICKS_PER_FRAME = 2
 local FRAMES_BETWEEN_BUILDING = 8 * 2
@@ -147,9 +147,9 @@ local function request_platform_animation_for(entity)
             visible = false,
         }
 
-        factorissimo.execute_later("start_construction_animation", up_base, top_animation, bottom_animation)
-        factorissimo.execute_later("pause_construction_animation", up_base + 15 * TICKS_PER_FRAME, top_animation, bottom_animation)
-        factorissimo.execute_later("unpause_construction_animation", down_base, top_animation, bottom_animation)
+        mythos.execute_later("start_construction_animation", up_base, top_animation, bottom_animation)
+        mythos.execute_later("pause_construction_animation", up_base + 15 * TICKS_PER_FRAME, top_animation, bottom_animation)
+        mythos.execute_later("unpause_construction_animation", down_base, top_animation, bottom_animation)
     end
 end
 
@@ -201,12 +201,12 @@ local function eject_unneeded_items(factory, requests_by_itemname)
 end
 
 -- ensure we are actually in a factory floor. prevent contraband construction robots from being created
-factorissimo.on_event(defines.events.on_script_trigger_effect, function(event)
+mythos.on_event(defines.events.on_script_trigger_effect, function(event)
     if event.effect_id ~= "factory-hidden-construction-robot-created" then return end
     local construction_robot = event.target_entity
     assert(construction_robot and construction_robot.name == FACTORY_HIDDEN_CONSTRUCTION_ROBOT)
     if not storage.surface_factories[construction_robot.surface_index] then
-        factorissimo.execute_later("destroy_entity", 1, construction_robot)
+        mythos.execute_later("destroy_entity", 1, construction_robot)
     end
 end)
 
@@ -216,15 +216,15 @@ local function destroy_robot_if_empty_inventory(robot)
         robot.destroy()
     end
 end
-factorissimo.register_delayed_function("destroy_robot_if_empty_inventory", destroy_robot_if_empty_inventory)
+mythos.register_delayed_function("destroy_robot_if_empty_inventory", destroy_robot_if_empty_inventory)
 
-factorissimo.on_event(defines.events.on_robot_built_entity, function(event)
+mythos.on_event(defines.events.on_robot_built_entity, function(event)
     local robot = event.robot
     if robot.name ~= FACTORY_HIDDEN_CONSTRUCTION_ROBOT then return end
     local entity = event.entity
     if not entity.valid then return end
     request_platform_animation_for(event.entity)
-    factorissimo.execute_later("destroy_robot_if_empty_inventory", 1, robot)
+    mythos.execute_later("destroy_robot_if_empty_inventory", 1, robot)
 end)
 
 -- ensure the hidden roboport is always filled to TARGET_NUMBER_OF_ROBOTS_IN_NETWORK bots in network.
@@ -246,13 +246,13 @@ local function ensure_target_number_of_robots(factory)
     end
 end
 
-factorissimo.on_nth_tick(367, function()
+mythos.on_nth_tick(367, function()
     for _, factory in pairs(storage.factories) do
         ensure_target_number_of_robots(factory)
     end
 end)
 
-factorissimo.build_roboport_upgrade = function(factory)
+mythos.build_roboport_upgrade = function(factory)
     if not factory.inside_surface.valid or not factory.outside_surface.valid then return end
     local force = factory.force
     if not force.valid then return end
@@ -321,7 +321,7 @@ factorissimo.build_roboport_upgrade = function(factory)
     }
 end
 
-factorissimo.cleanup_factory_roboport_exterior_chest = function(factory)
+mythos.cleanup_factory_roboport_exterior_chest = function(factory)
     if not factory.roboport_upgrade then return end
     factory.roboport_upgrade.item_request_proxies = {}
 
@@ -472,7 +472,7 @@ end
 
 local create_or_remove_item_request_proxies -- function stub
 
-factorissimo.on_nth_tick(257, function()
+mythos.on_nth_tick(257, function()
     local construction_requests_by_factory = get_construction_requests_by_factory()
 
     -- update each factory and create item-request-proxy for unfulfilled construction requests
@@ -582,7 +582,7 @@ create_or_remove_item_request_proxies = function(factory, requests_by_itemname)
 end
 
 -- smaller update function to transfer items from the requester chest to the construction chest
-factorissimo.on_nth_tick(43, function()
+mythos.on_nth_tick(43, function()
     for _, factory in pairs(storage.factories) do
         local roboport_upgrade = factory.roboport_upgrade
         if not roboport_upgrade then goto continue end
@@ -607,7 +607,7 @@ factorissimo.on_nth_tick(43, function()
     end
 end)
 
-factorissimo.on_event(defines.events.on_gui_opened, function(event)
+mythos.on_event(defines.events.on_gui_opened, function(event)
     local gui_type = event.gui_type
     if gui_type ~= defines.gui_type.entity then return end
     local entity = event.entity

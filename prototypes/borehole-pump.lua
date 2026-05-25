@@ -8,7 +8,7 @@ if mods.pypetroleumhandling then return end
 local hit_effects = require("__base__.prototypes.entity.hit-effects")
 local sounds = require("__base__.prototypes.entity.sounds")
 
-local F = "__factorissimo-2-notnotmelon__"
+local F = "__mythos__"
 local pf = "p-q-"
 
 data:extend {{
@@ -17,7 +17,7 @@ data:extend {{
     icon = F .. "/graphics/icon/borehole-pump.png",
     icon_size = 64,
     flags = {},
-    subgroup = "factorissimo2",
+    subgroup = "mythos",
     order = "c-c",
     place_result = "borehole-pump",
     stack_size = 10,

@@ -29,7 +29,7 @@ data:extend {{
 data:extend {{
     type = "sprite",
     name = "factory-floor-space",
-    filename = "__factorissimo-2-notnotmelon__/graphics/icon/factory-floor-space.png",
+    filename = "__mythos__/graphics/icon/factory-floor-space.png",
     width = 64,
     height = 64,
     scale = 1,
@@ -60,7 +60,7 @@ local function generate_factory_floor_planet_icons(planet)
 
     -- add a factory icon to the bottom right corner
     table.insert(icons, {
-        icon = "__factorissimo-2-notnotmelon__/graphics/icon/factory-subicon.png",
+        icon = "__mythos__/graphics/icon/factory-subicon.png",
         icon_size = 64,
         scale = 1
     })
@@ -165,7 +165,7 @@ for _, planet in pairs(data.raw.planet) do
 end
 data:extend(factory_floors)
 
--- ensure that the factorissimo planets are unlocked when the original planets are unlocked
+-- ensure that the mythos planets are unlocked when the original planets are unlocked
 for _, technology in pairs(data.raw.technology) do
     if technology.effects and type(technology.effects) == "table" then
         local new_effects = {}

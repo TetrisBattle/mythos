@@ -49,7 +49,7 @@ local function update_pollution(factory)
     end
 end
 
-factorissimo.on_nth_tick(15, function(event)
+mythos.on_nth_tick(15, function(event)
     local factories = storage.factories
     for i = (event.tick % 4 + 1), #factories, 4 do
         local factory = factories[i]

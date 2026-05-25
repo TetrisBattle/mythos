@@ -1,4 +1,4 @@
-local F = "__factorissimo-2-notnotmelon__"
+local F = "__mythos__"
 
 -- Circuit connectors
 
@@ -8,7 +8,7 @@ data:extend {{
     icon = F .. "/graphics/icon/factory-circuit-connector.png",
     icon_size = 64,
     flags = {},
-    subgroup = "factorissimo2",
+    subgroup = "mythos",
     order = "c-b",
     place_result = "factory-circuit-connector",
     stack_size = 50,

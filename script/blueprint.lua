@@ -5,13 +5,13 @@ local function setup_blueprint_tags(blueprint, mapping)
         local factory = storage.factories_by_entity[entity.unit_number]
         if factory and has_layout(entity.name) then
             blueprint.set_blueprint_entity_tag(i, "id", factory.id)
-        elseif factorissimo.connection_indicator_names[entity.name] then
+        elseif mythos.connection_indicator_names[entity.name] then
             local factory = remote_api.find_surrounding_factory(entity.surface, entity.position)
             if factory then
                 for cid, indicator in pairs(factory.connection_indicators) do
                     if indicator.valid and indicator.unit_number == entity.unit_number then
-                        local ctype = factorissimo.connection_indicator_names[entity.name]
-                        local settings = factorissimo.get_connection_settings(factory, cid, ctype)
+                        local ctype = mythos.connection_indicator_names[entity.name]
+                        local settings = mythos.get_connection_settings(factory, cid, ctype)
                         for k, v in pairs(settings) do
                             blueprint.set_blueprint_entity_tag(i, k, v)
                         end
@@ -38,9 +38,9 @@ local function paste_blueprint(inventory, destination)
     end
     inventory.destroy()
 end
-factorissimo.register_delayed_function("paste_blueprint", paste_blueprint)
+mythos.register_delayed_function("paste_blueprint", paste_blueprint)
 
-function factorissimo.copy_entity_ghosts(source, destination)
+function mythos.copy_entity_ghosts(source, destination)
     if not source.inside_surface.valid or not destination.inside_surface.valid then return end
 
     local j = 60
@@ -72,17 +72,17 @@ function factorissimo.copy_entity_ghosts(source, destination)
         mapping = mapping
     })
 
-    factorissimo.copy_overlay_between_factory_buildings(source, destination)
+    mythos.copy_overlay_between_factory_buildings(source, destination)
 
     -- Delay this function a bit to give the radars a chance to scan the area
-    factorissimo.execute_later("paste_blueprint", 240, inventory, destination)
+    mythos.execute_later("paste_blueprint", 240, inventory, destination)
 
     first_anchor.destroy()
     second_anchor.destroy()
 end
 
 -- setup ghost tags for factory components
-factorissimo.on_event(defines.events.on_player_setup_blueprint, function(event)
+mythos.on_event(defines.events.on_player_setup_blueprint, function(event)
     local player = game.get_player(event.player_index)
     local blueprint = player.blueprint_to_setup
     if not blueprint.valid_for_read then blueprint = player.cursor_stack end
@@ -115,18 +115,18 @@ local function unpack_connection_settings_from_blueprint(entity)
     local factory = remote_api.find_surrounding_factory(surface, position)
     if not factory then return end
 
-    local ctype = factorissimo.connection_indicator_names[entity.ghost_name]
+    local ctype = mythos.connection_indicator_names[entity.ghost_name]
     local cpos = get_cpos(factory, position)
     if cpos then
         local cid = cpos.id
-        local settings = factorissimo.get_connection_settings(factory, cid, ctype)
+        local settings = mythos.get_connection_settings(factory, cid, ctype)
         for k, v in pairs(entity.tags) do
             settings[k] = v
         end
         local conn = factory.connections[cid]
         if conn then
-            factorissimo.destroy_connection(conn)
-            factorissimo.init_connection(factory, cid, cpos)
+            mythos.destroy_connection(conn)
+            mythos.init_connection(factory, cid, cpos)
         end
         return
     end
@@ -139,7 +139,7 @@ local BLUEPRINTABLE_FACTORY_PERIPHERALS = {
     ["factory-blueprint-anchor"] = true,
 }
 
-factorissimo.on_event(factorissimo.events.on_built(), function(event)
+mythos.on_event(mythos.events.on_built(), function(event)
     local entity = event.entity
     if not entity.valid then return end
     local entity_name, entity_type = entity.name, entity.type
@@ -147,7 +147,7 @@ factorissimo.on_event(factorissimo.events.on_built(), function(event)
     local is_ghost = entity_name == "entity-ghost"
     if is_ghost then entity_name = entity.ghost_name end
 
-    if is_ghost and factorissimo.connection_indicator_names[entity_name] then
+    if is_ghost and mythos.connection_indicator_names[entity_name] then
         unpack_connection_settings_from_blueprint(entity)
         entity.destroy()
         return

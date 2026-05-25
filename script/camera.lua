@@ -2,7 +2,7 @@ local mod_gui = require "mod-gui"
 local get_factory_by_entity = remote_api.get_factory_by_entity
 local find_surrounding_factory = remote_api.find_surrounding_factory
 
-factorissimo.on_event(factorissimo.events.on_init(), function()
+mythos.on_event(mythos.events.on_init(), function()
     storage.fancy_preview_active = storage.fancy_preview_active or {}
 end)
 
@@ -111,7 +111,7 @@ local function set_camera(player, factory)
     update_camera(player)
 end
 
-factorissimo.on_event(defines.events.on_player_changed_position, function(event)
+mythos.on_event(defines.events.on_player_changed_position, function(event)
     -- the normal on_tick check does not run in editor mode. check for game paused
     if game.tick_paused then
         local player = game.get_player(event.player_index)
@@ -119,7 +119,7 @@ factorissimo.on_event(defines.events.on_player_changed_position, function(event)
     end
 end)
 
-factorissimo.on_event(defines.events.on_tick, function()
+mythos.on_event(defines.events.on_tick, function()
     for player_index in pairs(storage.fancy_preview_active) do
         local player = game.get_player(player_index)
         if player and player.connected then
@@ -177,7 +177,7 @@ local function unset_camera(player)
 end
 
 local function update_factory_preview(player)
-    local preview_mode = settings.get_player_settings(player)["Factorissimo2-factory-preview-mode"].value
+    local preview_mode = settings.get_player_settings(player)["mythos-factory-preview-mode"].value
     
     if preview_mode == "off" then
         unset_camera(player)
@@ -215,29 +215,29 @@ local function update_factory_preview(player)
         else
             factory = get_factory_by_entity(player.selected)
             if preview_mode == "fancy" and factory then
-                factorissimo.update_overlay(factory)
+                mythos.update_overlay(factory)
                 set_camera(player, factory)
                 return
             end
         end
         if factory then
-            factorissimo.update_overlay(factory)
+            mythos.update_overlay(factory)
             set_minimap(player, factory, inside)
             return
         end
     end
     unset_camera(player)
 end
-factorissimo.update_factory_preview = update_factory_preview
+mythos.update_factory_preview = update_factory_preview
 
-factorissimo.on_event({
+mythos.on_event({
     defines.events.on_player_display_resolution_changed,
     defines.events.on_player_display_scale_changed,
     defines.events.on_player_controller_changed,
     defines.events.on_player_changed_surface
 }, function(event)
     local player = game.get_player(event.player_index)
-    factorissimo.update_factory_preview(player)
+    mythos.update_factory_preview(player)
 end)
 
 local god_controllers = {
@@ -264,20 +264,20 @@ end
 
 local function open_outside_in_remote_view(player, pole)
     for _, factory in pairs(storage.factories) do
-        if factory.built and factory.outside_surface.valid and factorissimo.get_or_create_inside_power_pole(factory) == pole then
+        if factory.built and factory.outside_surface.valid and mythos.get_or_create_inside_power_pole(factory) == pole then
             local teleport_position = {x = factory.outside_x, y = factory.outside_y}
 
             local recursive_parent = remote_api.find_surrounding_factory(factory.outside_surface, teleport_position)
             if recursive_parent then teleport_position = {recursive_parent.inside_x, recursive_parent.inside_y} end
 
-            factorissimo.update_overlay(factory)
+            mythos.update_overlay(factory)
             camera_teleport(player, factory.outside_surface, teleport_position)
             return
         end
     end
 end
 
-factorissimo.on_event("factory-open-outside-surface-to-remote-view", function(event)
+mythos.on_event("factory-open-outside-surface-to-remote-view", function(event)
     local player = game.get_player(event.player_index)
     local entity = player.selected
     if not entity or not entity.valid then return end

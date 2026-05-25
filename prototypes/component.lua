@@ -1,4 +1,4 @@
-local F = "__factorissimo-2-notnotmelon__";
+local F = "__mythos__";
 
 require("circuit-connector-sprites")
 
@@ -149,7 +149,7 @@ data:extend {{
     connection_points = {cwc0c(), cwc0c(), cwc0c(), cwc0c()},
 }}
 
--- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/239
+-- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/239
 data:extend {{
     type = "electric-pole",
     name = "factory-global-electric-network-pole",

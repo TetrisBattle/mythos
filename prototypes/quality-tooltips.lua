@@ -99,7 +99,7 @@ add_quality_factoriopedia_info(data.raw["storage-tank"]["factory-3"], {
     {"fluid-transfer-speed", function(entity, quality_level) return tostring(FACTORY_PUMPING_SPEED * get_quality_buff(quality_level)) .. "/s" end}
 })
 
-if not settings.startup["Factorissimo2-space-architecture"].value then return end
+if not settings.startup["mythos-space-architecture"].value then return end
 
 add_quality_factoriopedia_info(data.raw["storage-tank"]["space-factory-1"], {
     {"interior-space",       function(entity, quality_level) return "30×30" end},

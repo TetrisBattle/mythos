@@ -4,7 +4,7 @@
 local find_surrounding_factory = remote_api.find_surrounding_factory
 local find_factory_by_area = remote_api.find_factory_by_area
 
-factorissimo.on_event(factorissimo.events.on_init(), function()
+mythos.on_event(mythos.events.on_init(), function()
     storage.last_player_teleport = storage.last_player_teleport or {}
 end)
 
@@ -45,7 +45,7 @@ local function teleport_safely(e, surface, position, player)
         storage.last_player_teleport[player.index] = game.tick
     end
 
-    if player then factorissimo.update_factory_preview(player) end
+    if player then mythos.update_factory_preview(player) end
 end
 
 local function enter_factory(e, factory, player)
@@ -119,8 +119,8 @@ local function check_position_and_leave_factory(player, is_airborne)
     if math.abs(position.x - factory.inside_door_x) >= 4 then return end
 
     leave_factory(player, factory, player)
-    factorissimo.update_factory_preview(player)
-    factorissimo.update_overlay(factory)
+    mythos.update_factory_preview(player)
+    mythos.update_overlay(factory)
     return true
 end
 
@@ -157,7 +157,7 @@ local function check_position_and_enter_factory(player, is_airborne)
 end
 
 -- teleport players between factory buildings
-factorissimo.on_nth_tick(6, function()
+mythos.on_nth_tick(6, function()
     local tick = game.tick
     local jetpacks = get_jetpacks()
     for player_index, player in pairs(game.connected_players) do

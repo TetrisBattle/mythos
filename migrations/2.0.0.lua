@@ -1,4 +1,4 @@
-require "__factorissimo-2-notnotmelon__.script.electricity"
+require "__mythos__.script.electricity"
 
 for _, pole in ipairs(storage.middleman_power_poles or {}) do
     if pole ~= 0 then pole.destroy() end
@@ -15,7 +15,7 @@ for _, factory in pairs(storage.factories) do
     factory.middleman_id = nil
     factory.direct_connection = nil
 
-    factorissimo.update_power_connection(factory)
+    mythos.update_power_connection(factory)
 end
 
 storage.surface_factory_counters = nil

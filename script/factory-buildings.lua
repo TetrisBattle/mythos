@@ -5,7 +5,7 @@ local has_layout = has_layout
 
 -- INITIALIZATION --
 
-factorissimo.on_event(factorissimo.events.on_init(), function()
+mythos.on_event(mythos.events.on_init(), function()
     -- List of all factories
     storage.factories = storage.factories or {}
     -- Map: Id from item-with-tags -> Factory
@@ -92,7 +92,7 @@ local function set_factory_active_or_inactive(factory)
         if not can_skip_factory_surface_check() then
             -- Check if a player is trying to cheat by moving factories between surfaces.
             local surface_name = factory.inside_surface.name
-            -- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/268
+            -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/268
             local surface_name = surface_name:gsub("%-factory%-floor%-factory%-floor", "-factory-floor")
             if factory.inside_surface.valid and surface_name ~= which_surface_should_this_new_factory_be_placed_on(factory.layout, building) then
                 if not is_legacy_factory_floor(surface_name) then
@@ -102,7 +102,7 @@ local function set_factory_active_or_inactive(factory)
             end
         end
 
-        if settings.global["Factorissimo2-free-recursion"].value then
+        if settings.global["mythos-free-recursion"].value then
             return true
         end
 
@@ -138,27 +138,27 @@ local function set_factory_active_or_inactive(factory)
     --     local player = game.get_player(storage.player_index)
     --     player.mine_entity(building, false)
     -- end
-    factorissimo.create_flying_text {position = position, text = msg}
+    mythos.create_flying_text {position = position, text = msg}
 
     for cid, _ in pairs(factory.layout.connections) do
         local conn = factory.connections[cid]
-        factorissimo.destroy_connection(conn)
+        mythos.destroy_connection(conn)
     end
 end
 
 local DEFAULT_FACTORY_UPGRADES = {
-    {"factorissimo", "build_lights_upgrade"},
-    {"factorissimo", "build_greenhouse_upgrade"},
-    {"factorissimo", "build_display_upgrade"},
-    {"factorissimo", "build_roboport_upgrade"}
+    {"mythos", "build_lights_upgrade"},
+    {"mythos", "build_greenhouse_upgrade"},
+    {"mythos", "build_display_upgrade"},
+    {"mythos", "build_roboport_upgrade"}
 }
 
 local function build_factory_upgrades(factory)
     for _, upgrade in pairs(factory.layout.upgrades or DEFAULT_FACTORY_UPGRADES) do
         assert(#upgrade == 2)
         local mod, upgrade_function = upgrade[1], upgrade[2]
-        if mod == "factorissimo" then
-            factorissimo[upgrade_function](factory)
+        if mod == "mythos" then
+            mythos[upgrade_function](factory)
         else
             remote.call(mod, upgrade_function, factory)
         end
@@ -173,9 +173,9 @@ local function activate_factories()
         build_factory_upgrades(factory)
     end
 end
-factorissimo.on_event(factorissimo.events.on_init(), activate_factories)
+mythos.on_event(mythos.events.on_init(), activate_factories)
 
-factorissimo.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
+mythos.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
     if not storage.factories then return end -- In case any mod or scenario script calls LuaForce.research_all_technologies() during its on_init
     local name = event.research.name
     if name == "factory-recursion-t1" or name == "factory-recursion-t2" then
@@ -186,10 +186,10 @@ factorissimo.on_event({defines.events.on_research_finished, defines.events.on_re
 end)
 
 local function update_recursion_techs(force)
-    if settings.global["Factorissimo2-hide-recursion"] and settings.global["Factorissimo2-hide-recursion"].value then
+    if settings.global["mythos-hide-recursion"] and settings.global["mythos-hide-recursion"].value then
         force.technologies["factory-recursion-t1"].enabled = false
         force.technologies["factory-recursion-t2"].enabled = false
-    elseif settings.global["Factorissimo2-hide-recursion-2"] and settings.global["Factorissimo2-hide-recursion-2"].value then
+    elseif settings.global["mythos-hide-recursion-2"] and settings.global["mythos-hide-recursion-2"].value then
         force.technologies["factory-recursion-t1"].enabled = true
         force.technologies["factory-recursion-t2"].enabled = false
     else
@@ -198,7 +198,7 @@ local function update_recursion_techs(force)
     end
 end
 
-factorissimo.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
+mythos.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
     if event.setting_type == "runtime-global" then activate_factories() end
 
     for _, force in pairs(game.forces) do
@@ -206,12 +206,12 @@ factorissimo.on_event(defines.events.on_runtime_mod_setting_changed, function(ev
     end
 end)
 
-factorissimo.on_event(defines.events.on_force_created, function(event)
+mythos.on_event(defines.events.on_force_created, function(event)
     local force = event.force
     update_recursion_techs(force)
 end)
 
-factorissimo.on_event(factorissimo.events.on_init(), function()
+mythos.on_event(mythos.events.on_init(), function()
     for _, force in pairs(game.forces) do
         update_recursion_techs(force)
     end
@@ -219,7 +219,7 @@ end)
 
 -- FACTORY GENERATION --
 
-factorissimo.on_event(defines.events.on_surface_created, function(event)
+mythos.on_event(defines.events.on_surface_created, function(event)
     local surface = game.get_surface(event.surface_index)
     if not surface.name:find("%-factory%-floor$") then return end
 
@@ -304,9 +304,9 @@ local function create_factory_position(layout, building)
     surface_sanity_checks(surface, building)
 
     local n = find_first_unused_position(surface) - 1
-    local FACTORISSIMO_CHUNK_SPACING = 16
-    local cx = FACTORISSIMO_CHUNK_SPACING * (n % 8)
-    local cy = FACTORISSIMO_CHUNK_SPACING * math.floor(n / 8)
+    local MYTHOS_CHUNK_SPACING = 16
+    local cx = MYTHOS_CHUNK_SPACING * (n % 8)
+    local cy = MYTHOS_CHUNK_SPACING * math.floor(n / 8)
     -- To make void chnks show up on the map, you need to tell them they've finished generating.
     for xx = -2, 2 do
         for yy = -2, 2 do
@@ -314,7 +314,7 @@ local function create_factory_position(layout, building)
         end
     end
     surface.destroy_decoratives {area = {{32 * (cx - 2), 32 * (cy - 2)}, {32 * (cx + 2), 32 * (cy + 2)}}}
-    factorissimo.spawn_maraxsis_water_shaders(surface, {x = cx, y = cy})
+    mythos.spawn_maraxsis_water_shaders(surface, {x = cx, y = cy})
 
     local factory = {}
     factory.inside_surface = surface
@@ -414,8 +414,8 @@ local function create_factory_interior(layout, building)
     factory.inside_surface.set_tiles(tiles)
     add_hidden_tile_rect(factory)
 
-    factorissimo.get_or_create_inside_power_pole(factory)
-    factorissimo.spawn_cerys_entities(factory)
+    mythos.get_or_create_inside_power_pole(factory)
+    mythos.spawn_cerys_entities(factory)
 
     local radar = factory.inside_surface.create_entity {
         name = "factory-hidden-radar",
@@ -463,9 +463,9 @@ local function create_factory_exterior(factory, building)
     factory.building = building
     factory.built = true
 
-    factorissimo.recheck_factory_connections(factory)
-    factorissimo.update_power_connection(factory)
-    factorissimo.update_overlay(factory)
+    mythos.recheck_factory_connections(factory)
+    mythos.update_power_connection(factory)
+    mythos.update_overlay(factory)
     build_factory_upgrades(factory)
     return factory
 end
@@ -473,10 +473,10 @@ end
 -- FACTORY MINING AND DECONSTRUCTION --
 
 local function cleanup_factory_exterior(factory, building)
-    factorissimo.cleanup_outside_energy_receiver(factory)
-    factorissimo.cleanup_factory_roboport_exterior_chest(factory)
+    mythos.cleanup_outside_energy_receiver(factory)
+    mythos.cleanup_factory_roboport_exterior_chest(factory)
 
-    factorissimo.disconnect_factory_connections(factory)
+    mythos.disconnect_factory_connections(factory)
     for _, render_id in pairs(factory.outside_overlay_displays) do
         local object = rendering.get_object_by_id(render_id)
         if object then object.destroy() end
@@ -577,7 +577,7 @@ local function cleanup_factory_interior(factory)
         force.rechart(factory.inside_surface)
     end
 
-    -- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/211
+    -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/211
     storage.was_deleted = storage.was_deleted or {}
     storage.was_deleted[factory.id] = true
 
@@ -586,7 +586,7 @@ end
 
 -- How players pick up factories
 -- Working factory buildings don't return items, so we have to manually give the player an item
-factorissimo.on_event({
+mythos.on_event({
     defines.events.on_player_mined_entity,
     defines.events.on_robot_mined_entity,
     defines.events.on_space_platform_mined_entity
@@ -643,16 +643,16 @@ local function prevent_factory_mining(entity)
     }
     storage.factories_by_entity[entity.unit_number] = factory
     factory.building = entity
-    factorissimo.update_overlay(factory)
+    mythos.update_overlay(factory)
     if #factory.outside_port_markers ~= 0 then
         factory.outside_port_markers = {}
-        factorissimo.toggle_port_markers(factory)
+        mythos.toggle_port_markers(factory)
     end
-    factorissimo.create_flying_text {position = entity.position, text = {"factory-cant-be-mined"}}
+    mythos.create_flying_text {position = entity.position, text = {"factory-cant-be-mined"}}
 end
 
 local fake_robots = {["repair-block-robot"] = true} -- Modded construction robots with heavy control scripting
-factorissimo.on_event(defines.events.on_robot_pre_mined, function(event)
+mythos.on_event(defines.events.on_robot_pre_mined, function(event)
     local entity = event.entity
     if has_layout(entity.name) and fake_robots[event.robot.name] then
         prevent_factory_mining(entity)
@@ -664,7 +664,7 @@ end)
 
 -- How biters pick up factories
 -- Too bad they don't have hands
-factorissimo.on_event(defines.events.on_entity_died, function(event)
+mythos.on_event(defines.events.on_entity_died, function(event)
     local entity = event.entity
     if not has_layout(entity.name) then return end
     local factory = get_factory_by_building(entity)
@@ -688,14 +688,14 @@ factorissimo.on_event(defines.events.on_entity_died, function(event)
         max_radius = 0,
         use_start_position_on_failure = true
     }
-    assert(table_size(items) == 1, "Failed to generate factory item. Are you using the quantum-fabricator mod? See https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/203")
+    assert(table_size(items) == 1, "Failed to generate factory item. Are you using the quantum-fabricator mod? See https://github.com/notnotmelon/mythos-2-notnotmelon/issues/203")
     local item = items[1].stack.item
     assert(item and item.valid)
     factory.item = item
     entity.force.print {"factory-killed-by-biters", items[1].gps_tag}
 end)
 
-factorissimo.on_event(defines.events.on_post_entity_died, function(event)
+mythos.on_event(defines.events.on_post_entity_died, function(event)
     if not has_layout(event.prototype.name) or not event.ghost then return end
     local factory = storage.factories_by_entity[event.unit_number]
     if not factory then return end
@@ -703,7 +703,7 @@ factorissimo.on_event(defines.events.on_post_entity_died, function(event)
 end)
 
 -- Just rebuild the factory in this case
-factorissimo.on_event(defines.events.script_raised_destroy, function(event)
+mythos.on_event(defines.events.script_raised_destroy, function(event)
     local entity = event.entity
     if has_layout(entity.name) then
         prevent_factory_mining(entity)
@@ -738,7 +738,7 @@ local function on_delete_surface(surface)
 end
 
 -- Delete all children surfaces in this case.
-factorissimo.on_event(defines.events.on_pre_surface_cleared, function(event)
+mythos.on_event(defines.events.on_pre_surface_cleared, function(event)
     on_delete_surface(game.get_surface(event.surface_index))
 end)
 
@@ -754,7 +754,7 @@ end
 
 -- It's possible that the item used to build this factory is not the same as the one that was saved.
 -- In this case, clear tags and description of the saved item such that there is only 1 copy of the factory item.
--- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/155
+-- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/155
 local function handle_factory_control_xed(factory)
     local item = factory.item
     if not item or not item.valid then return end
@@ -794,22 +794,22 @@ local function handle_factory_placed(entity, tags)
     if not factory and storage.factories[tags.id] then
         -- This factory was copied from somewhere else. Clone all contained entities
         local factory = create_fresh_factory(entity)
-        factorissimo.copy_entity_ghosts(storage.factories[tags.id], factory)
-        factorissimo.update_overlay(factory)
+        mythos.copy_entity_ghosts(storage.factories[tags.id], factory)
+        mythos.update_overlay(factory)
         return
     end
 
-    -- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/211
+    -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/211
     if storage.was_deleted and storage.was_deleted[tags.id] then
         create_fresh_factory(entity)
         return
     end
 
-    factorissimo.create_flying_text {position = entity.position, text = {"factory-connection-text.invalid-factory-data"}}
+    mythos.create_flying_text {position = entity.position, text = {"factory-connection-text.invalid-factory-data"}}
     entity.destroy()
 end
 
--- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/259
+-- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/259
 local function try_randomly_tag_an_itemized_factory_from_space_platform_hub(entity_ghost, player_index)
     if not player_index then return end
     if entity_ghost.tags then return end
@@ -855,7 +855,7 @@ local function try_randomly_tag_an_itemized_factory_from_space_platform_hub(enti
     end
 end
 
-factorissimo.on_event(factorissimo.events.on_built(), function(event)
+mythos.on_event(mythos.events.on_built(), function(event)
     local entity = event.entity
     if not entity.valid then return end
     local entity_name = entity.name
@@ -876,7 +876,7 @@ factorissimo.on_event(factorissimo.events.on_built(), function(event)
     if entity.tags then
         local copied_from_factory = storage.factories[entity.tags.id]
         if copied_from_factory then
-            factorissimo.update_overlay(copied_from_factory, entity)
+            mythos.update_overlay(copied_from_factory, entity)
         end
     end
 end)
@@ -921,7 +921,7 @@ local function is_entity_clone_forbidden(name)
     return false
 end
 
-factorissimo.on_event(defines.events.on_entity_cloned, function(event)
+mythos.on_event(defines.events.on_entity_cloned, function(event)
     local src_entity = event.source
     local dst_entity = event.destination
     if is_entity_clone_forbidden(dst_entity.name) then
@@ -952,7 +952,7 @@ commands.add_command("give-lost-factory-buildings", {"command-help-message.give-
     end
 end)
 
-factorissimo.on_event(defines.events.on_forces_merging, function(event)
+mythos.on_event(defines.events.on_forces_merging, function(event)
     for _, factory in pairs(storage.factories) do
         if not factory.force.valid then
             factory.force = game.forces["player"]

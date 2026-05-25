@@ -1,9 +1,9 @@
--- this file rebalances the factorissimo tech tree for space age
+-- this file rebalances the mythos tech tree for space age
 -- t3 factory buildings are unlocked on vulcanus now!
 
 if not mods["space-age"] then return end
 if mods["space-is-fake"] then return end
-if settings.startup["Factorissimo2-cheap-research"].value then return end
+if settings.startup["mythos-cheap-research"].value then return end
 
 data.raw.technology["factory-architecture-t2"].unit = {
     count = 600,
@@ -182,9 +182,9 @@ data.raw["electric-pole"]["factory-circuit-connector"].surface_conditions = {{
     min = 0.1
 }}
 
-if not settings.startup["Factorissimo2-space-architecture"].value then return end
+if not settings.startup["mythos-space-architecture"].value then return end
 
--- https://github.com/notnotmelon/factorissimo-2-notnotmelon/issues/247
+-- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/247
 data.raw["electric-pole"]["factory-circuit-connector"].surface_conditions = {}
 
 data.raw["storage-tank"]["space-factory-1"].surface_conditions = {{

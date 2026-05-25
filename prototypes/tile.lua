@@ -8,12 +8,12 @@ local concrete_vehicle_speed_modifier = data.raw["tile"]["concrete"].vehicle_fri
 local concrete_driving_sound = table.deepcopy(data.raw["tile"]["concrete"].driving_sound)
 local concrete_tile_build_sounds = table.deepcopy(data.raw["tile"]["concrete"].build_sound)
 
-local F = "__factorissimo-2-notnotmelon__"
-local no_tile_transitions = settings.startup["Factorissimo2-disable-new-tile-effects"].value
+local F = "__mythos__"
+local no_tile_transitions = settings.startup["mythos-disable-new-tile-effects"].value
 
 data:extend {{
     type = "item-subgroup",
-    name = "factorissimo-tiles",
+    name = "mythos-tiles",
     order = "q",
     group = "tiles"
 }}
@@ -29,7 +29,7 @@ local function tile_transitions(tile_variants)
             background_layer_group = "zero",
             offset_background_layer_by_tile_layer = true,
 
-            spritesheet = "__factorissimo-2-notnotmelon__/graphics/tile/out-of-map-transition.png",
+            spritesheet = "__mythos__/graphics/tile/out-of-map-transition.png",
             layout = tile_spritesheet_layout.transition_4_4_8_1_1,
             overlay_enabled = false
         }
@@ -60,7 +60,7 @@ local function make_tile(tinfo)
 
     data:extend {{
         type = "tile",
-        subgroup = "factorissimo-tiles",
+        subgroup = "mythos-tiles",
         name = tinfo.name,
         localised_name = tinfo.localised_name,
         needs_correction = false,
@@ -256,7 +256,7 @@ make_tile {
 if feature_flags.expansion_shaders then
     data:extend {{
         type = "tile-effect",
-        name = "factorissimo-out-of-map",
+        name = "mythos-out-of-map",
         shader = "space",
         space = {
             star_scale = 0,
@@ -264,12 +264,12 @@ if feature_flags.expansion_shaders then
         }
     }}
 
-    data.raw.tile["out-of-map"].effect = "factorissimo-out-of-map"
+    data.raw.tile["out-of-map"].effect = "mythos-out-of-map"
     data.raw.tile["out-of-map"].effect_color = {0.5, 0.507, 0}
     data.raw.tile["out-of-map"].effect_color_secondary = {0, 68, 25}
 end
 
-if not settings.startup["Factorissimo2-space-architecture"].value then return end
+if not settings.startup["mythos-space-architecture"].value then return end
 
 local function space_floor_mask()
     if mods["space-exploration"] then

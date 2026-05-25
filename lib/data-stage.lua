@@ -1,10 +1,10 @@
 -- Adds helper functions for data stage. Shared across all pymods and adapted for use in maraxsis
 
-factorissimo.on_event = function() end
+mythos.on_event = function() end
 
 ---Returns a 1x1 empty image.
 ---@return table
-factorissimo.empty_image = function()
+mythos.empty_image = function()
     return {
         filename = "__core__/graphics/empty.png",
         size = 1,
@@ -19,9 +19,9 @@ end
 ---@param old data.AnyPrototype
 ---@param new table
 ---@return data.AnyPrototype
-factorissimo.merge = function(old, new)
+mythos.merge = function(old, new)
     if not old then
-        error("Failed to factorissimo.merge: Old prototype is nil", 2)
+        error("Failed to mythos.merge: Old prototype is nil", 2)
     end
 
     old = table.deepcopy(old)
@@ -35,7 +35,7 @@ factorissimo.merge = function(old, new)
     return old
 end
 
-factorissimo.surface_conditions = function()
+mythos.surface_conditions = function()
     return {{
         property = "pressure",
         min = 200000,
@@ -45,7 +45,7 @@ end
 
 -- Recursive function to ensure all strings are within 20 units.
 -- Factorio crashes if a localised string is greater than 20 units
-factorissimo.shorten_localised_string = function(localised_string)
+mythos.shorten_localised_string = function(localised_string)
     if table_size(localised_string) <= 20 then return localised_string end
 
     local first_half = {}
@@ -62,5 +62,5 @@ factorissimo.shorten_localised_string = function(localised_string)
         end
     end
 
-    return {"", factorissimo.shorten_localised_string(first_half), factorissimo.shorten_localised_string(second_half)}
+    return {"", mythos.shorten_localised_string(first_half), mythos.shorten_localised_string(second_half)}
 end

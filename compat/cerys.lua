@@ -23,7 +23,7 @@ local DEFAULT_CERYS_TOWER_POSITIONS = {
     {-10, -10},
 }
 
-factorissimo.spawn_cerys_entities = function(factory)
+mythos.spawn_cerys_entities = function(factory)
     if not script.active_mods["Cerys-Moon-of-Fulgora"] then return end
 
     local surface = factory.inside_surface

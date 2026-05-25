@@ -5,7 +5,7 @@ require "prototypes.quality-tooltips"
 require "script.roboport.utility-constants"
 require "compat.pyanodon"
 
-local F = "__factorissimo-2-notnotmelon__"
+local F = "__mythos__"
 
 local function blank()
     return {

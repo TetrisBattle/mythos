@@ -18,7 +18,7 @@ local function build_display_upgrade(factory)
     controller.rotatable = false
     factory.inside_overlay_controller = controller
 end
-factorissimo.build_display_upgrade = build_display_upgrade
+mythos.build_display_upgrade = build_display_upgrade
 
 local sprite_path_translation = {
     virtual = "virtual-signal",
@@ -153,7 +153,7 @@ local function update_overlay(factory, draw_onto)
         )
     end
 end
-factorissimo.update_overlay = update_overlay
+mythos.update_overlay = update_overlay
 
 local function copy_overlay_between_factory_buildings(source, destination)
     local source_controller = source.inside_overlay_controller
@@ -180,12 +180,12 @@ local function copy_overlay_between_factory_buildings(source, destination)
         new_section.filters = section.filters
     end
 
-    factorissimo.update_overlay(destination)
+    mythos.update_overlay(destination)
 end
-factorissimo.copy_overlay_between_factory_buildings = copy_overlay_between_factory_buildings
+mythos.copy_overlay_between_factory_buildings = copy_overlay_between_factory_buildings
 
-factorissimo.on_event(defines.events.on_player_changed_surface, function(event)
+mythos.on_event(defines.events.on_player_changed_surface, function(event)
     for _, factory in pairs(storage.factories) do
-        factorissimo.update_overlay(factory)
+        mythos.update_overlay(factory)
     end
 end)

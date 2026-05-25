@@ -1,4 +1,4 @@
-local F = "__factorissimo-2-notnotmelon__"
+local F = "__mythos__"
 local pf = "p-q-"
 
 local starting_planet = "nauvis"
@@ -79,7 +79,7 @@ data:extend {{
     order = pf .. "a-c",
 }}
 
-if (mods["space-exploration"] or mods["space-age"]) and settings.startup["Factorissimo2-space-architecture"].value then
+if (mods["space-exploration"] or mods["space-age"]) and settings.startup["mythos-space-architecture"].value then
     local unit
     local prerequisites = {"factory-architecture-t3", "production-science-pack", "utility-science-pack"}
     if mods["space-exploration"] then

@@ -14,7 +14,7 @@ require "compat.power-grid-comb"
 data:extend {
     {
         type = "item-subgroup",
-        name = "factorissimo2",
+        name = "mythos",
         group = "logistics",
         order = "e-e"
     },

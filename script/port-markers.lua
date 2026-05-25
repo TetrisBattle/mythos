@@ -1,6 +1,6 @@
 local get_factory_by_building = remote_api.get_factory_by_building
 
-function factorissimo.toggle_port_markers(factory)
+function mythos.toggle_port_markers(factory)
     if not factory.built then return end
     if #(factory.outside_port_markers) == 0 then
         for id, cpos in pairs(factory.layout.connections) do
@@ -26,11 +26,11 @@ function factorissimo.toggle_port_markers(factory)
     end
 end
 
-factorissimo.on_event("factory-rotate", function(event)
+mythos.on_event("factory-rotate", function(event)
     local player = game.get_player(event.player_index)
     local entity = player.selected
     if not entity or not has_layout(entity.name) then return end
     local factory = get_factory_by_building(entity)
     if not factory then return end
-    factorissimo.toggle_port_markers(factory)
+    mythos.toggle_port_markers(factory)
 end)

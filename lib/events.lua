@@ -3,7 +3,7 @@ local events = {}
 ---Drop-in replacement for script.on_event however it supports multiple handlers per event. You can also use 'on_built' 'on_destroyed' and 'on_init' as shortcuts for multiple events.
 ---@param event defines.events|defines.events[]|string
 ---@param f function
-factorissimo.on_event = function(event, f)
+mythos.on_event = function(event, f)
     for _, event in pairs(type(event) == "table" and event or {event}) do
         event = tostring(event)
         events[event] = events[event] or {}
@@ -11,7 +11,7 @@ factorissimo.on_event = function(event, f)
     end
 end
 
-factorissimo.on_nth_tick = function(event, f)
+mythos.on_nth_tick = function(event, f)
     events[event] = events[event] or {}
     table.insert(events[event], f)
 end
@@ -33,14 +33,14 @@ for i = 0, 20 do
 end
 
 local finalized = false
-factorissimo.finalize_events = function()
+mythos.finalize_events = function()
     if finalized then error("Events already finalized") end
     local i = 0
     for event, functions in pairs(events) do
         local f = one_function_from_many(functions)
         if type(event) == "number" then
             script.on_nth_tick(event, f)
-        elseif event == factorissimo.events.on_init() then
+        elseif event == mythos.events.on_init() then
             script.on_init(f)
             script.on_configuration_changed(f)
         else
@@ -76,19 +76,19 @@ local function process_gui_event(event)
 end
 
 for event, _ in pairs(gui_events) do
-    factorissimo.on_event(event, process_gui_event)
+    mythos.on_event(event, process_gui_event)
 end
 
 local delayed_functions = {}
 ---use this to execute a script after a delay
 ---example:
----factorissimo.register_delayed_function('my_delayed_func', function(param1, param2, param3) ... end)
----factorissimo.execute_later('my_delayed_func', 60, param1, param2, param3)
+---mythos.register_delayed_function('my_delayed_func', function(param1, param2, param3) ... end)
+---mythos.execute_later('my_delayed_func', 60, param1, param2, param3)
 ---The above code will execute my_delayed_func after waiting for 60 ticks
 ---@param function_key string
 ---@param ticks integer
 ---@param ... any
-function factorissimo.execute_later(function_key, ticks, ...)
+function mythos.execute_later(function_key, ticks, ...)
     local marked_for_death_render_object = rendering.draw_line {
         color = {0, 0, 0, 0},
         width = 0,
@@ -103,7 +103,7 @@ function factorissimo.execute_later(function_key, ticks, ...)
     storage._delayed_functions[script.register_on_object_destroyed(marked_for_death_render_object)] = {function_key, {...}}
 end
 
-factorissimo.on_event(defines.events.on_object_destroyed, function(event)
+mythos.on_event(defines.events.on_object_destroyed, function(event)
     if not storage._delayed_functions then return end
     local registration_number = event.registration_number
     local data = storage._delayed_functions[registration_number]
@@ -115,12 +115,12 @@ factorissimo.on_event(defines.events.on_object_destroyed, function(event)
     f(table.unpack(data[2]))
 end)
 
-function factorissimo.register_delayed_function(key, func)
+function mythos.register_delayed_function(key, func)
     delayed_functions[key] = func
 end
 
 --- Sentinel values for defining groups of events
-factorissimo.events = {
+mythos.events = {
     --- Called after an entity is constructed.
     --- Note: Using this event may be bad practice. Consider instead defining `created_effect` in the entity prototype.
     ---

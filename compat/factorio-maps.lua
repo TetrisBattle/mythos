@@ -1,5 +1,5 @@
 local function cleanup_entities_for_factoriomaps()
-    print("Starting factoriomaps-factorissimo integration script")
+    print("Starting factoriomaps-mythos integration script")
 
     for surface_index, factory_list in pairs(storage.surface_factories) do
         local surface = game.get_surface(surface_index)
@@ -35,5 +35,5 @@ end
 script.on_load(function()
     if not remote.interfaces.factoriomaps then return end
     local event_id = remote.call("factoriomaps", "get_start_capture_event_id")
-    factorissimo.on_event(event_id, cleanup_entities_for_factoriomaps)
+    mythos.on_event(event_id, cleanup_entities_for_factoriomaps)
 end)

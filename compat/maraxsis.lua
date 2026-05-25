@@ -12,7 +12,7 @@ local function spawn_maraxsis_water_shader(surface, chunk_position)
     fancy_water.minable_flag = false
 end
 
-function factorissimo.spawn_maraxsis_water_shaders(surface, chunk_position)
+function mythos.spawn_maraxsis_water_shaders(surface, chunk_position)
     if not script.active_mods["maraxsis"] then return end
     if surface.name ~= "maraxsis-factory-floor" and surface.name ~= "maraxsis-trench-factory-floor" then return end
 

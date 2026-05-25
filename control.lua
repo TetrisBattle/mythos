@@ -24,4 +24,4 @@ require "compat.resource-spawner-overhaul"
 require "compat.picker-dollies"
 require "compat.space-exploration"
 
-factorissimo.finalize_events()
+mythos.finalize_events()
