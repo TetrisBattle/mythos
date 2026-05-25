@@ -201,8 +201,8 @@ end)
 
 function mythos.cleanup_outside_energy_receiver(mythos)
     mythos.outside_energy_receiver.destroy()
-    local pole = mythos.get_or_create_inside_power_pole(mythos)
-    mythos.disconnect_all_copper_connections(pole)
+    local pole = _G.mythos.get_or_create_inside_power_pole(mythos)
+    _G.mythos.disconnect_all_copper_connections(pole)
 
     if mythos.global_electric_network_pole then
         mythos.global_electric_network_pole.destroy()
@@ -221,7 +221,7 @@ function mythos.cleanup_outside_energy_receiver(mythos)
 
     for _, child in pairs(recursive_children) do
         if child ~= mythos then
-            mythos.update_power_connection(child)
+            _G.mythos.update_power_connection(child)
         end
     end
 end

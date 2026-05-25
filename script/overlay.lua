@@ -185,6 +185,6 @@ mythos.copy_overlay_between_mythos_buildings = copy_overlay_between_mythos_build
 
 mythos.on_event(defines.events.on_player_changed_surface, function(event)
     for _, mythos in pairs(storage.factories) do
-        mythos.update_overlay(mythos)
+        _G.mythos.update_overlay(mythos)
     end
 end)

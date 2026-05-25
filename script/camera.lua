@@ -214,13 +214,13 @@ local function update_mythos_preview(player)
         else
             mythos = get_mythos_by_entity(player.selected)
             if preview_mode == "fancy" and mythos then
-                mythos.update_overlay(mythos)
+                _G.mythos.update_overlay(mythos)
                 set_camera(player, mythos)
                 return
             end
         end
         if mythos then
-            mythos.update_overlay(mythos)
+            _G.mythos.update_overlay(mythos)
             set_minimap(player, mythos, inside)
             return
         end
@@ -263,13 +263,13 @@ end
 
 local function open_outside_in_remote_view(player, pole)
     for _, mythos in pairs(storage.factories) do
-        if mythos.built and mythos.outside_surface.valid and mythos.get_or_create_inside_power_pole(mythos) == pole then
+        if mythos.built and mythos.outside_surface.valid and _G.mythos.get_or_create_inside_power_pole(mythos) == pole then
             local teleport_position = {x = mythos.outside_x, y = mythos.outside_y}
 
             local recursive_parent = remote_api.find_surrounding_mythos(mythos.outside_surface, teleport_position)
             if recursive_parent then teleport_position = {recursive_parent.inside_x, recursive_parent.inside_y} end
 
-            mythos.update_overlay(mythos)
+            _G.mythos.update_overlay(mythos)
             camera_teleport(player, mythos.outside_surface, teleport_position)
             return
         end

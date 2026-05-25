@@ -138,11 +138,11 @@ local function set_mythos_active_or_inactive(mythos)
     --     local player = game.get_player(storage.player_index)
     --     player.mine_entity(building, false)
     -- end
-    mythos.create_flying_text {position = position, text = msg}
+    _G.mythos.create_flying_text {position = position, text = msg}
 
     for cid, _ in pairs(mythos.layout.connections) do
         local conn = mythos.connections[cid]
-        mythos.destroy_connection(conn)
+        _G.mythos.destroy_connection(conn)
     end
 end
 
@@ -158,7 +158,7 @@ local function build_mythos_upgrades(mythos)
         assert(#upgrade == 2)
         local mod, upgrade_function = upgrade[1], upgrade[2]
         if mod == "mythos" then
-            mythos[upgrade_function](mythos)
+            _G.mythos[upgrade_function](mythos)
         else
             remote.call(mod, upgrade_function, mythos)
         end
@@ -376,8 +376,8 @@ local function create_mythos_interior(layout, building)
     mythos.inside_surface.set_tiles(tiles)
     add_hidden_tile_rect(mythos)
 
-    mythos.get_or_create_inside_power_pole(mythos)
-    mythos.spawn_cerys_entities(mythos)
+    _G.mythos.get_or_create_inside_power_pole(mythos)
+    _G.mythos.spawn_cerys_entities(mythos)
 
     local radar = mythos.inside_surface.create_entity {
         name = "mythos-hidden-radar",
@@ -425,9 +425,9 @@ local function create_mythos_exterior(mythos, building)
     mythos.building = building
     mythos.built = true
 
-    mythos.recheck_mythos_connections(mythos)
-    mythos.update_power_connection(mythos)
-    mythos.update_overlay(mythos)
+    _G.mythos.recheck_mythos_connections(mythos)
+    _G.mythos.update_power_connection(mythos)
+    _G.mythos.update_overlay(mythos)
     build_mythos_upgrades(mythos)
     return mythos
 end
@@ -435,10 +435,10 @@ end
 -- MYTHOS MINING AND DECONSTRUCTION --
 
 local function cleanup_mythos_exterior(mythos, building)
-    mythos.cleanup_outside_energy_receiver(mythos)
-    mythos.cleanup_mythos_roboport_exterior_chest(mythos)
+    _G.mythos.cleanup_outside_energy_receiver(mythos)
+    _G.mythos.cleanup_mythos_roboport_exterior_chest(mythos)
 
-    mythos.disconnect_mythos_connections(mythos)
+    _G.mythos.disconnect_mythos_connections(mythos)
     for _, render_id in pairs(mythos.outside_overlay_displays) do
         local object = rendering.get_object_by_id(render_id)
         if object then object.destroy() end
@@ -605,12 +605,12 @@ local function prevent_mythos_mining(entity)
     }
     storage.factories_by_entity[entity.unit_number] = mythos
     mythos.building = entity
-    mythos.update_overlay(mythos)
+    _G.mythos.update_overlay(mythos)
     if #mythos.outside_port_markers ~= 0 then
         mythos.outside_port_markers = {}
-        mythos.toggle_port_markers(mythos)
+        _G.mythos.toggle_port_markers(mythos)
     end
-    mythos.create_flying_text {position = entity.position, text = {"mythos-cant-be-mined"}}
+    _G.mythos.create_flying_text {position = entity.position, text = {"mythos-cant-be-mined"}}
 end
 
 local fake_robots = {["repair-block-robot"] = true} -- Modded construction robots with heavy control scripting
@@ -756,8 +756,8 @@ local function handle_mythos_placed(entity, tags)
     if not mythos and storage.factories[tags.id] then
         -- This mythos was copied from somewhere else. Clone all contained entities
         local mythos = create_fresh_mythos(entity)
-        mythos.copy_entity_ghosts(storage.factories[tags.id], mythos)
-        mythos.update_overlay(mythos)
+        _G.mythos.copy_entity_ghosts(storage.factories[tags.id], mythos)
+        _G.mythos.update_overlay(mythos)
         return
     end
 
@@ -767,7 +767,7 @@ local function handle_mythos_placed(entity, tags)
         return
     end
 
-    mythos.create_flying_text {position = entity.position, text = {"mythos-connection-text.invalid-mythos-data"}}
+    _G.mythos.create_flying_text {position = entity.position, text = {"mythos-connection-text.invalid-mythos-data"}}
     entity.destroy()
 end
 

@@ -4,7 +4,7 @@
         type = "recipe",
         name = "mythos-1",
         enabled = true,
-        energy_required = 5,
+        energy_required = 1,
         ingredients = {
             {type = "item", name = "iron-plate", amount = 10}
         },

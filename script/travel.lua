@@ -119,8 +119,8 @@ local function check_position_and_leave_mythos(player, is_airborne)
     if math.abs(position.x - mythos.inside_door_x) >= 4 then return end
 
     leave_mythos(player, mythos, player)
-    mythos.update_mythos_preview(player)
-    mythos.update_overlay(mythos)
+    _G.mythos.update_mythos_preview(player)
+    _G.mythos.update_overlay(mythos)
     return true
 end
 

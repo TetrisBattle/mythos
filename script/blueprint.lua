@@ -119,14 +119,14 @@ local function unpack_connection_settings_from_blueprint(entity)
     local cpos = get_cpos(mythos, position)
     if cpos then
         local cid = cpos.id
-        local settings = mythos.get_connection_settings(mythos, cid, ctype)
+        local settings = _G.mythos.get_connection_settings(mythos, cid, ctype)
         for k, v in pairs(entity.tags) do
             settings[k] = v
         end
         local conn = mythos.connections[cid]
         if conn then
-            mythos.destroy_connection(conn)
-            mythos.init_connection(mythos, cid, cpos)
+            _G.mythos.destroy_connection(conn)
+            _G.mythos.init_connection(mythos, cid, cpos)
         end
         return
     end
