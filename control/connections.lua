@@ -287,60 +287,43 @@ end
 -- ---------------------------------------------------------------------------
 -- Fluid connection
 -- ---------------------------------------------------------------------------
--- Creates two hidden pump proxies (one per surface) joined via linked fluidbox.
--- Default flow: outside → inside (pump resources INTO the pocket dimension).
--- `flow_in` = true  means outside→inside  (outside-pump-input, inside-pump-output)
--- `flow_in` = false means inside→outside  (inside-pump-input,  outside-pump-output)
+-- Creates two hidden mythos-fluid-connector pipe entities (one per surface)
+-- and links their fluidboxes via add_linked_connection.  The result is a
+-- shared pressure network: fluid flows bidirectionally at normal pipe rate,
+-- exactly like placing pipes next to each other in the open world.
 
-local function connect_fluid_pair(mythos_data, cpos, outside_entity, inside_entity, flow_in)
+local function connect_fluid_pair(mythos_data, cpos, outside_entity, inside_entity)
     local outside_pos     = mythos_data.outside_pos
     local inside_surface  = game.get_surface(mythos_data.surface_name)
     local outside_surface = mythos_data.entity.surface
     if not inside_surface then return nil end
 
-    local inside_pos  = {
-        x = cpos.inside_x  + cpos.indicator_dx,
-        y = cpos.inside_y  + cpos.indicator_dy,
-    }
-    local outside_pos_adj = {
-        x = outside_pos.x + cpos.outside_x - cpos.indicator_dx,
-        y = outside_pos.y + cpos.outside_y - cpos.indicator_dy,
-    }
-
-    -- flow_in=true: outside pumps IN, inside delivers OUT
-    local inside_pump_name  = flow_in and "mythos-inside-pump-output"  or "mythos-inside-pump-input"
-    local outside_pump_name = flow_in and "mythos-outside-pump-input" or "mythos-outside-pump-output"
-
     local inside_connector = inside_surface.create_entity {
-        name                     = inside_pump_name,
-        position                 = inside_pos,
-        direction                = cpos.direction_in,
+        name                      = "mythos-fluid-connector",
+        position                  = {cpos.inside_x, cpos.inside_y},
+        direction                 = cpos.direction_in,  -- outward port faces toward interior
         create_build_effect_smoke = false,
-        raise_built              = false,
-        force                    = inside_entity.force,
+        raise_built               = false,
+        force                     = inside_entity.force,
     }
     if not inside_connector then return nil end
     inside_connector.destructible = false
-    inside_connector.operable     = false
-    inside_connector.rotatable    = false
 
     local outside_connector = outside_surface.create_entity {
-        name                     = outside_pump_name,
-        position                 = outside_pos_adj,
-        direction                = cpos.direction_out,
+        name                      = "mythos-fluid-connector",
+        position                  = {outside_pos.x + cpos.outside_x, outside_pos.y + cpos.outside_y},
+        direction                 = cpos.direction_out,  -- outward port faces away from entity
         create_build_effect_smoke = false,
-        raise_built              = false,
-        force                    = outside_entity.force,
+        raise_built               = false,
+        force                     = outside_entity.force,
     }
     if not outside_connector then
         inside_connector.destroy()
         return nil
     end
     outside_connector.destructible = false
-    outside_connector.operable     = false
-    outside_connector.rotatable    = false
 
-    -- Link fluidboxes across surfaces
+    -- Bridge the two pipe networks across surfaces
     inside_connector.fluidbox.add_linked_connection(0, outside_connector, 0)
 
     return {
@@ -349,7 +332,6 @@ local function connect_fluid_pair(mythos_data, cpos, outside_entity, inside_enti
         outside_connector = outside_connector,
         outside_entity    = outside_entity,
         inside_entity     = inside_entity,
-        flow_in           = flow_in,
         cid               = cpos.id,
     }
 end
@@ -448,7 +430,7 @@ local function try_init_connection(uid, mythos_data, cpos)
                 end
                 conn = connect_belt_pair(mythos_data, cpos, oe, ie)
             elseif oe_ctype == "fluid" then
-                conn = connect_fluid_pair(mythos_data, cpos, oe, ie, true)
+                conn = connect_fluid_pair(mythos_data, cpos, oe, ie)
             elseif oe_ctype == "heat" then
                 conn = connect_heat_pair(mythos_data, cpos, oe, ie)
             end
