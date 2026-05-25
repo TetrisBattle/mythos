@@ -1,27 +1,33 @@
-require("prototypes.entity")
-require("prototypes.item")
-require("prototypes.recipe")
+require "lib.lib"
 
--- Shift+RMB custom input to enter/exit the pocket dimension
-data:extend({
-  {
-    type         = "custom-input",
-    name         = "mythos-enter-pocket",
-    key_sequence = "SHIFT + mouse-button-2",
-  }
-})
+require "prototypes.space-location"
+require "prototypes.tile"
+require "prototypes.factory"
+require "prototypes.component"
+require "prototypes.utility"
+require "prototypes.recipe"
 
--- Port-indicator sprite: first frame of yellow-dir.png (north-facing arrow).
--- Used by surface.lua to draw directional arrows at each connection side.
-data:extend({
-  {
-    type     = "sprite",
-    name     = "mythos-port-indicator",
-    filename = "__mythos__/graphics/indicator/yellow-dir.png",
-    width    = 64,
-    height   = 64,
-    x        = 0,
-    y        = 0,
-    scale    = 0.5,
-  }
-})
+data:extend {
+    {
+        type = "item-subgroup",
+        name = "mythos-factories",
+        group = "logistics",
+        order = "e-e"
+    },
+    {
+        type = "custom-input",
+        name = "factory-rotate",
+        key_sequence = "R",
+        controller_key_sequence = "controller-rightstick"
+    },
+    {
+        type = "custom-input",
+        name = "factory-open-outside-surface-to-remote-view",
+        key_sequence = "SHIFT + mouse-button-2",
+        controller_key_sequence = "controller-leftstick"
+    },
+    {
+        type = "custom-event",
+        name = "on_script_setup_blueprint"
+    },
+}

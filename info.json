@@ -2,8 +2,10 @@
   "name": "mythos",
   "version": "0.1.0",
   "title": "Mythos",
-  "author": "TetrisBattle",
-  "description": "A portable pocket dimension.",
+  "author": "dev",
+  "description": "Factory buildings for Factorio. Place them down, walk in, build your factories inside!",
   "factorio_version": "2.0",
-  "dependencies": ["base >= 2.0"]
+  "dependencies": [
+    "base >= 2.0.64"
+  ]
 }
