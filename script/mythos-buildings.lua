@@ -428,6 +428,7 @@ local function create_mythos_exterior(mythos, building)
     _G.mythos.recheck_mythos_connections(mythos)
     _G.mythos.update_power_connection(mythos)
     _G.mythos.update_overlay(mythos)
+    _G.mythos.show_port_markers(mythos)
     build_mythos_upgrades(mythos)
     return mythos
 end
@@ -606,10 +607,7 @@ local function prevent_mythos_mining(entity)
     storage.factories_by_entity[entity.unit_number] = mythos
     mythos.building = entity
     _G.mythos.update_overlay(mythos)
-    if #mythos.outside_port_markers ~= 0 then
-        mythos.outside_port_markers = {}
-        _G.mythos.toggle_port_markers(mythos)
-    end
+    _G.mythos.show_port_markers(mythos)
     _G.mythos.create_flying_text {position = entity.position, text = {"mythos-cant-be-mined"}}
 end
 

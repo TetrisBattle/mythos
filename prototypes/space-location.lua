@@ -1,32 +1,4 @@
-﻿-- generate a surface prototype for the personal roboport travel surface. see travel.lua for more information
-data:extend {{
-    type = "planet",
-    name = "mythos-travel-surface",
-    localised_name = "",
-    hidden = true,
-    icon = "__base__/graphics/icons/space-science-pack.png",
-    icon_size = 64,
-    gravity_pull = 0,
-    distance = 0,
-    orientation = 0,
-    map_gen_settings = {
-        height = 1,
-        width = 1,
-        property_expression_names = {},
-        autoplace_settings = {
-            ["decorative"] = {treat_missing_as_default = false, settings = {}},
-            ["entity"] = {treat_missing_as_default = false, settings = {}},
-            ["tile"] = {treat_missing_as_default = false, settings = {}},
-        }
-    },
-    surface_properties = mods["space-age"] and {
-        gravity = -1,
-        pressure = 10000,
-        ["solar-power"] = 0,
-    },
-}}
-
-data:extend {{
+﻿data:extend {{
     type = "sprite",
     name = "mythos-floor-space",
     filename = "__mythos__/graphics/icon/mythos-floor-space.png",

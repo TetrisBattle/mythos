@@ -12,31 +12,31 @@ data:extend {
     {
         type = "storage-tank",
         name = "mythos-1",
-        icon = F .. "/graphics/icon/mythos-1.png",
+        icon = F .. "/graphics/icon/mythos.png",
         icon_size = 64,
         flags = {"player-creation", "placeable-player"},
         minable = {mining_time = 0.5, result = "mythos-1-instantiated", count = 1},
         placeable_by = {item = "mythos-1", count = 1},
         max_health = 2000,
-        collision_box = {{-3.8, -3.8}, {3.8, 3.8}},
-        selection_box = {{-3.8, -3.8}, {3.8, 3.8}},
+        collision_box = {{-1.8, -1.8}, {1.8, 1.8}},
+        selection_box = {{-1.8, -1.8}, {1.8, 1.8}},
         pictures = {
             picture = {
                 layers = {
                     {
-                        filename = F .. "/graphics/mythos/mythos-1-shadow.png",
-                        width = 416 * 2,
-                        height = 320 * 2,
-                        scale = 0.5,
-                        shift = {1.5, 0},
+                        filename = F .. "/graphics/mythos/mythos-shadow.png",
+                        width = 416,
+                        height = 320,
+                        scale = 0.35,
+                        shift = {0.75, 0},
                         draw_as_shadow = true
                     },
                     {
-                        filename = F .. "/graphics/mythos/mythos-1.png",
-                        width = 416 * 2,
-                        height = 320 * 2,
+                        filename = F .. "/graphics/mythos/mythos.png",
+                        width = 416,
+                        height = 320,
                         scale = 0.5,
-                        shift = {1.5, 0},
+                        shift = {0.75, 0},
                     }
                 }
             },
@@ -59,7 +59,7 @@ data:extend {
         localised_name = {"item-name.mythos-packed", {"entity-name.mythos-1"}},
         icons = {
             {
-                icon = F .. "/graphics/icon/mythos-1.png",
+                icon = F .. "/graphics/icon/mythos.png",
                 icon_size = 64,
             },
             {
@@ -79,7 +79,7 @@ data:extend {
     {
         type = "item",
         name = "mythos-1",
-        icon = F .. "/graphics/icon/mythos-1.png",
+        icon = F .. "/graphics/icon/mythos.png",
         icon_size = 64,
         subgroup = "mythos",
         order = "b-a",

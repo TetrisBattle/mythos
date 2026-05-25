@@ -38,7 +38,8 @@ local function create_energy_interfaces(size, icon)
     }}
 end
 
-create_energy_interfaces(8, F .. "/graphics/icon/mythos-1.png")
+create_energy_interfaces(4, F .. "/graphics/icon/mythos.png")
+create_energy_interfaces(8, F .. "/graphics/icon/mythos.png")
 
 -- Connection indicators
 
