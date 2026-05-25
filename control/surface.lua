@@ -27,6 +27,26 @@ function get_or_create_surface(uid)
   end
   surface.set_tiles(tiles)
 
+  -- Draw one yellow arrow per side, centered between the two ports on that side,
+  -- pointing outward (direction_out).  The four midpoints are:
+  --   North {0, -14.5}  South {0, 14.5}  East {14.5, 0}  West {-14.5, 0}
+  local side_centers = {
+    {x =    0, y = -14.5, dir_out = defines.direction.north},
+    {x =    0, y =  14.5, dir_out = defines.direction.south},
+    {x =  14.5, y =    0, dir_out = defines.direction.east},
+    {x = -14.5, y =    0, dir_out = defines.direction.west},
+  }
+  for _, sc in ipairs(side_centers) do
+    rendering.draw_sprite {
+      sprite      = "mythos-port-indicator",
+      target      = {x = sc.x, y = sc.y},
+      surface     = surface,
+      orientation = sc.dir_out / 16,
+      x_scale     = 1.5,
+      y_scale     = 1.5,
+    }
+  end
+
   return surface
 end
 
@@ -69,7 +89,6 @@ script.on_event(defines.events.on_player_mined_entity, function(event)
   if not uid then return end
   connections.destroy_all(uid)
   destroy_icon_render(uid)
-  close_entity_gui_for_unit(event.entity.unit_number)
   storage.mythos_entities[event.entity.unit_number] = nil
 
   local inv = game.players[event.player_index].get_main_inventory()
@@ -92,7 +111,6 @@ script.on_event(defines.events.on_entity_died, function(event)
   if uid then
     connections.destroy_all(uid)
     destroy_icon_render(uid)
-    close_entity_gui_for_unit(event.entity.unit_number)
   end
   storage.mythos_entities[event.entity.unit_number] = nil
 end, {{filter = "name", name = "mythos-entity"}})

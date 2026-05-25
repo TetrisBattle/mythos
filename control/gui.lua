@@ -1,7 +1,6 @@
 local connections     = require("control.connections")
 
-local HUD_NAME        = "mythos_hud"
-local ENTITY_GUI_NAME = "mythos_entity_gui"
+local HUD_NAME = "mythos_hud"
 
 -- ---------------------------------------------------------------------------
 -- Icon rendering
@@ -92,7 +91,6 @@ local function destroy_mythos_recursive(uid)
         local unit_number = entity.unit_number
         connections.destroy_all(uid)
         destroy_icon_render(uid)
-        close_entity_gui_for_unit(unit_number)
         storage.mythos_entities[unit_number] = nil
         entity.destroy()
     else
@@ -101,84 +99,6 @@ local function destroy_mythos_recursive(uid)
 
     -- 5. Wipe all storage for this uid
     storage.mythos[uid] = nil
-end
-
--- ---------------------------------------------------------------------------
--- Entity GUI  (opens on right-click; shows icon picker + Enter button)
--- ---------------------------------------------------------------------------
-
-local function get_uid_for_player_gui(player_index)
-    local unit_number = storage.player_gui_entity and storage.player_gui_entity[player_index]
-    if not unit_number then return nil end
-    return storage.mythos_entities and storage.mythos_entities[unit_number]
-end
-
-local function open_entity_gui(player, entity, uid)
-    local old = player.gui.screen[ENTITY_GUI_NAME]
-    if old and old.valid then old.destroy() end
-
-    storage.player_gui_entity = storage.player_gui_entity or {}
-    storage.player_gui_entity[player.index] = entity.unit_number
-
-    local frame = player.gui.screen.add {
-        type      = "frame",
-        name      = ENTITY_GUI_NAME,
-        caption   = "Pocket Dimension",
-        direction = "vertical",
-    }
-    frame.auto_center = true
-
-    -- Icon picker row
-    local row = frame.add {type = "flow", direction = "horizontal"}
-    row.style.vertical_align     = "center"
-    row.style.horizontal_spacing = 8
-    row.add {type = "label", caption = "Icon:"}
-    local picker = row.add {
-        type      = "choose-elem-button",
-        name      = "mythos_icon_picker",
-        elem_type = "signal",
-    }
-    local icon = storage.mythos[uid] and storage.mythos[uid].icon
-    if icon then picker.elem_value = icon end
-
-    -- Buttons row: Enter + Delete
-    local btns = frame.add {type = "flow", direction = "horizontal"}
-    btns.style.top_margin         = 8
-    btns.style.horizontal_spacing = 8
-    btns.add {
-        type    = "button",
-        name    = "mythos_enter_btn",
-        caption = "Enter",
-        style   = "confirm_button",
-    }
-    btns.add {
-        type    = "sprite-button",
-        name    = "mythos_delete_btn",
-        sprite  = "utility/trash",
-        tooltip = "Permanently delete this pocket dimension and everything inside it. This cannot be undone.",
-        style   = "tool_button",
-    }
-
-    player.opened = frame  -- Escape closes it
-end
-
-local function close_entity_gui(player)
-    local frame = player.gui.screen[ENTITY_GUI_NAME]
-    if frame and frame.valid then frame.destroy() end
-    storage.player_gui_entity = storage.player_gui_entity or {}
-    storage.player_gui_entity[player.index] = nil
-end
-
--- Close the entity GUI for every player who currently has `unit_number` open.
--- Called from surface.lua when the entity is mined or destroyed.
-function close_entity_gui_for_unit(unit_number)
-    if not storage.player_gui_entity then return end
-    for player_index, open_unit in pairs(storage.player_gui_entity) do
-        if open_unit == unit_number then
-            local player = game.players[player_index]
-            if player and player.valid then close_entity_gui(player) end
-        end
-    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -252,50 +172,38 @@ end
 -- Events
 -- ---------------------------------------------------------------------------
 
--- Right-click entity → open config GUI (instead of immediately entering)
+-- Right-click the entity → enter the pocket immediately.
+-- Also handles the Shift+RMB custom-input once the data stage has been reloaded.
+local function try_enter_from_entity(player, entity)
+    if not (entity and entity.valid and entity.name == "mythos-entity") then return end
+    storage.mythos_entities = storage.mythos_entities or {}
+    local uid = storage.mythos_entities[entity.unit_number]
+    if uid then enter_pocket(player, uid) end
+end
+
 script.on_event(defines.events.on_gui_opened, function(event)
     if not (event.entity and event.entity.name == "mythos-entity") then return end
     local player = game.players[event.player_index]
     player.opened = nil  -- suppress default container inventory
-
-    storage.mythos_entities = storage.mythos_entities or {}
-    local uid = storage.mythos_entities[event.entity.unit_number]
-    if uid then open_entity_gui(player, event.entity, uid) end
+    try_enter_from_entity(player, event.entity)
 end)
 
--- Icon picker changed → persist and redraw
-script.on_event(defines.events.on_gui_elem_changed, function(event)
-    if event.element.name ~= "mythos_icon_picker" then return end
-    local uid = get_uid_for_player_gui(event.player_index)
-    if not uid then return end
-    local data = storage.mythos[uid]
-    if not data then return end
-    data.icon = event.element.elem_value  -- nil when cleared
-    update_icon_render(uid)
-end)
-
--- Button clicks
-script.on_event(defines.events.on_gui_click, function(event)
+-- Shift+RMB custom-input (requires a full save-reload after first install).
+pcall(script.on_event, "mythos-enter-pocket", function(event)
     local player = game.players[event.player_index]
-    if event.element.name == "mythos_enter_btn" then
-        local uid = get_uid_for_player_gui(player.index)
-        close_entity_gui(player)
-        if uid then enter_pocket(player, uid) end
-    elseif event.element.name == "mythos_delete_btn" then
-        local uid = get_uid_for_player_gui(player.index)
-        close_entity_gui(player)  -- close for the clicking player first
-        if uid then destroy_mythos_recursive(uid) end
-    elseif event.element.name == "mythos_exit_btn" then
-        exit_pocket(player)
+    try_enter_from_entity(player, player.selected)
+end)
+
+-- Exit button click.
+script.on_event(defines.events.on_gui_click, function(event)
+    if event.element.name == "mythos_exit_btn" then
+        exit_pocket(game.players[event.player_index])
     end
 end)
 
--- Escape
+-- Escape closes the HUD (exits pocket).
 script.on_event(defines.events.on_gui_closed, function(event)
-    if not event.element then return end
-    if event.element.name == ENTITY_GUI_NAME then
-        close_entity_gui(game.players[event.player_index])
-    elseif event.element.name == HUD_NAME then
+    if event.element and event.element.name == HUD_NAME then
         exit_pocket(game.players[event.player_index])
     end
 end)

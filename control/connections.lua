@@ -472,6 +472,10 @@ function M.recheck_all(uid)
     end
 end
 
+-- Public read-only access to the connection point layout (used by surface.lua
+-- to mark the port tiles when creating a new pocket surface).
+M.CONNECTIONS = CONNECTIONS
+
 -- Destroy all active connections for a mythos instance (called on entity removal).
 function M.destroy_all(uid)
     local mythos_data = storage.mythos and storage.mythos[uid]
