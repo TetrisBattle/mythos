@@ -1,3 +1,5 @@
+local connections     = require("control.connections")
+
 local HUD_NAME        = "mythos_hud"
 local ENTITY_GUI_NAME = "mythos_entity_gui"
 
@@ -51,6 +53,57 @@ function destroy_icon_render(uid)
 end
 
 -- ---------------------------------------------------------------------------
+-- Recursive delete: destroys a mythos entity, its pocket surface, all nested
+-- mythos entities inside, and any players are ejected first.
+-- ---------------------------------------------------------------------------
+
+local function destroy_mythos_recursive(uid)
+    local data = storage.mythos and storage.mythos[uid]
+    if not data then return end
+
+    -- 1. Eject any players currently inside this pocket dimension
+    for player_index, pocket_data in pairs(storage.player_in_mythos or {}) do
+        if pocket_data.uid == uid then
+            local player = game.players[player_index]
+            if player and player.valid then
+                exit_pocket(player)
+            end
+        end
+    end
+
+    -- 2. Recursively destroy nested mythos entities on the pocket surface
+    local surface = game.get_surface("mythos_" .. uid)
+    if surface then
+        local nested = surface.find_entities_filtered {name = "mythos-entity"}
+        for _, nested_entity in ipairs(nested) do
+            local nested_uid = storage.mythos_entities and storage.mythos_entities[nested_entity.unit_number]
+            if nested_uid then
+                storage.mythos_entities[nested_entity.unit_number] = nil  -- prevent double-process
+                destroy_mythos_recursive(nested_uid)
+            end
+        end
+        -- 3. Delete the pocket surface; any remaining entities are wiped by Factorio
+        game.delete_surface(surface)
+    end
+
+    -- 4. Destroy the outer entity (no item drop)
+    local entity = data.entity
+    if entity and entity.valid then
+        local unit_number = entity.unit_number
+        connections.destroy_all(uid)
+        destroy_icon_render(uid)
+        close_entity_gui_for_unit(unit_number)
+        storage.mythos_entities[unit_number] = nil
+        entity.destroy()
+    else
+        destroy_icon_render(uid)
+    end
+
+    -- 5. Wipe all storage for this uid
+    storage.mythos[uid] = nil
+end
+
+-- ---------------------------------------------------------------------------
 -- Entity GUI  (opens on right-click; shows icon picker + Enter button)
 -- ---------------------------------------------------------------------------
 
@@ -88,7 +141,7 @@ local function open_entity_gui(player, entity, uid)
     local icon = storage.mythos[uid] and storage.mythos[uid].icon
     if icon then picker.elem_value = icon end
 
-    -- Enter button
+    -- Buttons row: Enter + Delete
     local btns = frame.add {type = "flow", direction = "horizontal"}
     btns.style.top_margin         = 8
     btns.style.horizontal_spacing = 8
@@ -97,6 +150,13 @@ local function open_entity_gui(player, entity, uid)
         name    = "mythos_enter_btn",
         caption = "Enter",
         style   = "confirm_button",
+    }
+    btns.add {
+        type    = "sprite-button",
+        name    = "mythos_delete_btn",
+        sprite  = "utility/trash",
+        tooltip = "Permanently delete this pocket dimension and everything inside it. This cannot be undone.",
+        style   = "tool_button",
     }
 
     player.opened = frame  -- Escape closes it
@@ -221,6 +281,10 @@ script.on_event(defines.events.on_gui_click, function(event)
         local uid = get_uid_for_player_gui(player.index)
         close_entity_gui(player)
         if uid then enter_pocket(player, uid) end
+    elseif event.element.name == "mythos_delete_btn" then
+        local uid = get_uid_for_player_gui(player.index)
+        close_entity_gui(player)  -- close for the clicking player first
+        if uid then destroy_mythos_recursive(uid) end
     elseif event.element.name == "mythos_exit_btn" then
         exit_pocket(player)
     end
