@@ -1,10 +1,10 @@
-local Chest = {}
+﻿local Chest = {}
 
 Chest.color = {r = 200 / 255, g = 110 / 255, b = 38 / 255}
 Chest.entity_types = {"container", "logistic-container", "infinity-container", "linked-container"}
-Chest.unlocked = function(force) return force.technologies["factory-connection-type-chest"].researched end
+Chest.unlocked = function(force) return force.technologies["mythos-connection-type-chest"].researched end
 
-local blacklist = {"factory-overlay-controller", "factory-requester-chest-factory-1", "factory-requester-chest-factory-2", "factory-requester-chest-factory-3"}
+local blacklist = {"mythos-overlay-controller", "mythos-requester-chest-mythos-1", "mythos-requester-chest-mythos-2", "mythos-requester-chest-mythos-3"}
 local blacklisted = {}
 for _, name in pairs(blacklist) do blacklisted[name] = true end
 
@@ -25,7 +25,7 @@ local function get_chest_type(chest)
     end
 end
 
-Chest.connect = function(factory, cid, cpos, outside_entity, inside_entity, settings)
+Chest.connect = function(mythos, cid, cpos, outside_entity, inside_entity, settings)
     if blacklisted[outside_entity.name] or blacklisted[inside_entity.name] then return nil end
 
     -- Connection mode: 0 for balance, 1 for inwards, 2 for outwards
@@ -69,9 +69,9 @@ Chest.direction = function(conn)
     if mode == 0 then
         return "b" .. make_valid_delay(conn._settings.delay or DEFAULT_DELAY), defines.direction.north
     elseif mode == 1 then
-        return "d" .. make_valid_delay(conn._settings.delay or DEFAULT_DELAY), conn._factory.layout.connections[conn._id].direction_in
+        return "d" .. make_valid_delay(conn._settings.delay or DEFAULT_DELAY), conn._mythos.layout.connections[conn._id].direction_in
     else
-        return "d" .. make_valid_delay(conn._settings.delay or DEFAULT_DELAY), conn._factory.layout.connections[conn._id].direction_out
+        return "d" .. make_valid_delay(conn._settings.delay or DEFAULT_DELAY), conn._mythos.layout.connections[conn._id].direction_out
     end
 end
 
@@ -79,11 +79,11 @@ Chest.rotate = function(conn)
     conn._settings.mode = ((conn._settings.mode or 0) + 1) % 3
     local mode = conn._settings.mode
     if mode == 0 then
-        return {"factory-connection-text.balance-mode"}
+        return {"mythos-connection-text.balance-mode"}
     elseif mode == 1 then
-        return {"factory-connection-text.input-mode"}
+        return {"mythos-connection-text.input-mode"}
     else
-        return {"factory-connection-text.output-mode"}
+        return {"mythos-connection-text.output-mode"}
     end
 end
 
@@ -97,7 +97,7 @@ Chest.adjust = function(conn, positive)
             end
         end
         conn._settings.delay = delay
-        return {"factory-connection-text.update-faster", delay}
+        return {"mythos-connection-text.update-faster", delay}
     else
         for i = 1, #DELAYS do
             if DELAYS[i] > delay then
@@ -106,7 +106,7 @@ Chest.adjust = function(conn, positive)
             end
         end
         conn._settings.delay = delay
-        return {"factory-connection-text.update-slower", delay}
+        return {"mythos-connection-text.update-slower", delay}
     end
 end
 

@@ -1,5 +1,6 @@
-local get_factory_by_building = remote_api.get_factory_by_building
-local find_surrounding_factory = remote_api.find_surrounding_factory
+﻿local get_mythos_by_building = remote_api.get_mythos_by_building
+local find_surrounding_mythos = remote_api.find_surrounding_mythos
+local M = mythos -- module alias; avoids ambiguity when local vars shadow the global
 
 local type_map = {}
 
@@ -30,7 +31,7 @@ local function register_connection_type(ctype, class)
     c_tick[ctype] = class.tick
     c_destroy[ctype] = class.destroy
     for _, name in pairs(class.indicator_settings) do
-        connection_indicator_names["factory-connection-indicator-" .. ctype .. "-" .. name] = ctype
+        connection_indicator_names["mythos-connection-indicator-" .. ctype .. "-" .. name] = ctype
     end
 end
 
@@ -50,8 +51,8 @@ mythos.on_event(mythos.events.on_init(), function()
     end
 
     -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/206
-    for _, factory in pairs(storage.factories) do
-        if factory.built then mythos.recheck_factory_connections(factory) end
+    for _, mythos in pairs(storage.factories) do
+        if mythos.built then mythos.recheck_mythos_connections(mythos) end
     end
 end)
 
@@ -62,64 +63,64 @@ end
 
 -- Connection settings --
 
-local function get_connection_settings(factory, cid, ctype)
-    factory.connection_settings[cid] = factory.connection_settings[cid] or {}
-    factory.connection_settings[cid][ctype] = factory.connection_settings[cid][ctype] or {}
-    return factory.connection_settings[cid][ctype]
+local function get_connection_settings(mythos, cid, ctype)
+    mythos.connection_settings[cid] = mythos.connection_settings[cid] or {}
+    mythos.connection_settings[cid][ctype] = mythos.connection_settings[cid][ctype] or {}
+    return mythos.connection_settings[cid][ctype]
 end
 mythos.get_connection_settings = get_connection_settings
 
 -- Connection indicators --
 
-local function set_connection_indicator(factory, cid, ctype, setting, dir)
-    local old_indicator = factory.connection_indicators[cid]
+local function set_connection_indicator(mythos, cid, ctype, setting, dir)
+    local old_indicator = mythos.connection_indicators[cid]
     if old_indicator and old_indicator.valid then old_indicator.destroy() end
-    local cpos = factory.layout.connections[cid]
-    local new_indicator = factory.inside_surface.create_entity {
-        name = "factory-connection-indicator-" .. ctype .. "-" .. setting,
-        force = factory.force,
-        position = {x = factory.inside_x + cpos.inside_x + cpos.indicator_dx, y = factory.inside_y + cpos.inside_y + cpos.indicator_dy},
+    local cpos = mythos.layout.connections[cid]
+    local new_indicator = mythos.inside_surface.create_entity {
+        name = "mythos-connection-indicator-" .. ctype .. "-" .. setting,
+        force = mythos.force,
+        position = {x = mythos.inside_x + cpos.inside_x + cpos.indicator_dx, y = mythos.inside_y + cpos.inside_y + cpos.indicator_dy},
         create_build_effect_smoke = false,
         direction = dir,
-        quality = factory.quality
+        quality = mythos.quality
     }
     new_indicator.destructible = false
-    factory.connection_indicators[cid] = new_indicator
+    mythos.connection_indicators[cid] = new_indicator
 end
 
-local function delete_connection_indicator(factory, cid, ctype)
-    local old_indicator = factory.connection_indicators[cid]
+local function delete_connection_indicator(mythos, cid, ctype)
+    local old_indicator = mythos.connection_indicators[cid]
     if old_indicator and old_indicator.valid then old_indicator.destroy() end
 end
 
 -- Connection changes --
 
-local function register_connection(factory, cid, ctype, conn, settings)
+local function register_connection(mythos, cid, ctype, conn, settings)
     conn._id = cid
     conn._type = ctype
-    conn._factory = factory
+    conn._mythos = mythos
     conn._settings = settings
     conn._valid = true
-    factory.connections[cid] = conn
+    mythos.connections[cid] = conn
     if conn.do_tick_update then add_connection_to_queue(conn) end
     local setting, dir = c_direction[ctype](conn)
-    set_connection_indicator(factory, cid, ctype, setting, dir)
+    set_connection_indicator(mythos, cid, ctype, setting, dir)
 end
 
-local function init_connection(factory, cid, cpos) -- Only call this when factory.connections[cid] == nil!
-    if factory.inactive then return end
-    if not factory.outside_surface.valid then return end
-    if not factory.inside_surface.valid then return end
+local function init_connection(mythos, cid, cpos) -- Only call this when mythos.connections[cid] == nil!
+    if mythos.inactive then return end
+    if not mythos.outside_surface.valid then return end
+    if not mythos.inside_surface.valid then return end
 
-    local outside_entities = factory.outside_surface.find_entities_filtered {
-        position = {cpos.outside_x + factory.outside_x, cpos.outside_y + factory.outside_y},
-        force = factory.force
+    local outside_entities = mythos.outside_surface.find_entities_filtered {
+        position = {cpos.outside_x + mythos.outside_x, cpos.outside_y + mythos.outside_y},
+        force = mythos.force
     }
     if outside_entities == nil or not outside_entities[1] then return end
 
-    local inside_entities = factory.inside_surface.find_entities_filtered {
-        position = {cpos.inside_x + factory.inside_x, cpos.inside_y + factory.inside_y},
-        force = factory.force
+    local inside_entities = mythos.inside_surface.find_entities_filtered {
+        position = {cpos.inside_x + mythos.inside_x, cpos.inside_y + mythos.inside_y},
+        force = mythos.force
     }
     if inside_entities == nil or not inside_entities[1] then return end
 
@@ -135,17 +136,17 @@ local function init_connection(factory, cid, cpos) -- Only call this when factor
                 goto continue_2
             end
 
-            if not c_unlocked[outside_connection_type](factory.force) then
-                mythos.create_flying_text {position = inside_entity.position, text = {"research-required"}}
-                mythos.create_flying_text {position = outside_entity.position, text = {"research-required"}}
+            if not c_unlocked[outside_connection_type](mythos.force) then
+                M.create_flying_text {position = inside_entity.position, text = {"research-required"}}
+                M.create_flying_text {position = outside_entity.position, text = {"research-required"}}
             end
 
-            local settings = get_connection_settings(factory, cid, outside_connection_type)
-            local new_connection = c_connect[outside_connection_type](factory, cid, cpos, outside_entity, inside_entity, settings)
+            local settings = get_connection_settings(mythos, cid, outside_connection_type)
+            local new_connection = c_connect[outside_connection_type](mythos, cid, cpos, outside_entity, inside_entity, settings)
             if new_connection then
-                factory.inside_surface.play_sound {path = "entity-close/assembling-machine-3", position = inside_entity.position}
-                factory.outside_surface.play_sound {path = "entity-close/assembling-machine-3", position = outside_entity.position}
-                register_connection(factory, cid, outside_connection_type, new_connection, settings)
+                mythos.inside_surface.play_sound {path = "entity-close/assembling-machine-3", position = inside_entity.position}
+                mythos.outside_surface.play_sound {path = "entity-close/assembling-machine-3", position = outside_entity.position}
+                register_connection(mythos, cid, outside_connection_type, new_connection, settings)
                 return
             end
             ::continue_2::
@@ -158,9 +159,9 @@ mythos.init_connection = init_connection
 local function destroy_connection(conn)
     if conn and conn._valid then
         c_destroy[conn._type](conn)
-        conn._valid = false                       -- _valid should be true iff conn._factory.connections[conn._id] == conn
-        conn._factory.connections[conn._id] = nil -- Lua can handle this
-        delete_connection_indicator(conn._factory, conn._id, conn._type)
+        conn._valid = false                       -- _valid should be true iff conn._mythos.connections[conn._id] == conn
+        conn._mythos.connections[conn._id] = nil -- Lua can handle this
+        delete_connection_indicator(conn._mythos, conn._id, conn._type)
     end
 end
 mythos.destroy_connection = destroy_connection
@@ -169,50 +170,50 @@ local function in_area(x, y, area)
     return x >= area.left_top.x and x <= area.right_bottom.x and y >= area.left_top.y and y <= area.right_bottom.y
 end
 
-local function recheck_factory_connections(factory, outside_area, inside_area) -- Areas are optional
-    if not factory.built then return end
-    for cid, cpos in pairs(factory.layout.connections) do
-        if outside_area and not in_area(cpos.outside_x + factory.outside_x, cpos.outside_y + factory.outside_y, outside_area) then goto continue end
-        if inside_area and not in_area(cpos.inside_x + factory.inside_x, cpos.inside_y + factory.inside_y, inside_area) then goto continue end
+local function recheck_mythos_connections(mythos, outside_area, inside_area) -- Areas are optional
+    if not mythos.built then return end
+    for cid, cpos in pairs(mythos.layout.connections) do
+        if outside_area and not in_area(cpos.outside_x + mythos.outside_x, cpos.outside_y + mythos.outside_y, outside_area) then goto continue end
+        if inside_area and not in_area(cpos.inside_x + mythos.inside_x, cpos.inside_y + mythos.inside_y, inside_area) then goto continue end
 
-        local conn = factory.connections[cid]
+        local conn = mythos.connections[cid]
         if conn then
             if c_recheck[conn._type](conn) then
                 -- Everything is fine
             else
                 destroy_connection(conn)
-                init_connection(factory, cid, cpos)
+                init_connection(mythos, cid, cpos)
             end
         else
-            init_connection(factory, cid, cpos)
+            init_connection(mythos, cid, cpos)
         end
 
         ::continue::
     end
 end
-mythos.recheck_factory_connections = recheck_factory_connections
+mythos.recheck_mythos_connections = recheck_mythos_connections
 
 mythos.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
     if not storage.factories then return end -- In case any mod or scenario script calls LuaForce.research_all_technologies() during its on_init
-    if event.research.name:find("factory%-connection%-type%-") then
-        for _, factory in pairs(storage.factories) do
-            if factory.built then recheck_factory_connections(factory) end
+    if event.research.name:find("mythos%-connection%-type%-") then
+        for _, mythos in pairs(storage.factories) do
+            if mythos.built then recheck_mythos_connections(mythos) end
         end
     end
 end)
 
--- During deconstruction events of an entity that is part of a connection, the entity is still valid and built, so recheck_factory_connections would not destroy the connection involved.
+-- During deconstruction events of an entity that is part of a connection, the entity is still valid and built, so recheck_mythos_connections would not destroy the connection involved.
 -- Delaying the recheck causes these connections to be properly deconstructed immediately, instead of having to wait until the connection ticks again.
-local function recheck_factory_connections_delayed(factory, outside_area, inside_area)
+local function recheck_mythos_connections_delayed(mythos, outside_area, inside_area)
     storage.delayed_connection_checks[1 + #(storage.delayed_connection_checks)] = {
-        factory = factory,
+        mythos = mythos,
         outside_area = outside_area,
         inside_area = inside_area
     }
 end
 
-function mythos.disconnect_factory_connections(factory)
-    for cid, conn in pairs(factory.connections) do
+function mythos.disconnect_mythos_connections(mythos)
+    for cid, conn in pairs(mythos.connections) do
         destroy_connection(conn)
     end
 end
@@ -227,7 +228,7 @@ local function aabb_collision(box1_shift, box1, box2)
     )
 end
 
--- When a connection piece is placed or destroyed, check if can be connected to a factory building
+-- When a connection piece is placed or destroyed, check if can be connected to a mythos building
 local function recheck_nearby_connections(entity, delayed)
     local surface = entity.surface
     local pos = entity.position
@@ -256,24 +257,24 @@ local function recheck_nearby_connections(entity, delayed)
         right_bottom = {x = pos.x + 0.3 + collision_box.right_bottom.x, y = pos.y + 0.3 + collision_box.right_bottom.y}
     }
 
-    for _, factory in pairs(storage.factories) do
-        local building = factory.building
-        if factory.built and factory.outside_surface == surface and building.valid and aabb_collision(building.position, building.prototype.collision_box, bounding_box) then
+    for _, mythos in pairs(storage.factories) do
+        local building = mythos.building
+        if mythos.built and mythos.outside_surface == surface and building.valid and aabb_collision(building.position, building.prototype.collision_box, bounding_box) then
             if delayed then
-                recheck_factory_connections_delayed(factory, bounding_box, nil)
+                recheck_mythos_connections_delayed(mythos, bounding_box, nil)
             else
-                recheck_factory_connections(factory, bounding_box, nil)
+                recheck_mythos_connections(mythos, bounding_box, nil)
             end
             break
         end
     end
 
-    local factory = find_surrounding_factory(surface, pos)
-    if factory then
+    local mythos = find_surrounding_mythos(surface, pos)
+    if mythos then
         if delayed then
-            recheck_factory_connections_delayed(factory, nil, bounding_box)
+            recheck_mythos_connections_delayed(mythos, nil, bounding_box)
         else
-            recheck_factory_connections(factory, nil, bounding_box)
+            recheck_mythos_connections(mythos, nil, bounding_box)
         end
     end
 end
@@ -290,11 +291,11 @@ mythos.on_event(mythos.events.on_built(), function(event)
     if not entity.valid or not is_connectable(entity) then return end
     local entity_name = entity.name
 
-    if entity_name == "factory-circuit-connector" then
+    if entity_name == "mythos-circuit-connector" then
         entity.operable = false
     else
-        local _, _, pipe_name_input = entity_name:find("^factory%-(.*)%-input$")
-        local _, _, pipe_name_output = entity_name:find("^factory%-(.*)%-output$")
+        local _, _, pipe_name_input = entity_name:find("^mythos%-(.*)%-input$")
+        local _, _, pipe_name_output = entity_name:find("^mythos%-(.*)%-output$")
         local pipe_name = pipe_name_input or pipe_name_output
         if pipe_name then entity = remote_api.replace_entity(entity, pipe_name) end
     end
@@ -308,7 +309,7 @@ CONNECTION_UPDATE_RATE = 5
 mythos.on_nth_tick(CONNECTION_UPDATE_RATE, function()
     -- First let's run all them delayed connection checks
     for _, check in pairs(storage.delayed_connection_checks) do
-        recheck_factory_connections(check.factory, check.outside_area, check.inside_area)
+        recheck_mythos_connections(check.mythos, check.outside_area, check.inside_area)
     end
     storage.delayed_connection_checks = {}
 
@@ -326,46 +327,46 @@ mythos.on_nth_tick(CONNECTION_UPDATE_RATE, function()
             new_slot[1 + #new_slot] = conn
         elseif conn._valid then
             destroy_connection(conn)
-            init_connection(conn._factory, conn._id, conn._factory.layout.connections[conn._id])
+            init_connection(conn._mythos, conn._id, conn._mythos.layout.connections[conn._id])
         end
     end
 end)
 
-local function rotate(factory, indicator)
-    for cid, ind2 in pairs(factory.connection_indicators) do
+local function rotate(mythos, indicator)
+    for cid, ind2 in pairs(mythos.connection_indicators) do
         if ind2 and ind2.valid then
             if (ind2.unit_number == indicator.unit_number) then
-                local conn = factory.connections[cid]
+                local conn = mythos.connections[cid]
                 local text, noop = c_rotate[conn._type](conn)
-                mythos.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
+                M.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
                 if noop then return end
                 local setting, dir = c_direction[conn._type](conn)
-                set_connection_indicator(factory, cid, conn._type, setting, dir)
+                set_connection_indicator(mythos, cid, conn._type, setting, dir)
                 return
             end
         end
     end
 end
 
-mythos.on_event("factory-rotate", function(event)
+mythos.on_event("mythos-rotate", function(event)
     local player = game.get_player(event.player_index)
     local indicator = player.selected
     if not indicator or not mythos.connection_indicator_names[indicator.name] then return end
-    local factory = find_surrounding_factory(indicator.surface, indicator.position)
-    if not factory then return end
-    rotate(factory, indicator)
+    local mythos = find_surrounding_mythos(indicator.surface, indicator.position)
+    if not mythos then return end
+    rotate(mythos, indicator)
 end)
 
-local function adjust(factory, indicator, positive)
-    for cid, ind2 in pairs(factory.connection_indicators) do
+local function adjust(mythos, indicator, positive)
+    for cid, ind2 in pairs(mythos.connection_indicators) do
         if ind2 and ind2.valid then
             if (ind2.unit_number == indicator.unit_number) then
-                local conn = factory.connections[cid]
+                local conn = mythos.connections[cid]
                 local text, noop = c_adjust[conn._type](conn, positive)
-                mythos.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
+                M.create_flying_text {position = indicator.position, color = c_color[conn._type], text = text}
                 if noop then return end
                 local setting, dir = c_direction[conn._type](conn)
-                set_connection_indicator(factory, cid, conn._type, setting, dir)
+                set_connection_indicator(mythos, cid, conn._type, setting, dir)
                 return
             end
         end
@@ -388,8 +389,8 @@ mythos.on_event(defines.events.on_player_flipped_entity, function(event)
     local entity = event.entity
     if not mythos.connection_indicator_names[entity.name] then return end
     entity.mirroring = false
-    local factory = remote_api.find_surrounding_factory(entity.surface, entity.position)
-    rotate(factory, entity)
+    local mythos = remote_api.find_surrounding_mythos(entity.surface, entity.position)
+    rotate(mythos, entity)
 end)
 
 mythos.on_event(defines.events.on_player_rotated_entity, function(event)
@@ -407,20 +408,20 @@ mythos.on_event(defines.events.on_player_rotated_entity, function(event)
     end
 end)
 
-mythos.on_event("factory-increase", function(event)
+mythos.on_event("mythos-increase", function(event)
     local entity = game.get_player(event.player_index).selected
     if not entity then return end
     if mythos.connection_indicator_names[entity.name] then
-        local factory = find_surrounding_factory(entity.surface, entity.position)
-        if factory then adjust(factory, entity, true) end
+        local mythos = find_surrounding_mythos(entity.surface, entity.position)
+        if mythos then adjust(mythos, entity, true) end
     end
 end)
 
-mythos.on_event("factory-decrease", function(event)
+mythos.on_event("mythos-decrease", function(event)
     local entity = game.get_player(event.player_index).selected
     if not entity then return end
     if mythos.connection_indicator_names[entity.name] then
-        local factory = find_surrounding_factory(entity.surface, entity.position)
-        if factory then adjust(factory, entity, false) end
+        local mythos = find_surrounding_mythos(entity.surface, entity.position)
+        if mythos then adjust(mythos, entity, false) end
     end
 end)

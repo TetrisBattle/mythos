@@ -1,8 +1,8 @@
-require "lib.lib"
+﻿require "lib.lib"
 
 require "script.remote-api"
 require "script.layout"
-require "script.factory-buildings"
+require "script.mythos-buildings"
 require "script.connections.connections"
 require "script.roboport.roboport"
 require "script.blueprint"

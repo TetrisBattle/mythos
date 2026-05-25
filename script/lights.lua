@@ -1,20 +1,20 @@
-local PERMABLACK_SURFACES = {
-    ["tenebris-factory-floor"] = true,
-    ["maraxsis-trench-factory-floor"] = true,
+﻿local PERMABLACK_SURFACES = {
+    ["tenebris-mythos-floor"] = true,
+    ["maraxsis-trench-mythos-floor"] = true,
 }
 
-function mythos.build_lights_upgrade(factory)
-    if not factory.inside_surface.valid then return end
-    local force = factory.force
+function mythos.build_lights_upgrade(mythos)
+    if not mythos.inside_surface.valid then return end
+    local force = mythos.force
     if not force.valid then return end
-    local has_tech = force.technologies["factory-interior-upgrade-lights"].researched
+    local has_tech = force.technologies["mythos-interior-upgrade-lights"].researched
 
-    if PERMABLACK_SURFACES[factory.inside_surface.name] then
+    if PERMABLACK_SURFACES[mythos.inside_surface.name] then
         has_tech = false
-        factory.inside_surface.brightness_visual_weights = {r = 1, g = 1, b = 1}
-        factory.inside_surface.min_brightness = 0
+        mythos.inside_surface.brightness_visual_weights = {r = 1, g = 1, b = 1}
+        mythos.inside_surface.min_brightness = 0
     end
 
-    factory.inside_surface.daytime = has_tech and 1 or 0.5
-    factory.inside_surface.freeze_daytime = true
+    mythos.inside_surface.daytime = has_tech and 1 or 0.5
+    mythos.inside_surface.freeze_daytime = true
 end

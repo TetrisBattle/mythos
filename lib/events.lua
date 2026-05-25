@@ -44,7 +44,16 @@ mythos.finalize_events = function()
             script.on_init(f)
             script.on_configuration_changed(f)
         else
-            script.on_event(tonumber(event) or event, f)
+            local numeric = tonumber(event)
+            if numeric then
+                script.on_event(numeric, f)
+            else
+                -- Prefer LuaCustomInputPrototype/LuaCustomEventPrototype over plain strings.
+                -- This is the correct Factorio 2.0 approach and avoids "Unknown event name" errors.
+                local prototype = (prototypes.custom_input and prototypes.custom_input[event])
+                    or (prototypes.custom_event and prototypes.custom_event[event])
+                script.on_event(prototype or event, f)
+            end
         end
         i = i + 1
     end

@@ -1,4 +1,4 @@
-local function spawn_maraxsis_water_shader(surface, chunk_position)
+﻿local function spawn_maraxsis_water_shader(surface, chunk_position)
     local x = chunk_position.x * 32 + 16
     local y = chunk_position.y * 32 + 16
 
@@ -14,7 +14,7 @@ end
 
 function mythos.spawn_maraxsis_water_shaders(surface, chunk_position)
     if not script.active_mods["maraxsis"] then return end
-    if surface.name ~= "maraxsis-factory-floor" and surface.name ~= "maraxsis-trench-factory-floor" then return end
+    if surface.name ~= "maraxsis-mythos-floor" and surface.name ~= "maraxsis-trench-mythos-floor" then return end
 
     for x = -7, 8 do
         for y = -7, 8 do

@@ -1,4 +1,4 @@
--- if you don't have space age, this thing would just produce water
+﻿-- if you don't have space age, this thing would just produce water
 if not mods["space-age"] then return end
 if mods["space-is-fake"] then return end
 
@@ -41,10 +41,10 @@ data:extend {{
 
 data:extend {{
     type = "technology",
-    name = "factory-upgrade-borehole-pump",
-    icon = F .. "/graphics/technology/factory-upgrade-borehole-pump.png",
+    name = "mythos-upgrade-borehole-pump",
+    icon = F .. "/graphics/technology/mythos-upgrade-borehole-pump.png",
     icon_size = 256,
-    prerequisites = {"factory-architecture-t3", "electromagnetic-science-pack"},
+    prerequisites = {"mythos-architecture-t1", "electromagnetic-science-pack"},
     effects = {
         {type = "unlock-recipe", recipe = "borehole-pump"},
     },

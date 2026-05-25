@@ -1,28 +1,28 @@
-{
+﻿{
     "item": [
         [
-            "factory-1",
-            "factory-1-instantiated"
+            "mythos-1",
+            "mythos-1-instantiated"
         ],
         [
-            "factory-2",
-            "factory-2-instantiated"
+            "mythos-2",
+            "mythos-2-instantiated"
         ],
         [
-            "factory-3",
-            "factory-3-instantiated"
+            "mythos-3",
+            "mythos-3-instantiated"
         ],
         [
-            "factory-1-raw",
-            "factory-1"
+            "mythos-1-raw",
+            "mythos-1"
         ],
         [
-            "factory-2-raw",
-            "factory-2"
+            "mythos-2-raw",
+            "mythos-2"
         ],
         [
-            "factory-3-raw",
-            "factory-3"
+            "mythos-3-raw",
+            "mythos-3"
         ]
     ]
 }

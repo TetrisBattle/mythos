@@ -1,15 +1,15 @@
-if not mods["space-age"] then return end
+﻿if not mods["space-age"] then return end
 if mods["space-is-fake"] then return end
 
 local F = "__mythos__"
 local pf = "p-q-"
 
 data:extend {{
-    name = "factory-upgrade-greenhouse",
+    name = "mythos-upgrade-greenhouse",
     type = "technology",
-    icon = F .. "/graphics/technology/factory-upgrade-greenhouse.png",
+    icon = F .. "/graphics/technology/mythos-upgrade-greenhouse.png",
     icon_size = 256,
-    prerequisites = {"factory-architecture-t3", "factory-interior-upgrade-lights"},
+    prerequisites = {"mythos-architecture-t1", "mythos-interior-upgrade-lights"},
     effects = {{
         type = "nothing",
         effect_description = ""

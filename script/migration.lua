@@ -1,22 +1,22 @@
--- Fix common migration issues.
+﻿-- Fix common migration issues.
 
 mythos.on_event(mythos.events.on_init(), function()
-    for _, factory in pairs(storage.factories) do
+    for _, mythos in pairs(storage.factories) do
         -- Fix issues when forces are deleted.
-        if not factory.force or not factory.force.valid then
-            factory.force = game.forces.player
+        if not mythos.force or not mythos.force.valid then
+            mythos.force = game.forces.player
         end
 
         -- Fix issues when quality prototypes are removed.
-        if not factory.quality or not factory.quality.valid then
-            if factory.building and factory.building.valid then
-                factory.quality = factory.building.quality
+        if not mythos.quality or not mythos.quality.valid then
+            if mythos.building and mythos.building.valid then
+                mythos.quality = mythos.building.quality
             else
-                factory.quality = prototypes.quality.normal
+                mythos.quality = prototypes.quality.normal
             end
         end
 
         -- Clean deprecated data.
-        factory.original_planet = nil
+        mythos.original_planet = nil
     end
 end)

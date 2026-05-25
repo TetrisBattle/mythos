@@ -1,4 +1,4 @@
-local entities_to_extend = {}
+﻿local entities_to_extend = {}
 
 local function downscale(picture)
     if not picture then return end
@@ -34,7 +34,7 @@ end
 
 data:extend {{
     type                                    = "roboport",
-    name                                    = "factory-hidden-construction-roboport",
+    name                                    = "mythos-hidden-construction-roboport",
     icon                                    = data.raw.item["roboport"].icon,
     icon_size                               = data.raw.item["roboport"].icon_size,
     flags                                   = {"not-on-map", "no-automated-item-removal"},
@@ -69,7 +69,7 @@ data:extend {{
 }}
 
 local hidden_construction_robot = table.deepcopy(data.raw["construction-robot"]["construction-robot"])
-hidden_construction_robot.name = "factory-hidden-construction-robot"
+hidden_construction_robot.name = "mythos-hidden-construction-robot"
 hidden_construction_robot.minable = nil
 hidden_construction_robot.next_upgrade = nil
 hidden_construction_robot.placeable_by = nil
@@ -80,7 +80,7 @@ hidden_construction_robot.created_effect = {
         source_effects = {
             {
                 type = "script",
-                effect_id = "factory-hidden-construction-robot-created",
+                effect_id = "mythos-hidden-construction-robot-created",
             },
         }
     }
@@ -107,17 +107,17 @@ data:extend {hidden_construction_robot}
 
 data:extend {{
     type = "item",
-    name = "factory-hidden-construction-robot",
+    name = "mythos-hidden-construction-robot",
     icon = data.raw.item["construction-robot"].icon,
     icon_size = data.raw.item["construction-robot"].icon_size,
     hidden = true,
     flags = {"only-in-cursor"},
-    place_result = "factory-hidden-construction-robot",
+    place_result = "mythos-hidden-construction-robot",
     stack_size = 1000,
 }}
 
 local roboport = table.deepcopy(data.raw["roboport"]["roboport"])
-roboport.name = "factory-construction-roboport"
+roboport.name = "mythos-construction-roboport"
 roboport.collision_box = {{-0.9, -0.9}, {0.9, 0.9}}
 roboport.selection_box = {{-1, -1}, {1, 1}}
 roboport.recharging_light.size = roboport.recharging_light.size / 2
@@ -146,7 +146,7 @@ vector_downscale(roboport.charging_offsets)
 entities_to_extend[#entities_to_extend + 1] = roboport
 
 local storage_chest = table.deepcopy(data.raw["logistic-container"]["storage-chest"])
-storage_chest.name = "factory-construction-chest"
+storage_chest.name = "mythos-construction-chest"
 storage_chest.inventory_type = "with_bar"
 storage_chest.icon = "__mythos__/graphics/icon/construction-chest.png"
 storage_chest.icon_size = 64
@@ -156,36 +156,36 @@ storage_chest.flags = {"player-creation", "placeable-player", "no-automated-item
 storage_chest.animation.layers[1].filename = "__mythos__/graphics/entity/construction-chest.png"
 entities_to_extend[#entities_to_extend + 1] = storage_chest
 
-for _, factory_name in pairs {"factory-1", "factory-2", "factory-3"} do
+for _, mythos_name in pairs {"mythos-1"} do
     -- all materials are delivered via the construction network. there is no need for this to be a requester.
     local requester_chest = table.deepcopy(data.raw.container["steel-chest"])
-    requester_chest.name = "factory-requester-chest-" .. factory_name
-    requester_chest.localised_name = {"entity-name.factory-requester-chest"}
-    requester_chest.icon = data.raw["storage-tank"][factory_name].icon
-    requester_chest.icon_size = data.raw["storage-tank"][factory_name].icon_size
-    requester_chest.collision_box = table.deepcopy(data.raw["storage-tank"][factory_name].collision_box)
+    requester_chest.name = "mythos-requester-chest-" .. mythos_name
+    requester_chest.localised_name = {"entity-name.mythos-requester-chest"}
+    requester_chest.icon = data.raw["storage-tank"][mythos_name].icon
+    requester_chest.icon_size = data.raw["storage-tank"][mythos_name].icon_size
+    requester_chest.collision_box = table.deepcopy(data.raw["storage-tank"][mythos_name].collision_box)
     requester_chest.selection_box = nil
     requester_chest.inventory_type = "with_custom_stack_size"
     requester_chest.inventory_properties = {stack_size_multiplier = 50}
     requester_chest.inventory_size = 100
     requester_chest.picture = nil
     requester_chest.hidden = true
-    requester_chest.factoriopedia_alternative = factory_name
+    requester_chest.factoriopedia_alternative = mythos_name
     requester_chest.quality_indicator_scale = 0
     requester_chest.flags = {"not-on-map", "hide-alt-info", "no-automated-item-removal", "no-automated-item-insertion", "not-in-kill-statistics", "not-rotatable"}
     entities_to_extend[#entities_to_extend + 1] = requester_chest
 
     local eject_chest = table.deepcopy(data.raw.container["steel-chest"])
-    eject_chest.name = "factory-eject-chest-" .. factory_name
+    eject_chest.name = "mythos-eject-chest-" .. mythos_name
     eject_chest.inventory_size = 1
-    eject_chest.localised_name = {"entity-name.factory-eject-chest"}
-    eject_chest.icon = data.raw["storage-tank"][factory_name].icon
-    eject_chest.icon_size = data.raw["storage-tank"][factory_name].icon_size
-    eject_chest.collision_box = table.deepcopy(data.raw["storage-tank"][factory_name].collision_box)
+    eject_chest.localised_name = {"entity-name.mythos-eject-chest"}
+    eject_chest.icon = data.raw["storage-tank"][mythos_name].icon
+    eject_chest.icon_size = data.raw["storage-tank"][mythos_name].icon_size
+    eject_chest.collision_box = table.deepcopy(data.raw["storage-tank"][mythos_name].collision_box)
     eject_chest.selection_box = nil
     eject_chest.picture = nil
     eject_chest.hidden = true
-    eject_chest.factoriopedia_alternative = factory_name
+    eject_chest.factoriopedia_alternative = mythos_name
     eject_chest.quality_indicator_scale = 0
     eject_chest.flags = {"not-on-map", "hide-alt-info", "no-automated-item-removal", "no-automated-item-insertion", "not-in-kill-statistics", "not-rotatable"}
     entities_to_extend[#entities_to_extend + 1] = eject_chest
@@ -207,25 +207,25 @@ data:extend(entities_to_extend)
 -- This is required to allow the roboport to exist in blueprints.
 data:extend {{
     type = "item",
-    name = "factory-construction-roboport",
+    name = "mythos-construction-roboport",
     icon = data.raw.item["roboport"].icon,
     icon_size = data.raw.item["roboport"].icon_size,
     stack_size = 1,
     hidden = true,
     hidden_in_factoriopedia = true,
     flags = {"not-stackable", "only-in-cursor"},
-    place_result = "factory-construction-roboport"
+    place_result = "mythos-construction-roboport"
 }}
 
 -- This is required to allow the construction chest to exist in blueprints.
 data:extend {{
     type = "item",
-    name = "factory-construction-chest",
+    name = "mythos-construction-chest",
     icon = "__mythos__/graphics/icon/construction-chest.png",
     icon_size = 64,
     stack_size = 1,
     hidden = true,
     hidden_in_factoriopedia = true,
     flags = {"not-stackable", "only-in-cursor"},
-    place_result = "factory-construction-chest"
+    place_result = "mythos-construction-chest"
 }}

@@ -1,8 +1,8 @@
--- This file contains frankly way too much code to basically make doors work.
+﻿-- This file contains frankly way too much code to basically make doors work.
 -- Warning to future mainainers: do not attempt to rewrite this with landmines. Trust me.
 
-local find_surrounding_factory = remote_api.find_surrounding_factory
-local find_factory_by_area = remote_api.find_factory_by_area
+local find_surrounding_mythos = remote_api.find_surrounding_mythos
+local find_mythos_by_area = remote_api.find_mythos_by_area
 
 mythos.on_event(mythos.events.on_init(), function()
     storage.last_player_teleport = storage.last_player_teleport or {}
@@ -11,10 +11,10 @@ end)
 --- This function exists in order to teleport the personal robopots of a player along with the player when moving between factories.
 local function purgatory_surface()
     if remote.interfaces["RSO"] then -- RSO compatibility
-        pcall(remote.call, "RSO", "ignoreSurface", "factory-travel-surface")
+        pcall(remote.call, "RSO", "ignoreSurface", "mythos-travel-surface")
     end
 
-    local planet = game.planets["factory-travel-surface"]
+    local planet = game.planets["mythos-travel-surface"]
     if planet.surface then return planet.surface end
 
     local surface = planet.create_surface()
@@ -45,15 +45,15 @@ local function teleport_safely(e, surface, position, player)
         storage.last_player_teleport[player.index] = game.tick
     end
 
-    if player then mythos.update_factory_preview(player) end
+    if player then mythos.update_mythos_preview(player) end
 end
 
-local function enter_factory(e, factory, player)
-    teleport_safely(e, factory.inside_surface, {factory.inside_door_x, factory.inside_door_y}, player)
+local function enter_mythos(e, mythos, player)
+    teleport_safely(e, mythos.inside_surface, {mythos.inside_door_x, mythos.inside_door_y}, player)
 end
 
-local function leave_factory(e, factory, player)
-    teleport_safely(e, factory.outside_surface, {factory.outside_door_x, factory.outside_door_y}, player)
+local function leave_mythos(e, mythos, player)
+    teleport_safely(e, mythos.outside_surface, {mythos.outside_door_x, mythos.outside_door_y}, player)
 end
 
 -- https://mods.factorio.com/mod/jetpack
@@ -88,7 +88,7 @@ local function is_airborne(jetpacks, player)
 end
 
 -- floating controllers that don't have a well-defined concept of "position"
--- we ignore these and its instead handled by shift clicking the factory/power monitor
+-- we ignore these and its instead handled by shift clicking the mythos/power monitor
 local god_controllers = {
     [defines.controllers.god] = true,
     [defines.controllers.editor] = true,
@@ -96,7 +96,7 @@ local god_controllers = {
     [defines.controllers.remote] = true,
 }
 
-local function check_position_and_leave_factory(player, is_airborne)
+local function check_position_and_leave_mythos(player, is_airborne)
     if god_controllers[player.controller_type] then return end
 
     local walking_state = player.walking_state
@@ -110,21 +110,21 @@ local function check_position_and_leave_factory(player, is_airborne)
 
     if not is_moving_downwards then return end
 
-    local factory = find_surrounding_factory(player.physical_surface, position)
-    if not factory then return end
+    local mythos = find_surrounding_mythos(player.physical_surface, position)
+    if not mythos then return end
 
     local y = position.y + (is_airborne and 0.5 or -1)
-    if y <= factory.inside_door_y then return end
+    if y <= mythos.inside_door_y then return end
 
-    if math.abs(position.x - factory.inside_door_x) >= 4 then return end
+    if math.abs(position.x - mythos.inside_door_x) >= 4 then return end
 
-    leave_factory(player, factory, player)
-    mythos.update_factory_preview(player)
-    mythos.update_overlay(factory)
+    leave_mythos(player, mythos, player)
+    mythos.update_mythos_preview(player)
+    mythos.update_overlay(mythos)
     return true
 end
 
-local function check_position_and_enter_factory(player, is_airborne)
+local function check_position_and_enter_mythos(player, is_airborne)
     if player.controller_type == defines.controllers.remote then return end
 
     local physical_position = player.physical_position
@@ -137,7 +137,7 @@ local function check_position_and_enter_factory(player, is_airborne)
 
     if not is_moving_upwards then return end
 
-    local factory = find_factory_by_area {
+    local mythos = find_mythos_by_area {
         surface = player.physical_surface,
         area = (not is_airborne) and {
             {physical_position.x - 0.2, physical_position.y - 0.3},
@@ -146,17 +146,17 @@ local function check_position_and_enter_factory(player, is_airborne)
         position = is_airborne and player.physical_position or nil
     }
 
-    if not factory or factory.inactive then return end
+    if not mythos or mythos.inactive then return end
 
     local door_width = is_airborne and 4 or 0.9
-    local is_standing_in_doorway = physical_position.y > factory.outside_y + 1 and math.abs(physical_position.x - factory.outside_x) < door_width
+    local is_standing_in_doorway = physical_position.y > mythos.outside_y + 1 and math.abs(physical_position.x - mythos.outside_x) < door_width
     if not is_standing_in_doorway then return end
 
-    enter_factory(player, factory, player)
+    enter_mythos(player, mythos, player)
     return true
 end
 
--- teleport players between factory buildings
+-- teleport players between mythos buildings
 mythos.on_nth_tick(6, function()
     local tick = game.tick
     local jetpacks = get_jetpacks()
@@ -166,8 +166,8 @@ mythos.on_nth_tick(6, function()
         if not player.walking_state.walking then goto continue end
 
         local is_airborne = is_airborne(jetpacks, player)
-        if not check_position_and_enter_factory(player, is_airborne) then
-            check_position_and_leave_factory(player, is_airborne)
+        if not check_position_and_enter_mythos(player, is_airborne) then
+            check_position_and_leave_mythos(player, is_airborne)
         end
 
         ::continue::

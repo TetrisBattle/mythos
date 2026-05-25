@@ -1,5 +1,5 @@
-local get_factory_by_building = remote_api.get_factory_by_building
-local find_surrounding_factory = remote_api.find_surrounding_factory
+﻿local get_mythos_by_building = remote_api.get_mythos_by_building
+local find_surrounding_mythos = remote_api.find_surrounding_mythos
 
 local has_layout = has_layout
 
@@ -8,9 +8,9 @@ local has_layout = has_layout
 mythos.on_event(mythos.events.on_init(), function()
     -- List of all factories
     storage.factories = storage.factories or {}
-    -- Map: Id from item-with-tags -> Factory
+    -- Map: Id from item-with-tags -> Mythos
     storage.saved_factories = storage.saved_factories or {}
-    -- Map: Entity unit number -> Factory it is a part of
+    -- Map: Entity unit number -> Mythos it is a part of
     storage.factories_by_entity = storage.factories_by_entity or {}
     -- Map: Surface index -> list of factories on it
     storage.surface_factories = storage.surface_factories or {}
@@ -25,11 +25,11 @@ local function was_this_placed_on_a_space_exploration_spaceship(layout, building
         return false
     end
 
-    if layout.surface_override ~= "space-factory-floor" then
+    if layout.surface_override ~= "space-mythos-floor" then
         return false
     end
 
-    if surface.name == "se-spaceship-factory-floor" then -- recursion
+    if surface.name == "se-spaceship-mythos-floor" then -- recursion
         return true
     end
 
@@ -54,49 +54,49 @@ local function surface_localised_name(surface)
 end
 
 --- @return string
-local function which_surface_should_this_new_factory_be_placed_on(layout, building)
+local function which_surface_should_this_new_mythos_be_placed_on(layout, building)
     if was_this_placed_on_a_space_exploration_spaceship(layout, building) then
-        return "se-spaceship-factory-floor"
+        return "se-spaceship-mythos-floor"
     end
 
     local surface = building.surface
     if layout.surface_override then
         return layout.surface_override
     elseif surface.platform then
-        return "space-factory-floor"
+        return "space-mythos-floor"
     elseif surface.planet then
-        return surface.planet.name:gsub("%-factory%-floor", "") .. "-factory-floor"
+        return surface.planet.name:gsub("%-mythos%-floor", "") .. "-mythos-floor"
     else
-        return surface.name:gsub("%-factory%-floor", "") .. "-factory-floor"
+        return surface.name:gsub("%-mythos%-floor", "") .. "-mythos-floor"
     end
 end
 
-local function is_legacy_factory_floor(surface_name)
-    return surface_name:match("^%d+%-factory%-floor$") ~= nil
+local function is_legacy_mythos_floor(surface_name)
+    return surface_name:match("^%d+%-mythos%-floor$") ~= nil
 end
 
-local function can_skip_factory_surface_check()
+local function can_skip_mythos_surface_check()
     return script.active_mods["warptorio-space-age"] or script.active_mods["Warp-Drive-Machine"] or script.active_mods["warptorio2"]
 end
 
-local function set_factory_active_or_inactive(factory)
-    local building = factory.building
+local function set_mythos_active_or_inactive(mythos)
+    local building = mythos.building
     if not building or not building.valid then
-        factory.inactive = false
+        mythos.inactive = false
         return
     end
     local surface = building.surface
     local position = building.position
 
-    local function can_place_factory_here()
-        if not can_skip_factory_surface_check() then
+    local function can_place_mythos_here()
+        if not can_skip_mythos_surface_check() then
             -- Check if a player is trying to cheat by moving factories between surfaces.
-            local surface_name = factory.inside_surface.name
+            local surface_name = mythos.inside_surface.name
             -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/268
-            local surface_name = surface_name:gsub("%-factory%-floor%-factory%-floor", "-factory-floor")
-            if factory.inside_surface.valid and surface_name ~= which_surface_should_this_new_factory_be_placed_on(factory.layout, building) then
-                if not is_legacy_factory_floor(surface_name) then
-                    flying_text = {"factory-connection-text.invalid-placement-surface", surface_localised_name(factory.inside_surface), surface_localised_name(surface)}
+            local surface_name = surface_name:gsub("%-mythos%-floor%-mythos%-floor", "-mythos-floor")
+            if mythos.inside_surface.valid and surface_name ~= which_surface_should_this_new_mythos_be_placed_on(mythos.layout, building) then
+                if not is_legacy_mythos_floor(surface_name) then
+                    flying_text = {"mythos-connection-text.invalid-placement-surface", surface_localised_name(mythos.inside_surface), surface_localised_name(surface)}
                     return false, flying_text, true
                 end
             end
@@ -106,30 +106,30 @@ local function set_factory_active_or_inactive(factory)
             return true
         end
 
-        local surrounding_factory = find_surrounding_factory(surface, position)
-        if not surrounding_factory then
+        local surrounding_mythos = find_surrounding_mythos(surface, position)
+        if not surrounding_mythos then
             return true
         end
 
-        local has_tech_t2 = surrounding_factory.force.technologies["factory-recursion-t2"].researched
-        local has_tech_t1 = has_tech_t2 or surrounding_factory.force.technologies["factory-recursion-t1"].researched
+        local has_tech_t2 = surrounding_mythos.force.technologies["mythos-recursion-t2"].researched
+        local has_tech_t1 = has_tech_t2 or surrounding_mythos.force.technologies["mythos-recursion-t1"].researched
 
-        local inner_tier = factory.layout.tier
-        local outer_tier = surrounding_factory.layout.tier
+        local inner_tier = mythos.layout.tier
+        local outer_tier = surrounding_mythos.layout.tier
         if not has_tech_t2 and inner_tier >= outer_tier then
-            return false, {"factory-connection-text.invalid-placement-recursion-2"}, false
+            return false, {"mythos-connection-text.invalid-placement-recursion-2"}, false
         end
 
         if not has_tech_t1 then -- cannot do any recursion
-            return false, {"factory-connection-text.invalid-placement-recursion-1"}, false
+            return false, {"mythos-connection-text.invalid-placement-recursion-1"}, false
         end
 
         return true
     end
 
-    local can_place, msg, cancel_creation = can_place_factory_here()
+    local can_place, msg, cancel_creation = can_place_mythos_here()
 
-    factory.inactive = not can_place
+    mythos.inactive = not can_place
     if can_place then return end
     assert(msg)
 
@@ -140,37 +140,37 @@ local function set_factory_active_or_inactive(factory)
     -- end
     mythos.create_flying_text {position = position, text = msg}
 
-    for cid, _ in pairs(factory.layout.connections) do
-        local conn = factory.connections[cid]
+    for cid, _ in pairs(mythos.layout.connections) do
+        local conn = mythos.connections[cid]
         mythos.destroy_connection(conn)
     end
 end
 
-local DEFAULT_FACTORY_UPGRADES = {
+local DEFAULT_MYTHOS_UPGRADES = {
     {"mythos", "build_lights_upgrade"},
     {"mythos", "build_greenhouse_upgrade"},
     {"mythos", "build_display_upgrade"},
     {"mythos", "build_roboport_upgrade"}
 }
 
-local function build_factory_upgrades(factory)
-    for _, upgrade in pairs(factory.layout.upgrades or DEFAULT_FACTORY_UPGRADES) do
+local function build_mythos_upgrades(mythos)
+    for _, upgrade in pairs(mythos.layout.upgrades or DEFAULT_MYTHOS_UPGRADES) do
         assert(#upgrade == 2)
         local mod, upgrade_function = upgrade[1], upgrade[2]
         if mod == "mythos" then
-            mythos[upgrade_function](factory)
+            mythos[upgrade_function](mythos)
         else
-            remote.call(mod, upgrade_function, factory)
+            remote.call(mod, upgrade_function, mythos)
         end
     end
 end
 
---- If a factory factory is built without proper recursion technology, it will be inactive.
+--- If a mythos mythos is built without proper recursion technology, it will be inactive.
 --- This function reactivates these factories once the research is complete.
 local function activate_factories()
-    for _, factory in pairs(storage.factories) do
-        set_factory_active_or_inactive(factory)
-        build_factory_upgrades(factory)
+    for _, mythos in pairs(storage.factories) do
+        set_mythos_active_or_inactive(mythos)
+        build_mythos_upgrades(mythos)
     end
 end
 mythos.on_event(mythos.events.on_init(), activate_factories)
@@ -178,23 +178,23 @@ mythos.on_event(mythos.events.on_init(), activate_factories)
 mythos.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
     if not storage.factories then return end -- In case any mod or scenario script calls LuaForce.research_all_technologies() during its on_init
     local name = event.research.name
-    if name == "factory-recursion-t1" or name == "factory-recursion-t2" then
+    if name == "mythos-recursion-t1" or name == "mythos-recursion-t2" then
         activate_factories()
     else
-        for _, factory in pairs(storage.factories) do build_factory_upgrades(factory) end
+        for _, mythos in pairs(storage.factories) do build_mythos_upgrades(mythos) end
     end
 end)
 
 local function update_recursion_techs(force)
     if settings.global["mythos-hide-recursion"] and settings.global["mythos-hide-recursion"].value then
-        force.technologies["factory-recursion-t1"].enabled = false
-        force.technologies["factory-recursion-t2"].enabled = false
+        force.technologies["mythos-recursion-t1"].enabled = false
+        force.technologies["mythos-recursion-t2"].enabled = false
     elseif settings.global["mythos-hide-recursion-2"] and settings.global["mythos-hide-recursion-2"].value then
-        force.technologies["factory-recursion-t1"].enabled = true
-        force.technologies["factory-recursion-t2"].enabled = false
+        force.technologies["mythos-recursion-t1"].enabled = true
+        force.technologies["mythos-recursion-t2"].enabled = false
     else
-        force.technologies["factory-recursion-t1"].enabled = true
-        force.technologies["factory-recursion-t2"].enabled = true
+        force.technologies["mythos-recursion-t1"].enabled = true
+        force.technologies["mythos-recursion-t2"].enabled = true
     end
 end
 
@@ -217,11 +217,11 @@ mythos.on_event(mythos.events.on_init(), function()
     end
 end)
 
--- FACTORY GENERATION --
+-- MYTHOS GENERATION --
 
 mythos.on_event(defines.events.on_surface_created, function(event)
     local surface = game.get_surface(event.surface_index)
-    if not surface.name:find("%-factory%-floor$") then return end
+    if not surface.name:find("%-mythos%-floor$") then return end
 
     local mgs = surface.map_gen_settings
     mgs.width = 2
@@ -229,7 +229,7 @@ mythos.on_event(defines.events.on_surface_created, function(event)
     surface.map_gen_settings = mgs
 end)
 
---- searches a factory floor for "holes" where a new factory could be created
+--- searches a mythos floor for "holes" where a new mythos could be created
 --- else returns the next position
 local function find_first_unused_position(surface)
     local used_indexes = {}
@@ -252,13 +252,13 @@ local function surface_sanity_checks(surface, building)
         pcall(remote.call, "RSO", "ignoreSurface", surface.name)
     end
 
-    if surface.name == "space-factory-floor" then
-        surface.localised_name = {"space-location-name.space-factory-floor"}
+    if surface.name == "space-mythos-floor" then
+        surface.localised_name = {"space-location-name.space-mythos-floor"}
         surface.set_property("gravity", 0)
         surface.set_property("pressure", 0)
         surface.set_property("magnetic-field", 0)
-    elseif surface.name == "se-spaceship-factory-floor" then
-        surface.localised_name = {"space-location-name.se-spaceship-factory-floor"}
+    elseif surface.name == "se-spaceship-mythos-floor" then
+        surface.localised_name = {"space-location-name.se-spaceship-mythos-floor"}
         surface.set_property("gravity", 0)
         surface.set_property("pressure", 0)
         surface.set_property("magnetic-field", 0)
@@ -273,7 +273,7 @@ local function surface_sanity_checks(surface, building)
     surface.map_gen_settings = {width = 2, height = 2}
 end
 
-local function create_factory_surface(surface_name)
+local function create_mythos_surface(surface_name)
     assert(_G.surface == nil)
 
     if remote.interfaces["RSO"] then -- RSO compatibility
@@ -293,12 +293,12 @@ local function create_factory_surface(surface_name)
     return game.create_surface(surface_name, {width = 2, height = 2})
 end
 
-local function create_factory_position(layout, building)
-    local surface_name = which_surface_should_this_new_factory_be_placed_on(layout, building)
+local function create_mythos_position(layout, building)
+    local surface_name = which_surface_should_this_new_mythos_be_placed_on(layout, building)
     local surface = game.get_surface(surface_name)
 
     if not surface then
-        surface = create_factory_surface(surface_name)
+        surface = create_mythos_surface(surface_name)
     end
 
     surface_sanity_checks(surface, building)
@@ -316,19 +316,19 @@ local function create_factory_position(layout, building)
     surface.destroy_decoratives {area = {{32 * (cx - 2), 32 * (cy - 2)}, {32 * (cx + 2), 32 * (cy + 2)}}}
     mythos.spawn_maraxsis_water_shaders(surface, {x = cx, y = cy})
 
-    local factory = {}
-    factory.inside_surface = surface
-    factory.inside_x = 32 * cx
-    factory.inside_y = 32 * cy
-    factory.stored_pollution = 0
-    factory.outside_x = building.position.x
-    factory.outside_y = building.position.y
-    factory.outside_door_x = factory.outside_x + layout.outside_door_x
-    factory.outside_door_y = factory.outside_y + layout.outside_door_y
-    factory.outside_surface = building.surface
+    local mythos = {}
+    mythos.inside_surface = surface
+    mythos.inside_x = 32 * cx
+    mythos.inside_y = 32 * cy
+    mythos.stored_pollution = 0
+    mythos.outside_x = building.position.x
+    mythos.outside_y = building.position.y
+    mythos.outside_door_x = mythos.outside_x + layout.outside_door_x
+    mythos.outside_door_y = mythos.outside_y + layout.outside_door_y
+    mythos.outside_surface = building.surface
 
     storage.surface_factories[surface.index] = storage.surface_factories[surface.index] or {}
-    storage.surface_factories[surface.index][n + 1] = factory
+    storage.surface_factories[surface.index][n + 1] = mythos
 
     local highest_currently_used_id = 0
     for id in pairs(storage.factories) do
@@ -336,10 +336,10 @@ local function create_factory_position(layout, building)
             highest_currently_used_id = id
         end
     end
-    factory.id = highest_currently_used_id + 1
-    storage.factories[factory.id] = factory
+    mythos.id = highest_currently_used_id + 1
+    storage.factories[mythos.id] = mythos
 
-    return factory
+    return mythos
 end
 
 local function add_tile_rect(tiles, tile_name, xmin, ymin, xmax, ymax) -- tiles is rw
@@ -352,12 +352,12 @@ local function add_tile_rect(tiles, tile_name, xmin, ymin, xmax, ymax) -- tiles 
     end
 end
 
-local function add_hidden_tile_rect(factory)
-    local surface = factory.inside_surface
-    local xmin = factory.inside_x - 64
-    local ymin = factory.inside_y - 64
-    local xmax = factory.inside_x + 64
-    local ymax = factory.inside_y + 64
+local function add_hidden_tile_rect(mythos)
+    local surface = mythos.inside_surface
+    local xmin = mythos.inside_x - 64
+    local ymin = mythos.inside_y - 64
+    local xmax = mythos.inside_x + 64
+    local ymax = mythos.inside_y + 64
 
     local position = {0, 0}
     for x = xmin, xmax - 1 do
@@ -381,123 +381,123 @@ local function add_tile_mosaic(tiles, tile_name, xmin, ymin, xmax, ymax, pattern
     end
 end
 
-local function create_factory_interior(layout, building)
+local function create_mythos_interior(layout, building)
     local force = building.force
 
-    local factory = create_factory_position(layout, building)
-    factory.building = building
-    factory.layout = layout
-    factory.force = force
-    factory.quality = building.quality
-    factory.inside_door_x = layout.inside_door_x + factory.inside_x
-    factory.inside_door_y = layout.inside_door_y + factory.inside_y
+    local mythos = create_mythos_position(layout, building)
+    mythos.building = building
+    mythos.layout = layout
+    mythos.force = force
+    mythos.quality = building.quality
+    mythos.inside_door_x = layout.inside_door_x + mythos.inside_x
+    mythos.inside_door_y = layout.inside_door_y + mythos.inside_y
 
     local tile_name_mapping = {}
-    if factory.inside_surface.name == "se-spaceship-factory-floor" then
-        tile_name_mapping["space-factory-floor"] = "se-spaceship-factory-floor"
-        tile_name_mapping["space-factory-entrance"] = "se-spaceship-factory-entrance"
+    if mythos.inside_surface.name == "se-spaceship-mythos-floor" then
+        tile_name_mapping["space-mythos-floor"] = "se-spaceship-mythos-floor"
+        tile_name_mapping["space-mythos-entrance"] = "se-spaceship-mythos-entrance"
     end
 
     local tiles = {}
     for _, rect in pairs(layout.rectangles) do
         local tile_name = tile_name_mapping[rect.tile] or rect.tile
-        add_tile_rect(tiles, tile_name, rect.x1 + factory.inside_x, rect.y1 + factory.inside_y, rect.x2 + factory.inside_x, rect.y2 + factory.inside_y)
+        add_tile_rect(tiles, tile_name, rect.x1 + mythos.inside_x, rect.y1 + mythos.inside_y, rect.x2 + mythos.inside_x, rect.y2 + mythos.inside_y)
     end
     for _, mosaic in pairs(layout.mosaics) do
         local tile_name = tile_name_mapping[mosaic.tile] or mosaic.tile
-        add_tile_mosaic(tiles, tile_name, mosaic.x1 + factory.inside_x, mosaic.y1 + factory.inside_y, mosaic.x2 + factory.inside_x, mosaic.y2 + factory.inside_y, mosaic.pattern)
+        add_tile_mosaic(tiles, tile_name, mosaic.x1 + mythos.inside_x, mosaic.y1 + mythos.inside_y, mosaic.x2 + mythos.inside_x, mosaic.y2 + mythos.inside_y, mosaic.pattern)
     end
     for _, cpos in pairs(layout.connections) do
         local tile_name = tile_name_mapping[layout.connection_tile] or layout.connection_tile
-        table.insert(tiles, {name = tile_name, position = {factory.inside_x + cpos.inside_x, factory.inside_y + cpos.inside_y}})
+        table.insert(tiles, {name = tile_name, position = {mythos.inside_x + cpos.inside_x, mythos.inside_y + cpos.inside_y}})
     end
-    factory.inside_surface.set_tiles(tiles)
-    add_hidden_tile_rect(factory)
+    mythos.inside_surface.set_tiles(tiles)
+    add_hidden_tile_rect(mythos)
 
-    mythos.get_or_create_inside_power_pole(factory)
-    mythos.spawn_cerys_entities(factory)
+    mythos.get_or_create_inside_power_pole(mythos)
+    mythos.spawn_cerys_entities(mythos)
 
-    local radar = factory.inside_surface.create_entity {
-        name = "factory-hidden-radar",
-        position = {factory.inside_x, factory.inside_y},
+    local radar = mythos.inside_surface.create_entity {
+        name = "mythos-hidden-radar",
+        position = {mythos.inside_x, mythos.inside_y},
         force = force,
     }
     radar.destructible = false
-    factory.radar = radar
-    factory.inside_overlay_controllers = {}
+    mythos.radar = radar
+    mythos.inside_overlay_controllers = {}
 
-    factory.connections = {}
-    factory.connection_settings = {}
-    factory.connection_indicators = {}
+    mythos.connections = {}
+    mythos.connection_settings = {}
+    mythos.connection_indicators = {}
 
-    return factory
+    return mythos
 end
 
-local function create_factory_exterior(factory, building)
-    local layout = factory.layout
-    local force = factory.force
-    factory.outside_x = building.position.x
-    factory.outside_y = building.position.y
-    factory.outside_door_x = factory.outside_x + layout.outside_door_x
-    factory.outside_door_y = factory.outside_y + layout.outside_door_y
-    factory.outside_surface = building.surface
+local function create_mythos_exterior(mythos, building)
+    local layout = mythos.layout
+    local force = mythos.force
+    mythos.outside_x = building.position.x
+    mythos.outside_y = building.position.y
+    mythos.outside_door_x = mythos.outside_x + layout.outside_door_x
+    mythos.outside_door_y = mythos.outside_y + layout.outside_door_y
+    mythos.outside_surface = building.surface
 
-    local oer = factory.outside_surface.create_entity {name = layout.outside_energy_receiver_type, position = {factory.outside_x, factory.outside_y}, force = force}
+    local oer = mythos.outside_surface.create_entity {name = layout.outside_energy_receiver_type, position = {mythos.outside_x, mythos.outside_y}, force = force}
     oer.destructible = false
     oer.operable = false
     oer.rotatable = false
-    factory.outside_energy_receiver = oer
+    mythos.outside_energy_receiver = oer
 
-    if factory.outside_surface.has_global_electric_network then
-        local genp = factory.outside_surface.create_entity {name = "factory-global-electric-network-pole", position = {factory.outside_x, factory.outside_y}, force = force}
+    if mythos.outside_surface.has_global_electric_network then
+        local genp = mythos.outside_surface.create_entity {name = "mythos-global-electric-network-pole", position = {mythos.outside_x, mythos.outside_y}, force = force}
         genp.destructible = false
         genp.operable = false
         genp.rotatable = false
-        factory.global_electric_network_pole = genp
+        mythos.global_electric_network_pole = genp
     end
 
-    factory.outside_overlay_displays = {}
-    factory.outside_port_markers = {}
+    mythos.outside_overlay_displays = {}
+    mythos.outside_port_markers = {}
 
-    storage.factories_by_entity[building.unit_number] = factory
-    factory.building = building
-    factory.built = true
+    storage.factories_by_entity[building.unit_number] = mythos
+    mythos.building = building
+    mythos.built = true
 
-    mythos.recheck_factory_connections(factory)
-    mythos.update_power_connection(factory)
-    mythos.update_overlay(factory)
-    build_factory_upgrades(factory)
-    return factory
+    mythos.recheck_mythos_connections(mythos)
+    mythos.update_power_connection(mythos)
+    mythos.update_overlay(mythos)
+    build_mythos_upgrades(mythos)
+    return mythos
 end
 
--- FACTORY MINING AND DECONSTRUCTION --
+-- MYTHOS MINING AND DECONSTRUCTION --
 
-local function cleanup_factory_exterior(factory, building)
-    mythos.cleanup_outside_energy_receiver(factory)
-    mythos.cleanup_factory_roboport_exterior_chest(factory)
+local function cleanup_mythos_exterior(mythos, building)
+    mythos.cleanup_outside_energy_receiver(mythos)
+    mythos.cleanup_mythos_roboport_exterior_chest(mythos)
 
-    mythos.disconnect_factory_connections(factory)
-    for _, render_id in pairs(factory.outside_overlay_displays) do
+    mythos.disconnect_mythos_connections(mythos)
+    for _, render_id in pairs(mythos.outside_overlay_displays) do
         local object = rendering.get_object_by_id(render_id)
         if object then object.destroy() end
     end
-    factory.outside_overlay_displays = {}
-    for _, render_id in pairs(factory.outside_port_markers) do
+    mythos.outside_overlay_displays = {}
+    for _, render_id in pairs(mythos.outside_port_markers) do
         local object = rendering.get_object_by_id(render_id)
         if object then object.destroy() end
     end
-    factory.outside_port_markers = {}
-    factory.building = nil
-    factory.built = false
+    mythos.outside_port_markers = {}
+    mythos.building = nil
+    mythos.built = false
 end
 
 local sprite_path_translation = {
     virtual = "virtual-signal",
 }
-local function generate_factory_item_description(factory)
-    local bound_to = {"item-description.bound-to", surface_localised_name(factory.inside_surface)}
+local function generate_mythos_item_description(mythos)
+    local bound_to = {"item-description.bound-to", surface_localised_name(mythos.inside_surface)}
 
-    local overlay = factory.inside_overlay_controller
+    local overlay = mythos.inside_overlay_controller
     local params = {}
     if overlay and overlay.valid then
         for _, section in pairs(overlay.get_or_create_control_behavior().sections) do
@@ -517,8 +517,8 @@ local function generate_factory_item_description(factory)
     end
 end
 
-local function is_completely_empty(factory)
-    local roboport_upgrade = factory.roboport_upgrade
+local function is_completely_empty(mythos)
+    local roboport_upgrade = mythos.roboport_upgrade
     if roboport_upgrade then
         for _, entity in pairs {roboport_upgrade.storage, roboport_upgrade.roboport} do
             if entity and entity.valid then
@@ -530,11 +530,11 @@ local function is_completely_empty(factory)
         end
     end
 
-    local x, y = factory.inside_x, factory.inside_y
-    local D = (factory.layout.inside_size + 8) / 2
+    local x, y = mythos.inside_x, mythos.inside_y
+    local D = (mythos.layout.inside_size + 8) / 2
     local area = {{x - D, y - D}, {x + D, y + D}}
 
-    local interior_entities = factory.inside_surface.find_entities_filtered {area = area}
+    local interior_entities = mythos.inside_surface.find_entities_filtered {area = area}
     for _, entity in pairs(interior_entities) do
         local collision_mask = entity.prototype.collision_mask.layers
         local is_hidden_entity = (not collision_mask) or table_size(collision_mask) == 0
@@ -543,12 +543,12 @@ local function is_completely_empty(factory)
     return true
 end
 
-local function cleanup_factory_interior(factory)
-    local x, y = factory.inside_x, factory.inside_y
-    local D = (factory.layout.inside_size + 8) / 2
+local function cleanup_mythos_interior(mythos)
+    local x, y = mythos.inside_x, mythos.inside_y
+    local D = (mythos.layout.inside_size + 8) / 2
     local area = {{x - D, y - D}, {x + D, y + D}}
 
-    for _, e in pairs(factory.inside_surface.find_entities_filtered {area = area}) do
+    for _, e in pairs(mythos.inside_surface.find_entities_filtered {area = area}) do
         e.destroy()
     end
 
@@ -558,34 +558,34 @@ local function cleanup_factory_interior(factory)
             out_of_map_tiles[#out_of_map_tiles + 1] = {position = {xx, yy}, name = "out-of-map"}
         end
     end
-    factory.inside_surface.set_tiles(out_of_map_tiles)
+    mythos.inside_surface.set_tiles(out_of_map_tiles)
 
-    local factory_lists = {storage.factories, storage.saved_factories, storage.factories_by_entity}
-    for _, factory_list in pairs(storage.surface_factories) do
-        factory_lists[#factory_lists + 1] = factory_list
+    local mythos_lists = {storage.factories, storage.saved_factories, storage.factories_by_entity}
+    for _, mythos_list in pairs(storage.surface_factories) do
+        mythos_lists[#mythos_lists + 1] = mythos_list
     end
 
-    for _, factory_list in pairs(factory_lists) do
-        for k, f in pairs(factory_list) do
-            if f == factory then
-                factory_list[k] = nil
+    for _, mythos_list in pairs(mythos_lists) do
+        for k, f in pairs(mythos_list) do
+            if f == mythos then
+                mythos_list[k] = nil
             end
         end
     end
 
     for _, force in pairs(game.forces) do
-        force.rechart(factory.inside_surface)
+        force.rechart(mythos.inside_surface)
     end
 
     -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/211
     storage.was_deleted = storage.was_deleted or {}
-    storage.was_deleted[factory.id] = true
+    storage.was_deleted[mythos.id] = true
 
-    for k in pairs(factory) do factory[k] = nil end
+    for k in pairs(mythos) do mythos[k] = nil end
 end
 
 -- How players pick up factories
--- Working factory buildings don't return items, so we have to manually give the player an item
+-- Working mythos buildings don't return items, so we have to manually give the player an item
 mythos.on_event({
     defines.events.on_player_mined_entity,
     defines.events.on_robot_mined_entity,
@@ -594,31 +594,31 @@ mythos.on_event({
     local entity = event.entity
     if not has_layout(entity.name) then return end
 
-    local factory = get_factory_by_building(entity)
-    if not factory then return end
-    cleanup_factory_exterior(factory, entity)
+    local mythos = get_mythos_by_building(entity)
+    if not mythos then return end
+    cleanup_mythos_exterior(mythos, entity)
 
-    if is_completely_empty(factory) then
+    if is_completely_empty(mythos) then
         local buffer = event.buffer
         buffer.clear()
         buffer.insert {
-            name = factory.layout.name,
+            name = mythos.layout.name,
             count = 1,
             quality = entity.quality,
             health = entity.health / entity.max_health
         }
-        cleanup_factory_interior(factory)
+        cleanup_mythos_interior(mythos)
         return
     end
 
-    storage.saved_factories[factory.id] = factory
+    storage.saved_factories[mythos.id] = mythos
     local buffer = event.buffer
     buffer.clear()
     buffer.insert {
-        name = factory.layout.name .. "-instantiated",
+        name = mythos.layout.name .. "-instantiated",
         count = 1,
-        tags = {id = factory.id},
-        custom_description = generate_factory_item_description(factory),
+        tags = {id = mythos.id},
+        custom_description = generate_mythos_item_description(mythos),
         quality = entity.quality,
         health = entity.health / entity.max_health
     }
@@ -626,12 +626,12 @@ mythos.on_event({
     assert(item_stack.valid_for_read and item_stack.is_item_with_tags)
     local item = item_stack.item
     assert(item and item.valid)
-    factory.item = item
+    mythos.item = item
 end)
 
-local function prevent_factory_mining(entity)
-    local factory = get_factory_by_building(entity)
-    if not factory then return end
+local function prevent_mythos_mining(entity)
+    local mythos = get_mythos_by_building(entity)
+    if not mythos then return end
     storage.factories_by_entity[entity.unit_number] = nil
     local entity = entity.surface.create_entity {
         name = entity.name,
@@ -641,21 +641,21 @@ local function prevent_factory_mining(entity)
         create_build_effect_smoke = false,
         player = entity.last_user
     }
-    storage.factories_by_entity[entity.unit_number] = factory
-    factory.building = entity
-    mythos.update_overlay(factory)
-    if #factory.outside_port_markers ~= 0 then
-        factory.outside_port_markers = {}
-        mythos.toggle_port_markers(factory)
+    storage.factories_by_entity[entity.unit_number] = mythos
+    mythos.building = entity
+    mythos.update_overlay(mythos)
+    if #mythos.outside_port_markers ~= 0 then
+        mythos.outside_port_markers = {}
+        mythos.toggle_port_markers(mythos)
     end
-    mythos.create_flying_text {position = entity.position, text = {"factory-cant-be-mined"}}
+    mythos.create_flying_text {position = entity.position, text = {"mythos-cant-be-mined"}}
 end
 
 local fake_robots = {["repair-block-robot"] = true} -- Modded construction robots with heavy control scripting
 mythos.on_event(defines.events.on_robot_pre_mined, function(event)
     local entity = event.entity
     if has_layout(entity.name) and fake_robots[event.robot.name] then
-        prevent_factory_mining(entity)
+        prevent_mythos_mining(entity)
         entity.destroy()
     elseif entity.type == "item-entity" and entity.stack.valid_for_read and has_layout(entity.stack.name) then
         event.robot.destructible = false
@@ -667,20 +667,20 @@ end)
 mythos.on_event(defines.events.on_entity_died, function(event)
     local entity = event.entity
     if not has_layout(entity.name) then return end
-    local factory = get_factory_by_building(entity)
-    if not factory then return end
+    local mythos = get_mythos_by_building(entity)
+    if not mythos then return end
 
-    storage.saved_factories[factory.id] = factory
-    cleanup_factory_exterior(factory, entity)
+    storage.saved_factories[mythos.id] = mythos
+    cleanup_mythos_exterior(mythos, entity)
 
     local items = entity.surface.spill_item_stack {
         position = entity.position,
         stack = {
-            name = factory.layout.name .. "-instantiated",
-            tags = {id = factory.id},
+            name = mythos.layout.name .. "-instantiated",
+            tags = {id = mythos.id},
             quality = entity.quality.name,
             count = 1,
-            custom_description = generate_factory_item_description(factory)
+            custom_description = generate_mythos_item_description(mythos)
         },
         enable_looted = false,
         force = nil,
@@ -688,25 +688,25 @@ mythos.on_event(defines.events.on_entity_died, function(event)
         max_radius = 0,
         use_start_position_on_failure = true
     }
-    assert(table_size(items) == 1, "Failed to generate factory item. Are you using the quantum-fabricator mod? See https://github.com/notnotmelon/mythos-2-notnotmelon/issues/203")
+    assert(table_size(items) == 1, "Failed to generate mythos item. Are you using the quantum-fabricator mod? See https://github.com/notnotmelon/mythos-2-notnotmelon/issues/203")
     local item = items[1].stack.item
     assert(item and item.valid)
-    factory.item = item
-    entity.force.print {"factory-killed-by-biters", items[1].gps_tag}
+    mythos.item = item
+    entity.force.print {"mythos-killed-by-biters", items[1].gps_tag}
 end)
 
 mythos.on_event(defines.events.on_post_entity_died, function(event)
     if not has_layout(event.prototype.name) or not event.ghost then return end
-    local factory = storage.factories_by_entity[event.unit_number]
-    if not factory then return end
-    event.ghost.tags = {id = factory.id}
+    local mythos = storage.factories_by_entity[event.unit_number]
+    if not mythos then return end
+    event.ghost.tags = {id = mythos.id}
 end)
 
--- Just rebuild the factory in this case
+-- Just rebuild the mythos in this case
 mythos.on_event(defines.events.script_raised_destroy, function(event)
     local entity = event.entity
     if has_layout(entity.name) then
-        prevent_factory_mining(entity)
+        prevent_mythos_mining(entity)
     end
 end)
 
@@ -714,19 +714,19 @@ local function on_delete_surface(surface)
     storage.surface_factories[surface.index] = nil
 
     local childen_surfaces_to_delete = {}
-    for _, factory in pairs(storage.factories) do
-        local inside_surface = factory.inside_surface
-        local outside_surface = factory.outside_surface
-        if inside_surface.valid and outside_surface.valid and factory.outside_surface == surface then
+    for _, mythos in pairs(storage.factories) do
+        local inside_surface = mythos.inside_surface
+        local outside_surface = mythos.outside_surface
+        if inside_surface.valid and outside_surface.valid and mythos.outside_surface == surface then
             childen_surfaces_to_delete[inside_surface.index] = inside_surface
         end
     end
 
-    for _, factory_list in pairs {storage.factories, storage.saved_factories, storage.factories_by_entity} do
-        for k, factory in pairs(factory_list) do
-            local inside_surface = factory.inside_surface
+    for _, mythos_list in pairs {storage.factories, storage.saved_factories, storage.factories_by_entity} do
+        for k, mythos in pairs(mythos_list) do
+            local inside_surface = mythos.inside_surface
             if not inside_surface.valid or childen_surfaces_to_delete[inside_surface.index] then
-                factory_list[k] = nil
+                mythos_list[k] = nil
             end
         end
     end
@@ -742,27 +742,27 @@ mythos.on_event(defines.events.on_pre_surface_cleared, function(event)
     on_delete_surface(game.get_surface(event.surface_index))
 end)
 
--- FACTORY PLACEMENT AND INITALIZATION --
+-- MYTHOS PLACEMENT AND INITALIZATION --
 
-local function create_fresh_factory(entity)
+local function create_fresh_mythos(entity)
     local layout = remote_api.create_layout(entity.name, entity.quality)
-    local factory = create_factory_interior(layout, entity)
-    create_factory_exterior(factory, entity)
-    set_factory_active_or_inactive(factory)
-    return factory
+    local mythos = create_mythos_interior(layout, entity)
+    create_mythos_exterior(mythos, entity)
+    set_mythos_active_or_inactive(mythos)
+    return mythos
 end
 
--- It's possible that the item used to build this factory is not the same as the one that was saved.
--- In this case, clear tags and description of the saved item such that there is only 1 copy of the factory item.
+-- It's possible that the item used to build this mythos is not the same as the one that was saved.
+-- In this case, clear tags and description of the saved item such that there is only 1 copy of the mythos item.
 -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/155
-local function handle_factory_control_xed(factory)
-    local item = factory.item
+local function handle_mythos_control_xed(mythos)
+    local item = mythos.item
     if not item or not item.valid then return end
-    factory.item.tags = {}
-    factory.item.custom_description = factory.item.prototype.localised_description
+    mythos.item.tags = {}
+    mythos.item.custom_description = mythos.item.prototype.localised_description
 
-    -- We should also attempt to swapped the packed factory item with an unpacked.
-    -- If this fails, whatever. It's just to avoid confusion. A packed factory with no tags is equal to an unpacked factory.
+    -- We should also attempt to swapped the packed mythos item with an unpacked.
+    -- If this fails, whatever. It's just to avoid confusion. A packed mythos with no tags is equal to an unpacked mythos.
     local item_stack = item.item_stack
     if not item_stack or not item_stack.valid_for_read then return end
 
@@ -774,43 +774,43 @@ local function handle_factory_control_xed(factory)
     }
 end
 
-local function handle_factory_placed(entity, tags)
+local function handle_mythos_placed(entity, tags)
     if not tags or not tags.id then
-        create_fresh_factory(entity)
+        create_fresh_mythos(entity)
         return
     end
 
-    local factory = storage.saved_factories[tags.id]
+    local mythos = storage.saved_factories[tags.id]
     storage.saved_factories[tags.id] = nil
-    if factory and factory.inside_surface and factory.inside_surface.valid then
-        -- This is a saved factory, we need to unpack it
-        factory.quality = entity.quality
-        create_factory_exterior(factory, entity)
-        set_factory_active_or_inactive(factory)
-        handle_factory_control_xed(factory)
+    if mythos and mythos.inside_surface and mythos.inside_surface.valid then
+        -- This is a saved mythos, we need to unpack it
+        mythos.quality = entity.quality
+        create_mythos_exterior(mythos, entity)
+        set_mythos_active_or_inactive(mythos)
+        handle_mythos_control_xed(mythos)
         return
     end
 
-    if not factory and storage.factories[tags.id] then
-        -- This factory was copied from somewhere else. Clone all contained entities
-        local factory = create_fresh_factory(entity)
-        mythos.copy_entity_ghosts(storage.factories[tags.id], factory)
-        mythos.update_overlay(factory)
+    if not mythos and storage.factories[tags.id] then
+        -- This mythos was copied from somewhere else. Clone all contained entities
+        local mythos = create_fresh_mythos(entity)
+        mythos.copy_entity_ghosts(storage.factories[tags.id], mythos)
+        mythos.update_overlay(mythos)
         return
     end
 
     -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/211
     if storage.was_deleted and storage.was_deleted[tags.id] then
-        create_fresh_factory(entity)
+        create_fresh_mythos(entity)
         return
     end
 
-    mythos.create_flying_text {position = entity.position, text = {"factory-connection-text.invalid-factory-data"}}
+    mythos.create_flying_text {position = entity.position, text = {"mythos-connection-text.invalid-mythos-data"}}
     entity.destroy()
 end
 
 -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/259
-local function try_randomly_tag_an_itemized_factory_from_space_platform_hub(entity_ghost, player_index)
+local function try_randomly_tag_an_itemized_mythos_from_space_platform_hub(entity_ghost, player_index)
     if not player_index then return end
     if entity_ghost.tags then return end
     local player = game.get_player(player_index)
@@ -833,8 +833,8 @@ local function try_randomly_tag_an_itemized_factory_from_space_platform_hub(enti
         local stack = inventory[i]
         if stack and stack.valid_for_read and stack.name == cursor_ghost_name and stack.quality.name == cursor_ghost.quality.name then
             if stack.type == "item-with-tags" and stack.tags and stack.tags.id then
-                local factory = storage.saved_factories[stack.tags.id]
-                if factory and factory.inside_surface.name == "space-factory-floor" then
+                local mythos = storage.saved_factories[stack.tags.id]
+                if mythos and mythos.inside_surface.name == "space-mythos-floor" then
                     random_indicies[#random_indicies + 1] = i
                 end
             end
@@ -845,12 +845,12 @@ local function try_randomly_tag_an_itemized_factory_from_space_platform_hub(enti
     local index = random_indicies[math.random(1, #random_indicies)]
     local stack = inventory[index]
     entity_ghost.tags = stack.tags
-    local factory = storage.saved_factories[entity_ghost.tags.id]
+    local mythos = storage.saved_factories[entity_ghost.tags.id]
 
     if #random_indicies > 1 then
         local certainty = string.format("%.2f", 100 / #random_indicies)
         local gps_1 = entity_ghost.gps_tag
-        local gps_2 = string.format("[gps=%s,%s,%s]", factory.inside_x, factory.inside_y, factory.inside_surface.name)
+        local gps_2 = string.format("[gps=%s,%s,%s]", mythos.inside_x, mythos.inside_y, mythos.inside_surface.name)
         game.print {"command-help-message.could-not-determine-with-certainty", gps_1, gps_2, certainty}
     end
 end
@@ -863,7 +863,7 @@ mythos.on_event(mythos.events.on_built(), function(event)
     if has_layout(entity_name) then
         local inventory = event.consumed_items
         local tags = event.tags or (inventory and not inventory.is_empty() and inventory[1].valid_for_read and inventory[1].is_item_with_tags and inventory[1].tags) or nil
-        handle_factory_placed(entity, tags)
+        handle_mythos_placed(entity, tags)
         return
     end
 
@@ -871,45 +871,45 @@ mythos.on_event(mythos.events.on_built(), function(event)
     local ghost_name = entity.ghost_name
     if not has_layout(ghost_name) then return end
 
-    try_randomly_tag_an_itemized_factory_from_space_platform_hub(entity, event.player_index)
+    try_randomly_tag_an_itemized_mythos_from_space_platform_hub(entity, event.player_index)
 
     if entity.tags then
-        local copied_from_factory = storage.factories[entity.tags.id]
-        if copied_from_factory then
-            mythos.update_overlay(copied_from_factory, entity)
+        local copied_from_mythos = storage.factories[entity.tags.id]
+        if copied_from_mythos then
+            mythos.update_overlay(copied_from_mythos, entity)
         end
     end
 end)
 
--- How to clone your factory
--- This implementation will not actually clone factory buildings, but move them to where they were cloned.
+-- How to clone your mythos
+-- This implementation will not actually clone mythos buildings, but move them to where they were cloned.
 local clone_forbidden_prefixes = {
-    "factory-1-",
-    "factory-2-",
-    "factory-3-",
-    "space-factory-1-",
-    "space-factory-2-",
-    "space-factory-3-",
-    "factory-power-input-",
-    "factory-connection-indicator-",
-    "factory-power-pole",
-    "factory-overlay-controller",
-    "factory-port-marker",
-    "factory-blueprint-anchor",
-    "factory-fluid-dummy-connector-",
-    "factory-linked-",
-    "factory-requester-chest-",
-    "factory-eject-chest-",
-    "factory-construction-chest",
-    "factory-construction-roboport",
-    "factory-hidden-construction-robot",
-    "factory-hidden-construction-roboport",
-    "factory-hidden-radar-",
-    "factory-heat-dummy-connector",
-    "factory-inside-pump-input",
-    "factory-inside-pump-output",
-    "factory-outside-pump-input",
-    "factory-outside-pump-output",
+    "mythos-1-",
+    "mythos-2-",
+    "mythos-3-",
+    "space-mythos-1-",
+    "space-mythos-2-",
+    "space-mythos-3-",
+    "mythos-power-input-",
+    "mythos-connection-indicator-",
+    "mythos-power-pole",
+    "mythos-overlay-controller",
+    "mythos-port-marker",
+    "mythos-blueprint-anchor",
+    "mythos-fluid-dummy-connector-",
+    "mythos-linked-",
+    "mythos-requester-chest-",
+    "mythos-eject-chest-",
+    "mythos-construction-chest",
+    "mythos-construction-roboport",
+    "mythos-hidden-construction-robot",
+    "mythos-hidden-construction-roboport",
+    "mythos-hidden-radar-",
+    "mythos-heat-dummy-connector",
+    "mythos-inside-pump-input",
+    "mythos-inside-pump-output",
+    "mythos-outside-pump-input",
+    "mythos-outside-pump-output",
 }
 
 local function is_entity_clone_forbidden(name)
@@ -927,38 +927,38 @@ mythos.on_event(defines.events.on_entity_cloned, function(event)
     if is_entity_clone_forbidden(dst_entity.name) then
         dst_entity.destroy()
     elseif has_layout(src_entity.name) then
-        local factory = get_factory_by_building(src_entity)
-        cleanup_factory_exterior(factory, src_entity)
+        local mythos = get_mythos_by_building(src_entity)
+        cleanup_mythos_exterior(mythos, src_entity)
         if src_entity.valid then src_entity.destroy() end
-        create_factory_exterior(factory, dst_entity)
-        set_factory_active_or_inactive(factory)
+        create_mythos_exterior(mythos, dst_entity)
+        set_mythos_active_or_inactive(mythos)
     end
 end)
 
 -- MISC --
 
-commands.add_command("give-lost-factory-buildings", {"command-help-message.give-lost-factory-buildings"}, function(event)
+commands.add_command("mythos-give-lost-mythos-buildings", {"command-help-message.mythos-give-lost-mythos-buildings"}, function(event)
     local player = game.get_player(event.player_index)
     if not (player and player.connected and player.admin) then return end
     local inventory = player.get_main_inventory()
     if not inventory then return end
-    for id, factory in pairs(storage.saved_factories) do
+    for id, mythos in pairs(storage.saved_factories) do
         for i = 1, #inventory do
             local stack = inventory[i]
-            if stack.valid_for_read and stack.name == factory.layout.name and stack.type == "item-with-tags" and stack.tags.id == id then goto found end
+            if stack.valid_for_read and stack.name == mythos.layout.name and stack.type == "item-with-tags" and stack.tags.id == id then goto found end
         end
-        player.insert {name = factory.layout.name .. "-instantiated", count = 1, tags = {id = id}}
+        player.insert {name = mythos.layout.name .. "-instantiated", count = 1, tags = {id = id}}
         ::found::
     end
 end)
 
 mythos.on_event(defines.events.on_forces_merging, function(event)
-    for _, factory in pairs(storage.factories) do
-        if not factory.force.valid then
-            factory.force = game.forces["player"]
+    for _, mythos in pairs(storage.factories) do
+        if not mythos.force.valid then
+            mythos.force = game.forces["player"]
         end
-        if factory.force.name == event.source.name then
-            factory.force = event.destination
+        if mythos.force.name == event.source.name then
+            mythos.force = event.destination
         end
     end
 end)

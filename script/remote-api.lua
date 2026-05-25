@@ -1,9 +1,9 @@
-remote_api = {}
+﻿remote_api = {}
 
 BUILDING_TYPE = "storage-tank"
 
 --[[
-factory = {
+mythos = {
 	+id = *,
 	(+)inactive = *,
 
@@ -57,26 +57,26 @@ remote_api.set_global = function(path, v)
     g[path[#path]] = v
 end
 
-remote_api.get_factory_by_entity = function(entity)
+remote_api.get_mythos_by_entity = function(entity)
     if entity == nil then return nil end
     return storage.factories_by_entity[entity.unit_number]
 end
 
-remote_api.get_factory_by_building = function(entity)
-    local factory = storage.factories_by_entity[entity.unit_number]
-    if factory == nil then
-        game.print("ERROR: Unbound factory building: " .. entity.name .. "@" .. entity.surface.name .. "(" .. entity.position.x .. ", " .. entity.position.y .. ")")
+remote_api.get_mythos_by_building = function(entity)
+    local mythos = storage.factories_by_entity[entity.unit_number]
+    if mythos == nil then
+        game.print("ERROR: Unbound mythos building: " .. entity.name .. "@" .. entity.surface.name .. "(" .. entity.position.x .. ", " .. entity.position.y .. ")")
     end
-    return factory
+    return mythos
 end
 
-remote_api.find_factory_by_area = function(params)
+remote_api.find_mythos_by_area = function(params)
     local surface = params.surface
     local position = params.position
     local area = params.area
 
     for _, entity in pairs(surface.find_entities_filtered {position = position, area = area, type = BUILDING_TYPE}) do
-        if has_layout(entity.name) then return remote_api.get_factory_by_building(entity) end
+        if has_layout(entity.name) then return remote_api.get_mythos_by_building(entity) end
     end
     return nil
 end
@@ -88,14 +88,14 @@ remote_api.find_factories_by_area = function(params)
     local factories = {}
     for _, entity in pairs(surface.find_entities_filtered {area = area, type = BUILDING_TYPE}) do
         if has_layout(entity.name) then
-            local factory = remote_api.get_factory_by_building(entity)
-            if factory then factories[#factories + 1] = factory end
+            local mythos = remote_api.get_mythos_by_building(entity)
+            if mythos then factories[#factories + 1] = mythos end
         end
     end
     return factories
 end
 
-remote_api.find_surrounding_factory = function(surface, position)
+remote_api.find_surrounding_mythos = function(surface, position)
     local factories = storage.surface_factories[surface.index]
     if factories == nil then return nil end
     local x = math.floor(0.5 + position.x / (16 * 32))
@@ -104,7 +104,7 @@ remote_api.find_surrounding_factory = function(surface, position)
     return factories[8 * y + x + 1]
 end
 
-remote_api.find_surrounding_factory_by_surface_index = function(surface_index, position)
+remote_api.find_surrounding_mythos_by_surface_index = function(surface_index, position)
     local factories = storage.surface_factories[surface_index]
     if factories == nil then return nil end
     local x = math.floor(0.5 + position.x / (16 * 32))

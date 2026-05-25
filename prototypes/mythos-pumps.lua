@@ -1,4 +1,4 @@
--- Hidden pumps to work around the extents @raiguard
+﻿-- Hidden pumps to work around the extents @raiguard
 
 local pump_pictures = {
     north = data.raw.pipe.pipe.pictures.ending_up,
@@ -19,11 +19,11 @@ data.raw["utility-constants"]["default"].max_fluid_flow = math.max(data.raw["uti
 
 data:extend {{
     type = "pump",
-    name = "factory-inside-pump-input",
+    name = "mythos-inside-pump-input",
     icon = data.raw["pump"]["pump"].icon,
     icon_size = data.raw["pump"]["pump"].icon_size,
-    localised_name = {"entity-name.factory-pump"},
-    localised_description = {"entity-description.factory-pump"},
+    localised_name = {"entity-name.mythos-pump"},
+    localised_description = {"entity-description.mythos-pump"},
     flags = {"not-blueprintable", "not-deconstructable", "not-on-map", "not-flammable", "not-repairable", "hide-alt-info"},
     max_health = 50,
     hidden = true,
@@ -50,11 +50,11 @@ data:extend {{
 
 data:extend {{
     type = "pump",
-    name = "factory-inside-pump-output",
+    name = "mythos-inside-pump-output",
     icon = data.raw["pump"]["pump"].icon,
     icon_size = data.raw["pump"]["pump"].icon_size,
-    localised_name = {"entity-name.factory-pump"},
-    localised_description = {"entity-description.factory-pump"},
+    localised_name = {"entity-name.mythos-pump"},
+    localised_description = {"entity-description.mythos-pump"},
     flags = {"not-blueprintable", "not-deconstructable", "not-on-map", "not-flammable", "not-repairable", "hide-alt-info"},
     max_health = 50,
     hidden = true,
@@ -79,13 +79,13 @@ data:extend {{
     squeak_behaviour = false
 }}
 
-local outside_input = table.deepcopy(data.raw["pump"]["factory-inside-pump-input"])
-outside_input.name = "factory-outside-pump-input"
+local outside_input = table.deepcopy(data.raw["pump"]["mythos-inside-pump-input"])
+outside_input.name = "mythos-outside-pump-input"
 outside_input.selection_box = {{-0.5, -0.5}, {0.5, 0.5}}
 outside_input.selection_priority = 51
 
-local outside_output = table.deepcopy(data.raw["pump"]["factory-inside-pump-output"])
-outside_output.name = "factory-outside-pump-output"
+local outside_output = table.deepcopy(data.raw["pump"]["mythos-inside-pump-output"])
+outside_output.name = "mythos-outside-pump-output"
 outside_output.selection_box = {{-0.5, -0.5}, {0.5, 0.5}}
 outside_output.selection_priority = 51
 

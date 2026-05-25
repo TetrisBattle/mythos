@@ -1,8 +1,8 @@
-local Circuit = {}
+﻿local Circuit = {}
 
 Circuit.color = {r = 255 / 255, g = 61 / 255, b = 61 / 255}
-Circuit.entity_types = {"factory-circuit-connector"}
-Circuit.unlocked = function(force) return force.technologies["factory-connection-type-circuit"].researched end
+Circuit.entity_types = {"mythos-circuit-connector"}
+Circuit.unlocked = function(force) return force.technologies["mythos-connection-type-circuit"].researched end
 
 local function connect_two_poles_with_circuit_wires(pole_1, pole_2)
     for _, connector_type in pairs {
@@ -15,11 +15,11 @@ local function connect_two_poles_with_circuit_wires(pole_1, pole_2)
     end
 end
 
-Circuit.connect = function(factory, cid, cpos, outside_entity, inside_entity)
-    if outside_entity.name ~= "factory-circuit-connector" or inside_entity.name ~= "factory-circuit-connector" then return nil end
+Circuit.connect = function(mythos, cid, cpos, outside_entity, inside_entity)
+    if outside_entity.name ~= "mythos-circuit-connector" or inside_entity.name ~= "mythos-circuit-connector" then return nil end
 
     local inside_middleman = inside_entity.surface.create_entity {
-        name = "factory-circuit-connector-invisible",
+        name = "mythos-circuit-connector-invisible",
         position = inside_entity.position,
         force = inside_entity.force,
     }
@@ -28,7 +28,7 @@ Circuit.connect = function(factory, cid, cpos, outside_entity, inside_entity)
     connect_two_poles_with_circuit_wires(inside_entity, inside_middleman)
 
     local outside_middleman = outside_entity.surface.create_entity {
-        name = "factory-circuit-connector-invisible",
+        name = "mythos-circuit-connector-invisible",
         position = outside_entity.position,
         force = outside_entity.force,
     }

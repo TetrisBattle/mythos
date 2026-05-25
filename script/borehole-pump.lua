@@ -1,4 +1,4 @@
-local NO_FLUID_ON_THIS_SURFACE = -1
+﻿local NO_FLUID_ON_THIS_SURFACE = -1
 
 local BOREHOLE_PUMP_FIXED_RECIPES = {
     ["nauvis"] = "water",
@@ -69,14 +69,14 @@ mythos.on_event(mythos.events.on_built(), function(event)
     if not borehole.valid or borehole.name ~= "borehole-pump" then return end
 
     local surface = borehole.surface
-    local parent_planet_name = surface.name:gsub("%-factory%-floor$", "")
+    local parent_planet_name = surface.name:gsub("%-mythos%-floor$", "")
     local parent_planet = game.planets[parent_planet_name]
     if not parent_planet then return end
     local fixed_recipe = BOREHOLE_PUMP_FIXED_RECIPES[parent_planet_name]
     if not fixed_recipe then return end
 
     if fixed_recipe == NO_FLUID_ON_THIS_SURFACE then
-        mythos.cancel_creation(borehole, event.player_index, {"factory-connection-text.borehole-pump-no-fluid"})
+        mythos.cancel_creation(borehole, event.player_index, {"mythos-connection-text.borehole-pump-no-fluid"})
         return
     end
 

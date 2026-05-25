@@ -1,6 +1,6 @@
-for _, factory in pairs(storage.factories or {}) do
-    if factory.radar.valid then
-        factory.radar.active = true
+﻿for _, mythos in pairs(storage.factories or {}) do
+    if mythos.radar.valid then
+        mythos.radar.active = true
     end
 end
 storage.hidden_radars = nil

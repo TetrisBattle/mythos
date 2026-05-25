@@ -1,4 +1,4 @@
-if not mods["power-grid-comb"] then return end
+﻿if not mods["power-grid-comb"] then return end
 
 local function array_combine(a, b)
     local result = {}
@@ -11,7 +11,7 @@ local function array_combine(a, b)
     return result
 end
 
-local our_poles = {"factory-circuit-connector", "factory-power-pole"}
+local our_poles = {"mythos-circuit-connector", "mythos-power-pole"}
 local selection_tool = data.raw["selection-tool"]["power-grid-comb"]
 selection_tool.entity_filters = array_combine(our_poles, selection_tool.entity_filters or {})
 selection_tool.alt_entity_filters = array_combine(our_poles, selection_tool.alt_entity_filters or {})

@@ -1,4 +1,4 @@
-local Belt = {}
+﻿local Belt = {}
 
 Belt.color = {r = 0, g = 183 / 255, b = 0}
 Belt.entity_types = {"transport-belt", "underground-belt", "loader", "loader-1x1", "linked-belt", "splitter", "lane-splitter", "inserter"}
@@ -61,7 +61,7 @@ local function get_conn_facing(outside_entity, inside_entity, direction_out, dir
     return (outside_dir == inside_dir) and outside_dir or nil
 end
 
-Belt.connect = function(factory, cid, cpos, outside_entity, inside_entity)
+Belt.connect = function(mythos, cid, cpos, outside_entity, inside_entity)
     local conn_facing = get_conn_facing(outside_entity, inside_entity, cpos.direction_out, cpos.direction_in)
     if not (conn_facing == cpos.direction_in or conn_facing == cpos.direction_out) then return end
 
@@ -69,20 +69,20 @@ Belt.connect = function(factory, cid, cpos, outside_entity, inside_entity)
     local inside_link_name, outside_link_name
     if inside_entity.type == "inserter" then
         if inside_entity.name:find("long") then return end
-        inside_link_name = "factory-linked-" .. outside_entity.name
+        inside_link_name = "mythos-linked-" .. outside_entity.name
     else
-        inside_link_name = "factory-linked-" .. inside_entity.name
+        inside_link_name = "mythos-linked-" .. inside_entity.name
     end
     if outside_entity.type == "inserter" then
         if outside_entity.name:find("long") then return end
-        outside_link_name = "factory-linked-" .. inside_entity.name
+        outside_link_name = "mythos-linked-" .. inside_entity.name
     else
-        outside_link_name = "factory-linked-" .. outside_entity.name
+        outside_link_name = "mythos-linked-" .. outside_entity.name
     end
 
     if not prototypes.entity[inside_link_name] or not prototypes.entity[outside_link_name] then return end
 
-    local outside_link_position = {factory.outside_x + cpos.outside_x - cpos.indicator_dx, factory.outside_y + cpos.outside_y - cpos.indicator_dy}
+    local outside_link_position = {mythos.outside_x + cpos.outside_x - cpos.indicator_dx, mythos.outside_y + cpos.outside_y - cpos.indicator_dy}
     local outside_link = outside_entity.surface.create_entity {
         name = outside_link_name,
         position = outside_link_position,
@@ -95,7 +95,7 @@ Belt.connect = function(factory, cid, cpos, outside_entity, inside_entity)
 
     local inside_link = inside_entity.surface.create_entity {
         name = inside_link_name,
-        position = {factory.inside_x + cpos.inside_x + cpos.indicator_dx, factory.inside_y + cpos.inside_y + cpos.indicator_dy},
+        position = {mythos.inside_x + cpos.inside_x + cpos.indicator_dx, mythos.inside_y + cpos.inside_y + cpos.indicator_dy},
         create_build_effect_smoke = false,
         raise_built = false,
         force = inside_entity.force
@@ -168,7 +168,7 @@ local function spill_link_items(belt, link, surface, position)
 end
 
 Belt.destroy = function(conn)
-    local surface = conn._factory.inside_surface
+    local surface = conn._mythos.inside_surface
     local position = conn.spill_location
 
     if conn.from_link.valid then

@@ -1,8 +1,8 @@
-local Fluid = {}
+﻿local Fluid = {}
 
 Fluid.color = {r = 167 / 255, g = 229 / 255, b = 255 / 255}
 Fluid.entity_types = {"pipe", "pipe-to-ground", "pump", "storage-tank", "infinity-pipe", "offshore-pump", "elevated-pipe"}
-Fluid.unlocked = function(force) return force.technologies["factory-connection-type-fluid"].researched end
+Fluid.unlocked = function(force) return force.technologies["mythos-connection-type-fluid"].researched end
 
 local function is_connected(dummy_connector, entity)
     if blacklist[entity.name] then return false end
@@ -11,12 +11,12 @@ local function is_connected(dummy_connector, entity)
     end
 end
 
-local function create_linked_connections(factory, cpos, settings)
-    local inside_surface = factory.inside_surface
-    local outside_surface = factory.outside_surface
+local function create_linked_connections(mythos, cpos, settings)
+    local inside_surface = mythos.inside_surface
+    local outside_surface = mythos.outside_surface
 
-    local inside_position = {factory.inside_x + cpos.inside_x + cpos.indicator_dx, factory.inside_y + cpos.inside_y + cpos.indicator_dy}
-    local outside_position = {factory.outside_x + cpos.outside_x - cpos.indicator_dx, factory.outside_y + cpos.outside_y - cpos.indicator_dy}
+    local inside_position = {mythos.inside_x + cpos.inside_x + cpos.indicator_dx, mythos.inside_y + cpos.inside_y + cpos.indicator_dy}
+    local outside_position = {mythos.outside_x + cpos.outside_x - cpos.indicator_dx, mythos.outside_y + cpos.outside_y - cpos.indicator_dy}
 
     local inside_flow_direction, outside_flow_direction = "input", "output"
     if settings.input_mode then
@@ -24,20 +24,20 @@ local function create_linked_connections(factory, cpos, settings)
     end
 
     local inside_connector = inside_surface.create_entity {
-        name = "factory-inside-pump-" .. inside_flow_direction,
+        name = "mythos-inside-pump-" .. inside_flow_direction,
         position = inside_position,
         direction = cpos.direction_in,
-        quality = factory.quality,
+        quality = mythos.quality,
     }
     inside_connector.destructible = false
     inside_connector.operable = false
     inside_connector.rotatable = false
 
     local outside_connector = outside_surface.create_entity {
-        name = "factory-outside-pump-" .. outside_flow_direction,
+        name = "mythos-outside-pump-" .. outside_flow_direction,
         position = outside_position,
         direction = cpos.direction_out,
-        quality = factory.quality,
+        quality = mythos.quality,
     }
     outside_connector.destructible = false
     outside_connector.operable = false
@@ -48,10 +48,10 @@ local function create_linked_connections(factory, cpos, settings)
     return inside_connector, outside_connector
 end
 
-Fluid.connect = function(factory, cid, cpos, outside_entity, inside_entity, settings)
+Fluid.connect = function(mythos, cid, cpos, outside_entity, inside_entity, settings)
     if inside_entity == outside_entity then return nil end
 
-    local inside_connector, outside_connector = create_linked_connections(factory, cpos, settings)
+    local inside_connector, outside_connector = create_linked_connections(mythos, cpos, settings)
 
     return {
         inside = inside_entity,
@@ -70,9 +70,9 @@ Fluid.indicator_settings = {"d0"}
 
 Fluid.direction = function(conn)
     if conn._settings.input_mode then
-        return "d0", conn._factory.layout.connections[conn._id].direction_in
+        return "d0", conn._mythos.layout.connections[conn._id].direction_in
     else
-        return "d0", conn._factory.layout.connections[conn._id].direction_out
+        return "d0", conn._mythos.layout.connections[conn._id].direction_out
     end
 end
 
@@ -86,13 +86,13 @@ Fluid.rotate = function(conn)
         conn.outside_connector.destroy()
     end
 
-    local cpos = conn._factory.layout.connections[conn._id]
-    conn.inside_connector, conn.outside_connector = create_linked_connections(conn._factory, cpos, conn._settings)
+    local cpos = conn._mythos.layout.connections[conn._id]
+    conn.inside_connector, conn.outside_connector = create_linked_connections(conn._mythos, cpos, conn._settings)
 
     if conn._settings.input_mode then
-        return {"factory-connection-text.input-mode"}
+        return {"mythos-connection-text.input-mode"}
     else
-        return {"factory-connection-text.output-mode"}
+        return {"mythos-connection-text.output-mode"}
     end
 end
 

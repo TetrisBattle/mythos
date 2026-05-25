@@ -1,4 +1,4 @@
-local EntitySwap = {}
+﻿local EntitySwap = {}
 local name_suffix_grounded = "-grounded"
 
 ---@param inv_a LuaInventory inventory to transfer FROM
@@ -140,13 +140,13 @@ mythos.on_event(mythos.events.on_built(), function(event)
     if not entity.valid or has_layout(entity.name) then return end
 
     local surface = entity.surface
-    if surface.name ~= "se-spaceship-factory-floor" then
+    if surface.name ~= "se-spaceship-mythos-floor" then
         return
     end
 
     local entity_type = entity.type == "entity-ghost" and entity.ghost_type or entity.type
     if banned_entities[entity_type] then
-        mythos.cancel_creation(entity, event.player_index, {"factory-connection-text.se-cannot-build-in-spaceship-factory-building"})
+        mythos.cancel_creation(entity, event.player_index, {"mythos-connection-text.se-cannot-build-in-spaceship-mythos-building"})
         return
     end
 

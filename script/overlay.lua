@@ -1,22 +1,22 @@
-local function build_display_upgrade(factory)
-    if not factory.force.technologies["factory-interior-upgrade-display"].researched then return end
-    if factory.inside_overlay_controller and factory.inside_overlay_controller.valid then return end
-    if not factory.inside_surface or not factory.inside_surface.valid then return end
+﻿local function build_display_upgrade(mythos)
+    if not mythos.force.technologies["mythos-interior-upgrade-display"].researched then return end
+    if mythos.inside_overlay_controller and mythos.inside_overlay_controller.valid then return end
+    if not mythos.inside_surface or not mythos.inside_surface.valid then return end
 
-    local pos = factory.layout.overlays
-    local controller = factory.inside_surface.create_entity {
-        name = "factory-overlay-controller",
+    local pos = mythos.layout.overlays
+    local controller = mythos.inside_surface.create_entity {
+        name = "mythos-overlay-controller",
         position = {
-            factory.inside_x + pos.inside_x,
-            factory.inside_y + pos.inside_y
+            mythos.inside_x + pos.inside_x,
+            mythos.inside_y + pos.inside_y
         },
-        force = factory.force,
-        quality = factory.quality
+        force = mythos.force,
+        quality = mythos.quality
     }
     controller.minable = false
     controller.destructible = false
     controller.rotatable = false
-    factory.inside_overlay_controller = controller
+    mythos.inside_overlay_controller = controller
 end
 mythos.build_display_upgrade = build_display_upgrade
 
@@ -117,18 +117,18 @@ local function convert_logistic_sections_into_overlay_icons(control_behavior)
     return overlay_icons
 end
 
-local function update_overlay(factory, draw_onto)
+local function update_overlay(mythos, draw_onto)
     if not draw_onto then
-        for _, id in pairs(factory.outside_overlay_displays) do
+        for _, id in pairs(mythos.outside_overlay_displays) do
             local object = rendering.get_object_by_id(id)
             if object then object.destroy() end
         end
-        factory.outside_overlay_displays = {}
+        mythos.outside_overlay_displays = {}
     end
 
-    if not factory.built then return end
-    if not factory.building.valid then return end
-    local controller = factory.inside_overlay_controller
+    if not mythos.built then return end
+    if not mythos.building.valid then return end
+    local controller = mythos.inside_overlay_controller
     if not controller then return end
     if not controller.valid then return end
     local control_behavior = controller.get_or_create_control_behavior()
@@ -137,8 +137,8 @@ local function update_overlay(factory, draw_onto)
     local overlay_icons = convert_logistic_sections_into_overlay_icons(control_behavior)
 
     local sprite_positions = get_nice_overlay_arrangement(
-        factory.layout.overlays.outside_w,
-        factory.layout.overlays.outside_h,
+        mythos.layout.overlays.outside_w,
+        mythos.layout.overlays.outside_h,
         #overlay_icons
     )
     local i = 0
@@ -146,16 +146,16 @@ local function update_overlay(factory, draw_onto)
         i = i + 1
         draw_overlay_sprite(
             param,
-            draw_onto or factory.building,
-            {sprite_positions[i].x + factory.layout.overlays.outside_x, sprite_positions[i].y + factory.layout.overlays.outside_y},
+            draw_onto or mythos.building,
+            {sprite_positions[i].x + mythos.layout.overlays.outside_x, sprite_positions[i].y + mythos.layout.overlays.outside_y},
             sprite_positions[i].scale,
-            factory.outside_overlay_displays
+            mythos.outside_overlay_displays
         )
     end
 end
 mythos.update_overlay = update_overlay
 
-local function copy_overlay_between_factory_buildings(source, destination)
+local function copy_overlay_between_mythos_buildings(source, destination)
     local source_controller = source.inside_overlay_controller
     local destination_controller = destination.inside_overlay_controller
 
@@ -182,10 +182,10 @@ local function copy_overlay_between_factory_buildings(source, destination)
 
     mythos.update_overlay(destination)
 end
-mythos.copy_overlay_between_factory_buildings = copy_overlay_between_factory_buildings
+mythos.copy_overlay_between_mythos_buildings = copy_overlay_between_mythos_buildings
 
 mythos.on_event(defines.events.on_player_changed_surface, function(event)
-    for _, factory in pairs(storage.factories) do
-        mythos.update_overlay(factory)
+    for _, mythos in pairs(storage.factories) do
+        mythos.update_overlay(mythos)
     end
 end)

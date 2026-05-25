@@ -1,15 +1,15 @@
-local mod_gui = require "mod-gui"
-local get_factory_by_entity = remote_api.get_factory_by_entity
-local find_surrounding_factory = remote_api.find_surrounding_factory
+﻿local mod_gui = require "mod-gui"
+local get_mythos_by_entity = remote_api.get_mythos_by_entity
+local find_surrounding_mythos = remote_api.find_surrounding_mythos
 
 mythos.on_event(mythos.events.on_init(), function()
     storage.fancy_preview_active = storage.fancy_preview_active or {}
 end)
 
 local function get_camera_frame(player)
-    local camera_frame = player.gui.screen.factory_camera_frame
+    local camera_frame = player.gui.screen.mythos_camera_frame
     if not camera_frame then
-        camera_frame = player.gui.screen.add {type = "frame", name = "factory_camera_frame", style = "invisible_frame", auto_center = false}
+        camera_frame = player.gui.screen.add {type = "frame", name = "mythos_camera_frame", style = "invisible_frame", auto_center = false}
         camera_frame.style.padding = 0
         camera_frame.style.margin = 0
         camera_frame.ignored_by_interaction = true
@@ -21,9 +21,9 @@ local function get_camera_frame(player)
 end
 
 local function get_minimap_frame(player)
-    local camera_frame = player.gui.screen.factory_minimap_frame
+    local camera_frame = player.gui.screen.mythos_minimap_frame
     if not camera_frame then
-        camera_frame = player.gui.screen.add {type = "frame", name = "factory_minimap_frame", style = "invisible_frame", auto_center = false}
+        camera_frame = player.gui.screen.add {type = "frame", name = "mythos_minimap_frame", style = "invisible_frame", auto_center = false}
         camera_frame.style.padding = 0
         camera_frame.style.margin = 0
         camera_frame.ignored_by_interaction = true
@@ -59,14 +59,14 @@ local function update_camera(player)
     if not selected or not selected.valid then return end
     if not has_layout(selected.name) then return end
 
-    local factory = get_factory_by_entity(selected)
+    local mythos = get_mythos_by_entity(selected)
     local zoom = player.zoom
     local display_resolution = player.display_resolution
     local display_scale = player.display_scale
 
     local left_margin = (selected.position.x - player.render_position.x) * zoom * 32
     local top_margin = (selected.position.y - player.render_position.y) * zoom * 32
-    local preview_size_world = (factory.layout.outside_size * 32 - 32)
+    local preview_size_world = (mythos.layout.outside_size * 32 - 32)
     local preview_size_screen = preview_size_world * zoom
 
     camera_frame.location = {
@@ -74,29 +74,29 @@ local function update_camera(player)
         top_margin + display_resolution.height / 2 - preview_size_screen / 2
     }
 
-    local camera = camera_frame.factory_camera
+    local camera = camera_frame.mythos_camera
     if not camera then return end
     camera.style.width = preview_size_screen / display_scale
     camera.style.height = preview_size_screen / display_scale
-    camera.zoom = preview_size_world / (factory.layout.inside_size + 2) * zoom / 32 / player.display_density_scale
+    camera.zoom = preview_size_world / (mythos.layout.inside_size + 2) * zoom / 32 / player.display_density_scale
 end
 
-local function set_camera(player, factory)
-    local has_tech = player.force.technologies["factory-interior-upgrade-lights"].researched
+local function set_camera(player, mythos)
+    local has_tech = player.force.technologies["mythos-interior-upgrade-lights"].researched
     if not has_tech then return end
 
-    if not factory or factory.inactive then return end
-    local inside_surface = factory.inside_surface
+    if not mythos or mythos.inactive then return end
+    local inside_surface = mythos.inside_surface
     if not inside_surface.valid then return end
     storage.fancy_preview_active[player.index] = true
 
-    position = {x = factory.inside_x, y = factory.inside_y}
+    position = {x = mythos.inside_x, y = mythos.inside_y}
     surface_index = inside_surface.index
 
     local camera_frame = get_camera_frame(player)
-    local camera = camera_frame.factory_camera
+    local camera = camera_frame.mythos_camera
     if not camera then
-        camera = camera_frame.add {type = "camera", name = "factory_camera", position = position}
+        camera = camera_frame.add {type = "camera", name = "mythos_camera", position = position}
     end
 
     camera.position = position
@@ -131,30 +131,30 @@ mythos.on_event(defines.events.on_tick, function()
     end
 end)
 
-local function set_minimap(player, factory, inside)
-    if not factory then return end
-    local inside_surface = factory.inside_surface
-    local outside_surface = factory.outside_surface
+local function set_minimap(player, mythos, inside)
+    if not mythos then return end
+    local inside_surface = mythos.inside_surface
+    local outside_surface = mythos.outside_surface
     if not inside_surface.valid or not outside_surface.valid then return end
 
     local minimap_dimensions = minimap_dimensions(player)
 
     local position, surface_index, zoom
     if inside then
-        position = {x = factory.inside_x, y = factory.inside_y}
+        position = {x = mythos.inside_x, y = mythos.inside_y}
         surface_index = inside_surface.index
-        zoom = (minimap_dimensions.size / 32) / (factory.layout.inside_size + 8) * player.display_scale / player.display_density_scale
+        zoom = (minimap_dimensions.size / 32) / (mythos.layout.inside_size + 8) * player.display_scale / player.display_density_scale
     else
-        position = {x = factory.outside_x, y = factory.outside_y}
+        position = {x = mythos.outside_x, y = mythos.outside_y}
         surface_index = outside_surface.index
-        zoom = (minimap_dimensions.size / 32) / (factory.layout.outside_size + 8) * player.display_scale / player.display_density_scale
+        zoom = (minimap_dimensions.size / 32) / (mythos.layout.outside_size + 8) * player.display_scale / player.display_density_scale
     end
     local minimap_frame = get_minimap_frame(player)
     minimap_frame.location = {minimap_dimensions.x, minimap_dimensions.y}
 
-    local camera = minimap_frame.factory_camera
+    local camera = minimap_frame.mythos_camera
     if not camera then
-        camera = minimap_frame.add {type = "camera", name = "factory_camera", position = position, surface_index = surface_index, zoom = zoom}
+        camera = minimap_frame.add {type = "camera", name = "mythos_camera", position = position, surface_index = surface_index, zoom = zoom}
     end
 
     camera.position = position
@@ -176,9 +176,10 @@ local function unset_camera(player)
     get_minimap_frame(player).visible = false
 end
 
-local function update_factory_preview(player)
-    local preview_mode = settings.get_player_settings(player)["mythos-factory-preview-mode"].value
-    
+local function update_mythos_preview(player)
+    local preview_setting = settings.get_player_settings(player)["mythos-mythos-preview-mode"]
+    local preview_mode = preview_setting and preview_setting.value or "fancy"
+
     if preview_mode == "off" then
         unset_camera(player)
         return
@@ -190,45 +191,45 @@ local function update_factory_preview(player)
         cursor_stack.type == "item-with-tags" and
         cursor_stack.tags and
         storage.saved_factories[cursor_stack.tags.id] then
-        local factory = storage.saved_factories[cursor_stack.tags.id]
-        set_minimap(player, factory, true)
+        local mythos = storage.saved_factories[cursor_stack.tags.id]
+        set_minimap(player, mythos, true)
         return
     end
 
     local selected = player.selected
     if selected then
-        local factory
+        local mythos
         local inside = true
-        if selected.name == "factory-power-pole" then
-            factory = find_surrounding_factory(selected.surface, selected.position)
+        if selected.name == "mythos-power-pole" then
+            mythos = find_surrounding_mythos(selected.surface, selected.position)
             inside = false
         elseif selected.type == "item-entity" and selected.stack.type == "item-with-tags" and has_layout(selected.stack.name) then
-            factory = storage.saved_factories[selected.stack.tags.id]
+            mythos = storage.saved_factories[selected.stack.tags.id]
         elseif selected.type == "construction-robot" or selected.type == "logistic-robot" then
             local inventory = selected.get_inventory(defines.inventory.robot_cargo)
             if inventory and #inventory >= 1 then
                 local itemstack = inventory[1]
                 if itemstack.valid_for_read and itemstack.type == "item-with-tags" and has_layout(itemstack.name) then
-                    factory = storage.saved_factories[itemstack.tags.id]
+                    mythos = storage.saved_factories[itemstack.tags.id]
                 end
             end
         else
-            factory = get_factory_by_entity(player.selected)
-            if preview_mode == "fancy" and factory then
-                mythos.update_overlay(factory)
-                set_camera(player, factory)
+            mythos = get_mythos_by_entity(player.selected)
+            if preview_mode == "fancy" and mythos then
+                mythos.update_overlay(mythos)
+                set_camera(player, mythos)
                 return
             end
         end
-        if factory then
-            mythos.update_overlay(factory)
-            set_minimap(player, factory, inside)
+        if mythos then
+            mythos.update_overlay(mythos)
+            set_minimap(player, mythos, inside)
             return
         end
     end
     unset_camera(player)
 end
-mythos.update_factory_preview = update_factory_preview
+mythos.update_mythos_preview = update_mythos_preview
 
 mythos.on_event({
     defines.events.on_player_display_resolution_changed,
@@ -237,7 +238,7 @@ mythos.on_event({
     defines.events.on_player_changed_surface
 }, function(event)
     local player = game.get_player(event.player_index)
-    mythos.update_factory_preview(player)
+    mythos.update_mythos_preview(player)
 end)
 
 local god_controllers = {
@@ -263,33 +264,33 @@ local function camera_teleport(player, surface, position)
 end
 
 local function open_outside_in_remote_view(player, pole)
-    for _, factory in pairs(storage.factories) do
-        if factory.built and factory.outside_surface.valid and mythos.get_or_create_inside_power_pole(factory) == pole then
-            local teleport_position = {x = factory.outside_x, y = factory.outside_y}
+    for _, mythos in pairs(storage.factories) do
+        if mythos.built and mythos.outside_surface.valid and mythos.get_or_create_inside_power_pole(mythos) == pole then
+            local teleport_position = {x = mythos.outside_x, y = mythos.outside_y}
 
-            local recursive_parent = remote_api.find_surrounding_factory(factory.outside_surface, teleport_position)
+            local recursive_parent = remote_api.find_surrounding_mythos(mythos.outside_surface, teleport_position)
             if recursive_parent then teleport_position = {recursive_parent.inside_x, recursive_parent.inside_y} end
 
-            mythos.update_overlay(factory)
-            camera_teleport(player, factory.outside_surface, teleport_position)
+            mythos.update_overlay(mythos)
+            camera_teleport(player, mythos.outside_surface, teleport_position)
             return
         end
     end
 end
 
-mythos.on_event("factory-open-outside-surface-to-remote-view", function(event)
+mythos.on_event("mythos-open-outside-surface-to-remote-view", function(event)
     local player = game.get_player(event.player_index)
     local entity = player.selected
     if not entity or not entity.valid then return end
 
-    if entity.name == "factory-power-pole" then -- teleport the camera to the outside of the factory
+    if entity.name == "mythos-power-pole" then -- teleport the camera to the outside of the mythos
         open_outside_in_remote_view(player, entity)
         return
     end
 
-    local factory = remote_api.get_factory_by_entity(entity)
-    if not factory then return end
+    local mythos = remote_api.get_mythos_by_entity(entity)
+    if not mythos then return end
 
-    local teleport_position = {factory.inside_x, factory.inside_y}
-    camera_teleport(player, factory.inside_surface, teleport_position)
+    local teleport_position = {mythos.inside_x, mythos.inside_y}
+    camera_teleport(player, mythos.inside_surface, teleport_position)
 end)

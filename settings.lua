@@ -1,4 +1,4 @@
-if mods["space-age"] then
+﻿if mods["space-age"] then
     data:extend {{
         type = "bool-setting",
         name = "mythos-cheap-research",
@@ -10,14 +10,6 @@ end
 
 data:extend {
     -- Startup
-    {
-        type = "bool-setting",
-        name = "mythos-space-architecture",
-        setting_type = "startup",
-        default_value = true,
-        hidden = not (mods["space-exploration"] or mods["space-age"]),
-        order = "a-a",
-    },
     {
         type = "bool-setting",
         name = "mythos-disable-new-tile-effects",
@@ -49,7 +41,7 @@ data:extend {
     },
     {
         type = "string-setting",
-        name = "mythos-factory-preview-mode",
+        name = "mythos-mythos-preview-mode",
         setting_type = "runtime-per-user",
         default_value = "fancy",
         allowed_values = {"fancy", "subtle", "off"},

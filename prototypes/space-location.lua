@@ -1,7 +1,7 @@
--- generate a surface prototype for the personal roboport travel surface. see travel.lua for more information
+﻿-- generate a surface prototype for the personal roboport travel surface. see travel.lua for more information
 data:extend {{
     type = "planet",
-    name = "factory-travel-surface",
+    name = "mythos-travel-surface",
     localised_name = "",
     hidden = true,
     icon = "__base__/graphics/icons/space-science-pack.png",
@@ -28,15 +28,15 @@ data:extend {{
 
 data:extend {{
     type = "sprite",
-    name = "factory-floor-space",
-    filename = "__mythos__/graphics/icon/factory-floor-space.png",
+    name = "mythos-floor-space",
+    filename = "__mythos__/graphics/icon/mythos-floor-space.png",
     width = 64,
     height = 64,
     scale = 1,
     flags = {"gui-icon"},
 }}
 
-local function generate_factory_floor_planet_icons(planet)
+local function generate_mythos_floor_planet_icons(planet)
     if not planet.icons and not planet.icon then
         error("Planet " .. planet.name .. " has no icon or icons")
     end
@@ -58,9 +58,9 @@ local function generate_factory_floor_planet_icons(planet)
         icon.shift = {x - 4, y - 4}
     end
 
-    -- add a factory icon to the bottom right corner
+    -- add a mythos icon to the bottom right corner
     table.insert(icons, {
-        icon = "__mythos__/graphics/icon/factory-subicon.png",
+        icon = "__mythos__/graphics/icon/mythos-subicon.png",
         icon_size = 64,
         scale = 1
     })
@@ -78,7 +78,7 @@ local function fog_color(planet)
     return {0.3, 0.3, 0.3}, {0.3, 0.3, 0.3}
 end
 
-local function update_surface_render_parameters(planet, factory_floor)
+local function update_surface_render_parameters(planet, mythos_floor)
     if not feature_flags.expansion_shaders then return end
 
     local color1, color2 = fog_color(planet.name)
@@ -97,23 +97,23 @@ local function update_surface_render_parameters(planet, factory_floor)
         fog_type = "vulcanus",
     }
 
-    factory_floor.surface_render_parameters = factory_floor.surface_render_parameters or {}
-    local srp = factory_floor.surface_render_parameters
+    mythos_floor.surface_render_parameters = mythos_floor.surface_render_parameters or {}
+    local srp = mythos_floor.surface_render_parameters
     srp.fog = fog
     srp.draw_sprite_clouds = false
     srp.clouds = nil
 
     if planet.name == "gleba" then -- No rain indoors
-        factory_floor.player_effects = nil
+        mythos_floor.player_effects = nil
     end
 end
 
-local function add_music(planet, factory_floor)
+local function add_music(planet, mythos_floor)
     for _, music in pairs(data.raw["ambient-sound"]) do
         if music.planet == planet.name or (music.track_type == "hero-track" and music.name:find(planet.name)) then
             local new_music = table.deepcopy(music)
-            new_music.name = music.name .. "-" .. factory_floor.name
-            new_music.planet = factory_floor.name
+            new_music.name = music.name .. "-" .. mythos_floor.name
+            new_music.planet = mythos_floor.name
             if new_music.track_type == "hero-track" then
                 new_music.track_type = "main-track"
                 new_music.weight = 10
@@ -123,47 +123,47 @@ local function add_music(planet, factory_floor)
     end
 end
 
--- we need to copy all existing planets in order to create factory floors for them
-local factory_floors = {}
+-- we need to copy all existing planets in order to create mythos floors for them
+local mythos_floors = {}
 for _, planet in pairs(data.raw.planet) do
     if planet.hidden and planet.name ~= "neo-nauvis" then goto continue end
     if planet.ignored_for_factorissimo then goto continue end
 
-    local factory_floor = table.deepcopy(planet)
+    local mythos_floor = table.deepcopy(planet)
     local original_localised_name = planet.localised_name or {"space-location-name." .. planet.name}
-    factory_floor.name = planet.name .. "-factory-floor"
-    factory_floor.localised_name = {"space-location-description.factory-floor-in-list", original_localised_name}
-    factory_floor.localised_description = {"space-location-description.factory-floor", original_localised_name, planet.name}
-    factory_floor.lightning_properties = nil
-    factory_floor.distance = factory_floor.distance - (1.25 * (factory_floor.magnitude or 1))
-    factory_floor.draw_orbit = false
-    factory_floor.solar_power_in_space = 0
-    factory_floor.fly_condition = true
-    factory_floor.auto_save_on_first_trip = false
-    factory_floor.asteroid_spawn_definitions = nil
-    factory_floor.order = "z-[factory-floor]" .. (planet.order or planet.name)
-    factory_floor.map_gen_settings = nil
-    factory_floor.surface_properties = factory_floor.surface_properties or {}
-    factory_floor.surface_properties["solar-power"] = 0
-    factory_floor.surface_properties["day-night-cycle"] = 0
-    factory_floor.surface_properties["ceiling"] = 0
-    factory_floor.magnitude = (factory_floor.magnitude or 1) / 2
-    factory_floor.starmap_icons = nil
-    factory_floor.starmap_icon = nil
-    factory_floor.icon = nil
-    factory_floor.icon_size = 64
-    factory_floor.icons = generate_factory_floor_planet_icons(planet)
-    factory_floor.starmap_icon_size = 115
-    factory_floor.factoriopedia_alternative = planet.name
-    factory_floor.hidden = true
-    factory_floor.hidden_in_factoriopedia = true
-    update_surface_render_parameters(planet, factory_floor)
-    add_music(planet, factory_floor)
-    table.insert(factory_floors, factory_floor)
+    mythos_floor.name = planet.name .. "-mythos-floor"
+    mythos_floor.localised_name = {"space-location-description.mythos-floor-in-list", original_localised_name}
+    mythos_floor.localised_description = {"space-location-description.mythos-floor", original_localised_name, planet.name}
+    mythos_floor.lightning_properties = nil
+    mythos_floor.distance = mythos_floor.distance - (1.25 * (mythos_floor.magnitude or 1))
+    mythos_floor.draw_orbit = false
+    mythos_floor.solar_power_in_space = 0
+    mythos_floor.fly_condition = true
+    mythos_floor.auto_save_on_first_trip = false
+    mythos_floor.asteroid_spawn_definitions = nil
+    mythos_floor.order = "z-[mythos-floor]" .. (planet.order or planet.name)
+    mythos_floor.map_gen_settings = nil
+    mythos_floor.surface_properties = mythos_floor.surface_properties or {}
+    mythos_floor.surface_properties["solar-power"] = 0
+    mythos_floor.surface_properties["day-night-cycle"] = 0
+    mythos_floor.surface_properties["ceiling"] = 0
+    mythos_floor.magnitude = (mythos_floor.magnitude or 1) / 2
+    mythos_floor.starmap_icons = nil
+    mythos_floor.starmap_icon = nil
+    mythos_floor.icon = nil
+    mythos_floor.icon_size = 64
+    mythos_floor.icons = generate_mythos_floor_planet_icons(planet)
+    mythos_floor.starmap_icon_size = 115
+    mythos_floor.factoriopedia_alternative = planet.name
+    mythos_floor.hidden = true
+    mythos_floor.hidden_in_factoriopedia = true
+    update_surface_render_parameters(planet, mythos_floor)
+    add_music(planet, mythos_floor)
+    table.insert(mythos_floors, mythos_floor)
 
     ::continue::
 end
-data:extend(factory_floors)
+data:extend(mythos_floors)
 
 -- ensure that the mythos planets are unlocked when the original planets are unlocked
 for _, technology in pairs(data.raw.technology) do
@@ -171,19 +171,19 @@ for _, technology in pairs(data.raw.technology) do
         local new_effects = {}
         for _, effect in pairs(technology.effects) do
             table.insert(new_effects, effect)
-            local planet, factory_floor
+            local planet, mythos_floor
 
             if type(effect) ~= "table" then goto continue end
             if effect.type ~= "unlock-space-location" then goto continue end
             if not effect.space_location then goto continue end
             local planet = data.raw.planet[effect.space_location]
             if not planet or not planet.name then goto continue end
-            local factory_floor = data.raw.planet[planet.name .. "-factory-floor"]
-            if not factory_floor then goto continue end
+            local mythos_floor = data.raw.planet[planet.name .. "-mythos-floor"]
+            if not mythos_floor then goto continue end
 
             table.insert(new_effects, {
                 type = "unlock-space-location",
-                space_location = factory_floor.name,
+                space_location = mythos_floor.name,
                 use_icon_overlay_constant = false,
             })
 

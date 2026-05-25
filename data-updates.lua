@@ -1,6 +1,6 @@
-require "prototypes.space-location"
+﻿require "prototypes.space-location"
 require "prototypes.ceiling"
-require "prototypes.factory-pumps"
+require "prototypes.mythos-pumps"
 require "prototypes.quality-tooltips"
 require "script.roboport.utility-constants"
 require "compat.pyanodon"
@@ -28,7 +28,7 @@ for _, type in ipairs {"linked-belt", "transport-belt", "underground-belt", "loa
         linked.type = "linked-belt"
         linked.next_upgrade = nil
         if not linked.localised_name then linked.localised_name = {"entity-name." .. linked.name} end
-        linked.name = "factory-linked-" .. linked.name
+        linked.name = "mythos-linked-" .. linked.name
         linked.structure = {
             direction_in = blank(),
             direction_out = blank()
@@ -82,7 +82,7 @@ if data.raw["assembling-machine"]["borehole-pump"] then
             },
             surface_conditions = table.deepcopy(data.raw["assembling-machine"]["borehole-pump"].surface_conditions)
         }}
-        table.insert(data.raw.technology["factory-upgrade-borehole-pump"].effects, {type = "unlock-recipe", recipe = recipe_name})
+        table.insert(data.raw.technology["mythos-upgrade-borehole-pump"].effects, {type = "unlock-recipe", recipe = recipe_name})
     end
 
     for _, tile in pairs(data.raw.tile) do
@@ -112,6 +112,4 @@ if data.raw["assembling-machine"]["borehole-pump"] then
     add_surface_conditions_to_borehole_recipe("borehole-pump-water", (data.raw["agricultural-tower"] or {})["agricultural-tower"])
 end
 
-data.raw.recipe["factory-1-instantiated-recycling"] = nil
-data.raw.recipe["factory-2-instantiated-recycling"] = nil
-data.raw.recipe["factory-3-instantiated-recycling"] = nil
+data.raw.recipe["mythos-1-instantiated-recycling"] = nil

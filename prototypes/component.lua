@@ -1,4 +1,4 @@
-local F = "__mythos__";
+﻿local F = "__mythos__";
 
 require("circuit-connector-sprites")
 
@@ -6,13 +6,13 @@ local function cwc0c()
     return {shadow = {red = {0, 0}, green = {0, 0}, copper = {0, 0}}, wire = {red = {0, 0}, green = {0, 0}, copper = {0, 0}}}
 end
 
--- Factory power I/O
+-- Mythos power I/O
 
 local function create_energy_interfaces(size, icon)
     local j = size / 2 - 0.3
     data:extend {{
         type = "electric-energy-interface",
-        name = "factory-power-input-" .. size,
+        name = "mythos-power-input-" .. size,
         icon = icon,
         icon_size = 64,
         flags = {"not-on-map"},
@@ -38,15 +38,13 @@ local function create_energy_interfaces(size, icon)
     }}
 end
 
-create_energy_interfaces(8, F .. "/graphics/icon/factory-1.png")
-create_energy_interfaces(12, F .. "/graphics/icon/factory-2.png")
-create_energy_interfaces(16, F .. "/graphics/icon/factory-3.png")
+create_energy_interfaces(8, F .. "/graphics/icon/mythos-1.png")
 
 -- Connection indicators
 
 data:extend {{
     type = "item",
-    name = "factory-connection-indicator-settings",
+    name = "mythos-connection-indicator-settings",
     icon = F .. "/graphics/indicator/blueprint-settings.png",
     stack_size = 1,
     hidden = true,
@@ -57,10 +55,10 @@ data:extend {{
 local function create_indicator(ctype, suffix, image)
     data:extend {{
         type                      = "storage-tank",
-        name                      = "factory-connection-indicator-" .. ctype .. "-" .. suffix,
-        localised_name            = {"entity-name.factory-connection-indicator-" .. ctype},
+        name                      = "mythos-connection-indicator-" .. ctype .. "-" .. suffix,
+        localised_name            = {"entity-name.mythos-connection-indicator-" .. ctype},
         flags                     = {"not-on-map", "player-creation", "not-deconstructable"},
-        placeable_by              = {item = "factory-connection-indicator-settings", count = 1},
+        placeable_by              = {item = "mythos-connection-indicator-settings", count = 1},
         max_health                = 500,
         selection_box             = {{-0.4, -0.4}, {0.4, 0.4}},
         collision_box             = {{-0.4, -0.4}, {0.4, 0.4}},
@@ -120,7 +118,7 @@ create_indicator("circuit", "b0", "yellow-dot")
 
 data:extend {{
     type = "simple-entity-with-force",
-    name = "factory-blueprint-anchor",
+    name = "mythos-blueprint-anchor",
     flags = {"player-creation", "placeable-off-grid"},
     hidden = true,
     collision_box = {{-0.5, -0.5}, {0.5, 0.5}},
@@ -131,7 +129,7 @@ data:extend {{
 local j = 0.99
 data:extend {{
     type = "electric-pole",
-    name = "factory-power-pole",
+    name = "mythos-power-pole",
     minable = nil,
     max_health = 500,
     selection_box = {{-j, -j}, {j, j}},
@@ -152,7 +150,7 @@ data:extend {{
 -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/239
 data:extend {{
     type = "electric-pole",
-    name = "factory-global-electric-network-pole",
+    name = "mythos-global-electric-network-pole",
     minable = nil,
     selection_box = {{0, 0}, {0, 0}},
     collision_box = {{0, 0}, {0, 0}},
@@ -172,19 +170,19 @@ data:extend {{
 -- This is required to allow the overlay controller to exist in blueprints.
 data:extend {{
     type = "item",
-    name = "factory-overlay-controller-settings",
+    name = "mythos-overlay-controller-settings",
     icon_size = data.raw.item["display-panel"].icon_size,
     icon = data.raw.item["display-panel"].icon,
     stack_size = 1,
     hidden = true,
     hidden_in_factoriopedia = true,
     flags = {"not-stackable", "only-in-cursor"},
-    place_result = "factory-overlay-controller"
+    place_result = "mythos-overlay-controller"
 }}
 
 local overlay_controller = table.deepcopy(data.raw["constant-combinator"]["constant-combinator"])
 overlay_controller.sprites = table.deepcopy(data.raw["display-panel"]["display-panel"].sprites)
-overlay_controller.name = "factory-overlay-controller"
+overlay_controller.name = "mythos-overlay-controller"
 overlay_controller.icon_size = data.raw.item["display-panel"].icon_size
 overlay_controller.icon = data.raw.item["display-panel"].icon
 overlay_controller.hidden = true
@@ -198,7 +196,7 @@ data:extend {overlay_controller}
 data:extend {
     {
         type = "radar",
-        name = "factory-hidden-radar",
+        name = "mythos-hidden-radar",
         selectable_in_game = false,
         flags = {"not-on-map", "hide-alt-info"},
         hidden = true,
@@ -215,7 +213,7 @@ data:extend {
     },
     {
         type = "heat-pipe",
-        name = "factory-heat-dummy-connector",
+        name = "mythos-heat-dummy-connector",
         selectable_in_game = false,
         flags = {"not-on-map", "hide-alt-info"},
         hidden = true,

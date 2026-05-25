@@ -1,8 +1,8 @@
-local blacklisted_names = require "script.roboport.blacklist"
+﻿local blacklisted_names = require "script.roboport.blacklist"
 local utility_constants = require "script.roboport.utility-constants"
 
 local STACK_SIZE_MULTIPLIER = 50
-local FACTORY_HIDDEN_CONSTRUCTION_ROBOT = "factory-hidden-construction-robot"
+local FACTORY_HIDDEN_CONSTRUCTION_ROBOT = "mythos-hidden-construction-robot"
 local TARGET_NUMBER_OF_ROBOTS_IN_NETWORK = 200
 
 local function get_tilebox(bounding_box)
@@ -153,8 +153,8 @@ local function request_platform_animation_for(entity)
     end
 end
 
-local function eject_unneeded_items(factory, requests_by_itemname)
-    local roboport_upgrade = factory.roboport_upgrade
+local function eject_unneeded_items(mythos, requests_by_itemname)
+    local roboport_upgrade = mythos.roboport_upgrade
     if not roboport_upgrade then return end
 
     local storage = roboport_upgrade.storage
@@ -200,9 +200,9 @@ local function eject_unneeded_items(factory, requests_by_itemname)
     end
 end
 
--- ensure we are actually in a factory floor. prevent contraband construction robots from being created
+-- ensure we are actually in a mythos floor. prevent contraband construction robots from being created
 mythos.on_event(defines.events.on_script_trigger_effect, function(event)
-    if event.effect_id ~= "factory-hidden-construction-robot-created" then return end
+    if event.effect_id ~= "mythos-hidden-construction-robot-created" then return end
     local construction_robot = event.target_entity
     assert(construction_robot and construction_robot.name == FACTORY_HIDDEN_CONSTRUCTION_ROBOT)
     if not storage.surface_factories[construction_robot.surface_index] then
@@ -228,8 +228,8 @@ mythos.on_event(defines.events.on_robot_built_entity, function(event)
 end)
 
 -- ensure the hidden roboport is always filled to TARGET_NUMBER_OF_ROBOTS_IN_NETWORK bots in network.
-local function ensure_target_number_of_robots(factory)
-    local roboport_upgrade = factory.roboport_upgrade
+local function ensure_target_number_of_robots(mythos)
+    local roboport_upgrade = mythos.roboport_upgrade
     if not roboport_upgrade then return end
     local hidden_roboport = roboport_upgrade.hidden_roboport
     if not hidden_roboport or not hidden_roboport.valid then return end
@@ -247,62 +247,62 @@ local function ensure_target_number_of_robots(factory)
 end
 
 mythos.on_nth_tick(367, function()
-    for _, factory in pairs(storage.factories) do
-        ensure_target_number_of_robots(factory)
+    for _, mythos in pairs(storage.factories) do
+        ensure_target_number_of_robots(mythos)
     end
 end)
 
-mythos.build_roboport_upgrade = function(factory)
-    if not factory.inside_surface.valid or not factory.outside_surface.valid then return end
-    local force = factory.force
+mythos.build_roboport_upgrade = function(mythos)
+    if not mythos.inside_surface.valid or not mythos.outside_surface.valid then return end
+    local force = mythos.force
     if not force.valid then return end
-    if not force.technologies["factory-interior-upgrade-roboport"].researched then return end
+    if not force.technologies["mythos-interior-upgrade-roboport"].researched then return end
 
-    local requester = factory.roboport_upgrade and factory.roboport_upgrade.requester and factory.roboport_upgrade.requester.valid and factory.roboport_upgrade.requester
-    local roboport = factory.roboport_upgrade and factory.roboport_upgrade.roboport and factory.roboport_upgrade.roboport.valid and factory.roboport_upgrade.roboport
-    local storage = factory.roboport_upgrade and factory.roboport_upgrade.storage and factory.roboport_upgrade.storage.valid and factory.roboport_upgrade.storage
-    local ejector = factory.roboport_upgrade and factory.roboport_upgrade.ejector and factory.roboport_upgrade.ejector.valid and factory.roboport_upgrade.ejector
-    local hidden_roboport = factory.roboport_upgrade and factory.roboport_upgrade.hidden_roboport and factory.roboport_upgrade.hidden_roboport.valid and factory.roboport_upgrade.hidden_roboport
+    local requester = mythos.roboport_upgrade and mythos.roboport_upgrade.requester and mythos.roboport_upgrade.requester.valid and mythos.roboport_upgrade.requester
+    local roboport = mythos.roboport_upgrade and mythos.roboport_upgrade.roboport and mythos.roboport_upgrade.roboport.valid and mythos.roboport_upgrade.roboport
+    local storage = mythos.roboport_upgrade and mythos.roboport_upgrade.storage and mythos.roboport_upgrade.storage.valid and mythos.roboport_upgrade.storage
+    local ejector = mythos.roboport_upgrade and mythos.roboport_upgrade.ejector and mythos.roboport_upgrade.ejector.valid and mythos.roboport_upgrade.ejector
+    local hidden_roboport = mythos.roboport_upgrade and mythos.roboport_upgrade.hidden_roboport and mythos.roboport_upgrade.hidden_roboport.valid and mythos.roboport_upgrade.hidden_roboport
 
-    if factory.building and factory.building.valid then
-        requester = requester or factory.outside_surface.create_entity {
-            name = factory.layout.outside_requester_chest or ("factory-requester-chest-" .. factory.building.name),
-            position = factory.building.position,
-            force = factory.force,
-            quality = factory.quality,
+    if mythos.building and mythos.building.valid then
+        requester = requester or mythos.outside_surface.create_entity {
+            name = mythos.layout.outside_requester_chest or ("mythos-requester-chest-" .. mythos.building.name),
+            position = mythos.building.position,
+            force = mythos.force,
+            quality = mythos.quality,
         }
 
-        ejector = ejector or factory.outside_surface.create_entity {
-            name = factory.layout.outside_ejector_chest or ("factory-eject-chest-" .. factory.building.name),
-            position = factory.building.position,
-            force = factory.force,
-            quality = factory.quality,
+        ejector = ejector or mythos.outside_surface.create_entity {
+            name = mythos.layout.outside_ejector_chest or ("mythos-eject-chest-" .. mythos.building.name),
+            position = mythos.building.position,
+            force = mythos.force,
+            quality = mythos.quality,
         }
     else
         requester = nil
         ejector = nil
     end
-    roboport = roboport or factory.inside_surface.create_entity {
-        name = "factory-construction-roboport",
-        position = {-factory.layout.inside_energy_x + factory.inside_x, factory.layout.inside_energy_y + factory.inside_y},
-        force = factory.force,
-        quality = factory.quality,
+    roboport = roboport or mythos.inside_surface.create_entity {
+        name = "mythos-construction-roboport",
+        position = {-mythos.layout.inside_energy_x + mythos.inside_x, mythos.layout.inside_energy_y + mythos.inside_y},
+        force = mythos.force,
+        quality = mythos.quality,
     }
     roboport.backer_name = ""
 
-    hidden_roboport = hidden_roboport or factory.inside_surface.create_entity {
-        name = "factory-hidden-construction-roboport",
+    hidden_roboport = hidden_roboport or mythos.inside_surface.create_entity {
+        name = "mythos-hidden-construction-roboport",
         position = roboport.position,
-        force = factory.force,
+        force = mythos.force,
     }
     hidden_roboport.backer_name = ""
-    ensure_target_number_of_robots(factory)
+    ensure_target_number_of_robots(mythos)
 
-    storage = storage or factory.inside_surface.create_entity {
-        name = "factory-construction-chest",
-        position = {-factory.layout.overlays.inside_x + factory.inside_x, factory.layout.overlays.inside_y + factory.inside_y},
-        force = factory.force,
-        quality = factory.quality,
+    storage = storage or mythos.inside_surface.create_entity {
+        name = "mythos-construction-chest",
+        position = {-mythos.layout.overlays.inside_x + mythos.inside_x, mythos.layout.overlays.inside_y + mythos.inside_y},
+        force = mythos.force,
+        quality = mythos.quality,
     }
 
     for _, entity in pairs {roboport, storage, requester, ejector, hidden_roboport} do
@@ -311,22 +311,22 @@ mythos.build_roboport_upgrade = function(factory)
         entity.rotatable = false
     end
 
-    factory.roboport_upgrade = {
+    mythos.roboport_upgrade = {
         roboport = roboport,
         storage = storage,
         requester = requester,
         ejector = ejector,
         hidden_roboport = hidden_roboport,
-        item_request_proxies = (factory.roboport_upgrade and factory.roboport_upgrade.item_request_proxies) or {}
+        item_request_proxies = (mythos.roboport_upgrade and mythos.roboport_upgrade.item_request_proxies) or {}
     }
 end
 
-mythos.cleanup_factory_roboport_exterior_chest = function(factory)
-    if not factory.roboport_upgrade then return end
-    factory.roboport_upgrade.item_request_proxies = {}
+mythos.cleanup_mythos_roboport_exterior_chest = function(mythos)
+    if not mythos.roboport_upgrade then return end
+    mythos.roboport_upgrade.item_request_proxies = {}
 
-    local requester = factory.roboport_upgrade and factory.roboport_upgrade.requester and factory.roboport_upgrade.requester.valid and factory.roboport_upgrade.requester
-    local ejector = factory.roboport_upgrade and factory.roboport_upgrade.ejector and factory.roboport_upgrade.ejector.valid and factory.roboport_upgrade.ejector
+    local requester = mythos.roboport_upgrade and mythos.roboport_upgrade.requester and mythos.roboport_upgrade.requester.valid and mythos.roboport_upgrade.requester
+    local ejector = mythos.roboport_upgrade and mythos.roboport_upgrade.ejector and mythos.roboport_upgrade.ejector.valid and mythos.roboport_upgrade.ejector
 
     local chests_to_cleanup = {}
     if requester then chests_to_cleanup[#chests_to_cleanup + 1] = requester end
@@ -355,17 +355,17 @@ end
 local GHOST_PROTOTYPE_NAME = "entity-ghost"
 local TILE_GHOST_PROTOTYPE_NAME = "tile-ghost"
 
-local function get_construction_requests_by_factory()
-    local missing_ghosts_per_factory = {}
+local function get_construction_requests_by_mythos()
+    local missing_ghosts_per_mythos = {}
     local factories_that_need_repair_packs = {}
 
     for surface_index, factories in pairs(storage.surface_factories) do
         if not game.get_surface(surface_index) then goto invalid_surface end
 
         local forces_to_check = {}
-        for _, factory in pairs(factories) do
-            local force = factory.force
-            if force.valid and not forces_to_check[force.index] and force.technologies["factory-interior-upgrade-roboport"].researched then
+        for _, mythos in pairs(factories) do
+            local force = mythos.force
+            if force.valid and not forces_to_check[force.index] and force.technologies["mythos-interior-upgrade-roboport"].researched then
                 -- theres no API function to get the current construction requests
                 -- so instead we are reading it from the player's alerts! (this is a bad idea)
                 -- find a valid online player to check the alerts for
@@ -386,16 +386,16 @@ local function get_construction_requests_by_factory()
                 ghost = ghost.target
                 if not ghost then goto continue end -- this can happen if the alerts are not updated yet but the entity is invalid
                 --if ghost.is_registered_for_construction() then goto continue end -- we only care about ghosts that are not already being constructed
-                local factory = remote_api.find_surrounding_factory_by_surface_index(surface_index, ghost.position)
-                if not factory or not factory.roboport_upgrade then goto continue end
-                if factory.inactive or not factory.built or not factory.building.valid then goto continue end
-                if not factory.inside_surface.valid or not factory.outside_surface.valid then goto continue end
+                local mythos = remote_api.find_surrounding_mythos_by_surface_index(surface_index, ghost.position)
+                if not mythos or not mythos.roboport_upgrade then goto continue end
+                if mythos.inactive or not mythos.built or not mythos.building.valid then goto continue end
+                if not mythos.inside_surface.valid or not mythos.outside_surface.valid then goto continue end
 
-                local missing_ghosts = missing_ghosts_per_factory[factory]
+                local missing_ghosts = missing_ghosts_per_mythos[mythos]
                 if missing_ghosts then
                     missing_ghosts[#missing_ghosts + 1] = ghost
                 else
-                    missing_ghosts_per_factory[factory] = {ghost}
+                    missing_ghosts_per_mythos[mythos] = {ghost}
                 end
 
                 ::continue::
@@ -408,11 +408,11 @@ local function get_construction_requests_by_factory()
 
             local not_enough_repair_packs = alerts[defines.alert_type.not_enough_repair_packs] or {}
             for _, alert in pairs(not_enough_repair_packs) do
-                local factory = remote_api.find_surrounding_factory_by_surface_index(surface_index, alert.position)
-                if not factory or not factory.roboport_upgrade then goto continue end
-                if factory.inactive or not factory.built or not factory.building.valid then goto continue end
-                if not factory.inside_surface.valid or not factory.outside_surface.valid then goto continue end
-                factories_that_need_repair_packs[factory] = true
+                local mythos = remote_api.find_surrounding_mythos_by_surface_index(surface_index, alert.position)
+                if not mythos or not mythos.roboport_upgrade then goto continue end
+                if mythos.inactive or not mythos.built or not mythos.building.valid then goto continue end
+                if not mythos.inside_surface.valid or not mythos.outside_surface.valid then goto continue end
+                factories_that_need_repair_packs[mythos] = true
                 ::continue::
             end
         end
@@ -420,8 +420,8 @@ local function get_construction_requests_by_factory()
         ::invalid_surface::
     end
 
-    local construction_requests_by_factory = {}
-    for factory, missing_ghosts in pairs(missing_ghosts_per_factory) do
+    local construction_requests_by_mythos = {}
+    for mythos, missing_ghosts in pairs(missing_ghosts_per_mythos) do
         local requests_by_itemname = {}
         for _, ghost in pairs(missing_ghosts) do
             local items_to_place
@@ -449,53 +449,53 @@ local function get_construction_requests_by_factory()
             ::continue::
         end
 
-        -- dont request instantiated factories. it already requests the raw factory item
-        requests_by_itemname["factory-1-instantiated"] = nil -- hardcoding these is not ideal
-        requests_by_itemname["factory-2-instantiated"] = nil
-        requests_by_itemname["factory-3-instantiated"] = nil
+        -- dont request instantiated factories. it already requests the raw mythos item
+        requests_by_itemname["mythos-1-instantiated"] = nil -- hardcoding these is not ideal
+        requests_by_itemname["mythos-2-instantiated"] = nil
+        requests_by_itemname["mythos-3-instantiated"] = nil
 
-        construction_requests_by_factory[factory] = requests_by_itemname
+        construction_requests_by_mythos[mythos] = requests_by_itemname
     end
 
     local quality = "normal"
     local item_name = "repair-pack"
 
-    for factory in pairs(factories_that_need_repair_packs) do
-        construction_requests_by_factory[factory] = construction_requests_by_factory[factory] or {}
-        local requests_by_itemname = construction_requests_by_factory[factory]
+    for mythos in pairs(factories_that_need_repair_packs) do
+        construction_requests_by_mythos[mythos] = construction_requests_by_mythos[mythos] or {}
+        local requests_by_itemname = construction_requests_by_mythos[mythos]
         requests_by_itemname[item_name] = requests_by_itemname[item_name] or {}
         requests_by_itemname[item_name][quality] = requests_by_itemname[item_name][quality] or 5
     end
 
-    return construction_requests_by_factory
+    return construction_requests_by_mythos
 end
 
 local create_or_remove_item_request_proxies -- function stub
 
 mythos.on_nth_tick(257, function()
-    local construction_requests_by_factory = get_construction_requests_by_factory()
+    local construction_requests_by_mythos = get_construction_requests_by_mythos()
 
-    -- update each factory and create item-request-proxy for unfulfilled construction requests
-    for _, factory in pairs(storage.factories) do
-        if not factory.inactive and factory.built then
-            local requests_by_itemname = construction_requests_by_factory[factory]
-            eject_unneeded_items(factory, requests_by_itemname or {})
+    -- update each mythos and create item-request-proxy for unfulfilled construction requests
+    for _, mythos in pairs(storage.factories) do
+        if not mythos.inactive and mythos.built then
+            local requests_by_itemname = construction_requests_by_mythos[mythos]
+            eject_unneeded_items(mythos, requests_by_itemname or {})
             if requests_by_itemname then
-                create_or_remove_item_request_proxies(factory, requests_by_itemname)
-            elseif factory.roboport_upgrade and next(factory.roboport_upgrade.item_request_proxies) then
-                for _, by_quality in pairs(factory.roboport_upgrade.item_request_proxies) do
+                create_or_remove_item_request_proxies(mythos, requests_by_itemname)
+            elseif mythos.roboport_upgrade and next(mythos.roboport_upgrade.item_request_proxies) then
+                for _, by_quality in pairs(mythos.roboport_upgrade.item_request_proxies) do
                     for _, proxy in pairs(by_quality) do
                         proxy.destroy()
                     end
                 end
-                factory.roboport_upgrade.item_request_proxies = {}
+                mythos.roboport_upgrade.item_request_proxies = {}
             end
         end
     end
 end)
 
-create_or_remove_item_request_proxies = function(factory, requests_by_itemname)
-    local roboport_upgrade = factory.roboport_upgrade
+create_or_remove_item_request_proxies = function(mythos, requests_by_itemname)
+    local roboport_upgrade = mythos.roboport_upgrade
     local item_request_proxies = roboport_upgrade.item_request_proxies
 
     local requester = roboport_upgrade.requester
@@ -583,8 +583,8 @@ end
 
 -- smaller update function to transfer items from the requester chest to the construction chest
 mythos.on_nth_tick(43, function()
-    for _, factory in pairs(storage.factories) do
-        local roboport_upgrade = factory.roboport_upgrade
+    for _, mythos in pairs(storage.factories) do
+        local roboport_upgrade = mythos.roboport_upgrade
         if not roboport_upgrade then goto continue end
         local requester = roboport_upgrade.requester
         if not requester or not requester.valid then goto continue end

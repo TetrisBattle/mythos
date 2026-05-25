@@ -1,17 +1,17 @@
-local has_layout = has_layout
+﻿local has_layout = has_layout
 
 local function setup_blueprint_tags(blueprint, mapping)
     for i, entity in pairs(mapping) do
-        local factory = storage.factories_by_entity[entity.unit_number]
-        if factory and has_layout(entity.name) then
-            blueprint.set_blueprint_entity_tag(i, "id", factory.id)
+        local mythos = storage.factories_by_entity[entity.unit_number]
+        if mythos and has_layout(entity.name) then
+            blueprint.set_blueprint_entity_tag(i, "id", mythos.id)
         elseif mythos.connection_indicator_names[entity.name] then
-            local factory = remote_api.find_surrounding_factory(entity.surface, entity.position)
-            if factory then
-                for cid, indicator in pairs(factory.connection_indicators) do
+            local mythos = remote_api.find_surrounding_mythos(entity.surface, entity.position)
+            if mythos then
+                for cid, indicator in pairs(mythos.connection_indicators) do
                     if indicator.valid and indicator.unit_number == entity.unit_number then
                         local ctype = mythos.connection_indicator_names[entity.name]
-                        local settings = mythos.get_connection_settings(factory, cid, ctype)
+                        local settings = mythos.get_connection_settings(mythos, cid, ctype)
                         for k, v in pairs(settings) do
                             blueprint.set_blueprint_entity_tag(i, k, v)
                         end
@@ -44,8 +44,8 @@ function mythos.copy_entity_ghosts(source, destination)
     if not source.inside_surface.valid or not destination.inside_surface.valid then return end
 
     local j = 60
-    local first_anchor = source.inside_surface.create_entity {name = "factory-blueprint-anchor", position = {source.inside_x - j, source.inside_y - j}, force = source.force}
-    local second_anchor = source.inside_surface.create_entity {name = "factory-blueprint-anchor", position = {source.inside_x + j, source.inside_y + j}, force = source.force}
+    local first_anchor = source.inside_surface.create_entity {name = "mythos-blueprint-anchor", position = {source.inside_x - j, source.inside_y - j}, force = source.force}
+    local second_anchor = source.inside_surface.create_entity {name = "mythos-blueprint-anchor", position = {source.inside_x + j, source.inside_y + j}, force = source.force}
 
     local inventory = game.create_inventory(1)
     inventory.insert {name = "blueprint", count = 1}
@@ -72,7 +72,7 @@ function mythos.copy_entity_ghosts(source, destination)
         mapping = mapping
     })
 
-    mythos.copy_overlay_between_factory_buildings(source, destination)
+    mythos.copy_overlay_between_mythos_buildings(source, destination)
 
     -- Delay this function a bit to give the radars a chance to scan the area
     mythos.execute_later("paste_blueprint", 240, inventory, destination)
@@ -81,7 +81,7 @@ function mythos.copy_entity_ghosts(source, destination)
     second_anchor.destroy()
 end
 
--- setup ghost tags for factory components
+-- setup ghost tags for mythos components
 mythos.on_event(defines.events.on_player_setup_blueprint, function(event)
     local player = game.get_player(event.player_index)
     local blueprint = player.blueprint_to_setup
@@ -99,10 +99,10 @@ mythos.on_event(defines.events.on_player_setup_blueprint, function(event)
     setup_blueprint_tags(blueprint, mapping)
 end)
 
-local function get_cpos(factory, position)
+local function get_cpos(mythos, position)
     local x, y = position.x or position[1], position.y or position[2]
-    for _, cpos in pairs(factory.layout.connections) do
-        if cpos.inside_x + factory.inside_x + cpos.indicator_dx == x and cpos.inside_y + factory.inside_y + cpos.indicator_dy == y then
+    for _, cpos in pairs(mythos.layout.connections) do
+        if cpos.inside_x + mythos.inside_x + cpos.indicator_dx == x and cpos.inside_y + mythos.inside_y + cpos.indicator_dy == y then
             return cpos
         end
     end
@@ -112,31 +112,31 @@ local function unpack_connection_settings_from_blueprint(entity)
     if not entity.tags or not next(entity.tags) then return end
     local surface = entity.surface
     local position = entity.position
-    local factory = remote_api.find_surrounding_factory(surface, position)
-    if not factory then return end
+    local mythos = remote_api.find_surrounding_mythos(surface, position)
+    if not mythos then return end
 
     local ctype = mythos.connection_indicator_names[entity.ghost_name]
-    local cpos = get_cpos(factory, position)
+    local cpos = get_cpos(mythos, position)
     if cpos then
         local cid = cpos.id
-        local settings = mythos.get_connection_settings(factory, cid, ctype)
+        local settings = mythos.get_connection_settings(mythos, cid, ctype)
         for k, v in pairs(entity.tags) do
             settings[k] = v
         end
-        local conn = factory.connections[cid]
+        local conn = mythos.connections[cid]
         if conn then
             mythos.destroy_connection(conn)
-            mythos.init_connection(factory, cid, cpos)
+            mythos.init_connection(mythos, cid, cpos)
         end
         return
     end
 end
 
 local BLUEPRINTABLE_FACTORY_PERIPHERALS = {
-    ["factory-construction-roboport"] = true,
-    ["factory-construction-chest"] = true,
-    ["factory-overlay-controller"] = true,
-    ["factory-blueprint-anchor"] = true,
+    ["mythos-construction-roboport"] = true,
+    ["mythos-construction-chest"] = true,
+    ["mythos-overlay-controller"] = true,
+    ["mythos-blueprint-anchor"] = true,
 }
 
 mythos.on_event(mythos.events.on_built(), function(event)

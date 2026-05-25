@@ -1,12 +1,12 @@
-require "compat.efficient-smelting"
+﻿require "compat.efficient-smelting"
 require "compat.gregtorio"
 
-data.raw.item["factory-hidden-construction-robot"].stack_size = 1000
+data.raw.item["mythos-hidden-construction-robot"].stack_size = 1000
 
 -- Auto-rebalance the roboport upgrade tech such that it costs the same packs as the construction-robotics tech.
 local construction_robotics = data.raw.technology["construction-robotics"]
-local roboport_upgrade = data.raw.technology["factory-interior-upgrade-roboport"]
-local architecture_2 = data.raw.technology["factory-architecture-t2"]
+local roboport_upgrade = data.raw.technology["mythos-interior-upgrade-roboport"]
+local architecture_2 = data.raw.technology["mythos-architecture-t2"]
 if construction_robotics and roboport_upgrade and architecture_2 then
     local construction_robotics = construction_robotics.unit
     local roboport_upgrade = roboport_upgrade.unit

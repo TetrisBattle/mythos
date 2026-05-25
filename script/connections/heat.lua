@@ -1,13 +1,13 @@
-local Heat = {}
+﻿local Heat = {}
 
 Heat.color = {r = 228 / 255, g = 236 / 255, b = 0}
 Heat.entity_types = {"heat-pipe"}
-Heat.unlocked = function(force) return force.technologies["factory-connection-type-heat"].researched end
+Heat.unlocked = function(force) return force.technologies["mythos-connection-type-heat"].researched end
 
-Heat.connect = function(factory, cid, cpos, outside_entity, inside_entity)
+Heat.connect = function(mythos, cid, cpos, outside_entity, inside_entity)
     local inside_link = inside_entity.surface.create_entity {
-        name = "factory-heat-dummy-connector",
-        position = {factory.inside_x + cpos.inside_x + cpos.indicator_dx, factory.inside_y + cpos.inside_y + cpos.indicator_dy},
+        name = "mythos-heat-dummy-connector",
+        position = {mythos.inside_x + cpos.inside_x + cpos.indicator_dx, mythos.inside_y + cpos.inside_y + cpos.indicator_dy},
         create_build_effect_smoke = false,
         raise_built = false,
         force = inside_entity.force
@@ -16,7 +16,7 @@ Heat.connect = function(factory, cid, cpos, outside_entity, inside_entity)
     inside_link.active = false
 
     local outside_link = outside_entity.surface.create_entity {
-        name = "factory-heat-dummy-connector",
+        name = "mythos-heat-dummy-connector",
         position = {outside_entity.position.x - cpos.indicator_dx, outside_entity.position.y - cpos.indicator_dy},
         create_build_effect_smoke = false,
         raise_built = false,
@@ -70,7 +70,7 @@ Heat.adjust = function(conn, positive)
             end
         end
         conn._settings.delay = delay
-        return {"factory-connection-text.update-faster", delay}
+        return {"mythos-connection-text.update-faster", delay}
     else
         for i = 1, #DELAYS do
             if DELAYS[i] > delay then
@@ -79,7 +79,7 @@ Heat.adjust = function(conn, positive)
             end
         end
         conn._settings.delay = delay
-        return {"factory-connection-text.update-slower", delay}
+        return {"mythos-connection-text.update-slower", delay}
     end
 end
 

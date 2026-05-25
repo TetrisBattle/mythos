@@ -1,4 +1,4 @@
-local function spawn_radiative_tower(surface, x, y)
+﻿local function spawn_radiative_tower(surface, x, y)
     local e = surface.create_entity {
         name = "cerys-fulgoran-radiative-tower-contracted-container",
         position = {x, y},
@@ -23,14 +23,14 @@ local DEFAULT_CERYS_TOWER_POSITIONS = {
     {-10, -10},
 }
 
-mythos.spawn_cerys_entities = function(factory)
+mythos.spawn_cerys_entities = function(mythos)
     if not script.active_mods["Cerys-Moon-of-Fulgora"] then return end
 
-    local surface = factory.inside_surface
-    if surface.name ~= "cerys-factory-floor" then return end
-    local x, y = factory.inside_x, factory.inside_y
+    local surface = mythos.inside_surface
+    if surface.name ~= "cerys-mythos-floor" then return end
+    local x, y = mythos.inside_x, mythos.inside_y
 
-    for _, tower_position in pairs(factory.layout.cerys_radiative_towers or DEFAULT_CERYS_TOWER_POSITIONS) do
+    for _, tower_position in pairs(mythos.layout.cerys_radiative_towers or DEFAULT_CERYS_TOWER_POSITIONS) do
         spawn_radiative_tower(surface, x + tower_position[1], y + tower_position[2])
     end
 end
