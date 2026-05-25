@@ -2,7 +2,7 @@
 
 Heat.color = {r = 228 / 255, g = 236 / 255, b = 0}
 Heat.entity_types = {"heat-pipe"}
-Heat.unlocked = function(force) return force.technologies["mythos-connection-type-heat"].researched end
+Heat.unlocked = function(force) return true end
 
 Heat.connect = function(mythos, cid, cpos, outside_entity, inside_entity)
     local inside_link = inside_entity.surface.create_entity {

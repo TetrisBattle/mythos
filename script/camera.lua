@@ -82,8 +82,6 @@ local function update_camera(player)
 end
 
 local function set_camera(player, mythos)
-    local has_tech = player.force.technologies["mythos-interior-upgrade-lights"].researched
-    if not has_tech then return end
 
     if not mythos or mythos.inactive then return end
     local inside_surface = mythos.inside_surface

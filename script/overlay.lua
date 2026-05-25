@@ -1,5 +1,4 @@
 ﻿local function build_display_upgrade(mythos)
-    if not mythos.force.technologies["mythos-interior-upgrade-display"].researched then return end
     if mythos.inside_overlay_controller and mythos.inside_overlay_controller.valid then return end
     if not mythos.inside_surface or not mythos.inside_surface.valid then return end
 

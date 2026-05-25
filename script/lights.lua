@@ -7,7 +7,7 @@ function mythos.build_lights_upgrade(mythos)
     if not mythos.inside_surface.valid then return end
     local force = mythos.force
     if not force.valid then return end
-    local has_tech = force.technologies["mythos-interior-upgrade-lights"].researched
+    local has_tech = true
 
     if PERMABLACK_SURFACES[mythos.inside_surface.name] then
         has_tech = false

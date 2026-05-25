@@ -3,7 +3,7 @@
     if not force.valid then return end
     if not mythos.inside_surface.valid or not mythos.outside_surface.valid then return end
 
-    local has_tech = force.technologies["mythos-upgrade-greenhouse"] and force.technologies["mythos-upgrade-greenhouse"].researched
+    local has_tech = true
     if not has_tech then
         mythos.inside_surface.set_property("solar-power", 0)
         return

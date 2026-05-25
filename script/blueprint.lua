@@ -5,7 +5,7 @@ local function setup_blueprint_tags(blueprint, mapping)
         local mythos = storage.factories_by_entity[entity.unit_number]
         if mythos and has_layout(entity.name) then
             blueprint.set_blueprint_entity_tag(i, "id", mythos.id)
-        elseif mythos.connection_indicator_names[entity.name] then
+        elseif mythos and mythos.connection_indicator_names[entity.name] then
             local mythos = remote_api.find_surrounding_mythos(entity.surface, entity.position)
             if mythos then
                 for cid, indicator in pairs(mythos.connection_indicators) do

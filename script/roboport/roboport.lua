@@ -256,7 +256,6 @@ mythos.build_roboport_upgrade = function(mythos)
     if not mythos.inside_surface.valid or not mythos.outside_surface.valid then return end
     local force = mythos.force
     if not force.valid then return end
-    if not force.technologies["mythos-interior-upgrade-roboport"].researched then return end
 
     local requester = mythos.roboport_upgrade and mythos.roboport_upgrade.requester and mythos.roboport_upgrade.requester.valid and mythos.roboport_upgrade.requester
     local roboport = mythos.roboport_upgrade and mythos.roboport_upgrade.roboport and mythos.roboport_upgrade.roboport.valid and mythos.roboport_upgrade.roboport
@@ -365,7 +364,7 @@ local function get_construction_requests_by_mythos()
         local forces_to_check = {}
         for _, mythos in pairs(factories) do
             local force = mythos.force
-            if force.valid and not forces_to_check[force.index] and force.technologies["mythos-interior-upgrade-roboport"].researched then
+            if force.valid and not forces_to_check[force.index] then
                 -- theres no API function to get the current construction requests
                 -- so instead we are reading it from the player's alerts! (this is a bad idea)
                 -- find a valid online player to check the alerts for

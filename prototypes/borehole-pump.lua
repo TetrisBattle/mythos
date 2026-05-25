@@ -39,31 +39,6 @@ data:extend {{
     energy_required = 5,
 }}
 
-data:extend {{
-    type = "technology",
-    name = "mythos-upgrade-borehole-pump",
-    icon = F .. "/graphics/technology/mythos-upgrade-borehole-pump.png",
-    icon_size = 256,
-    prerequisites = {"mythos-architecture-t1", "electromagnetic-science-pack"},
-    effects = {
-        {type = "unlock-recipe", recipe = "borehole-pump"},
-    },
-    unit = {
-        count = 2000,
-        ingredients = {
-            {"automation-science-pack",      1},
-            {"logistic-science-pack",        1},
-            {"chemical-science-pack",        1},
-            {"space-science-pack",           1},
-            {"utility-science-pack",         1},
-            {"metallurgic-science-pack",     1},
-            {"electromagnetic-science-pack", 1},
-        },
-        time = 60
-    },
-    order = pf .. "d-c",
-}}
-
 local function get_shifted_underground_pipe_picture(direction, shift)
     local underground_pipe_pictures = data.raw["pipe-to-ground"]["pipe-to-ground"].pictures
     local picture = table.deepcopy(underground_pipe_pictures[direction])

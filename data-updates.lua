@@ -82,7 +82,7 @@ if data.raw["assembling-machine"]["borehole-pump"] then
             },
             surface_conditions = table.deepcopy(data.raw["assembling-machine"]["borehole-pump"].surface_conditions)
         }}
-        table.insert(data.raw.technology["mythos-upgrade-borehole-pump"].effects, {type = "unlock-recipe", recipe = recipe_name})
+        data.raw.recipe[recipe_name].enabled = true
     end
 
     for _, tile in pairs(data.raw.tile) do

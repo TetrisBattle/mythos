@@ -111,8 +111,8 @@ local function set_mythos_active_or_inactive(mythos)
             return true
         end
 
-        local has_tech_t2 = surrounding_mythos.force.technologies["mythos-recursion-t2"].researched
-        local has_tech_t1 = has_tech_t2 or surrounding_mythos.force.technologies["mythos-recursion-t1"].researched
+        local has_tech_t2 = true
+        local has_tech_t1 = true
 
         local inner_tier = mythos.layout.tier
         local outer_tier = surrounding_mythos.layout.tier
@@ -175,46 +175,8 @@ local function activate_factories()
 end
 mythos.on_event(mythos.events.on_init(), activate_factories)
 
-mythos.on_event({defines.events.on_research_finished, defines.events.on_research_reversed}, function(event)
-    if not storage.factories then return end -- In case any mod or scenario script calls LuaForce.research_all_technologies() during its on_init
-    local name = event.research.name
-    if name == "mythos-recursion-t1" or name == "mythos-recursion-t2" then
-        activate_factories()
-    else
-        for _, mythos in pairs(storage.factories) do build_mythos_upgrades(mythos) end
-    end
-end)
-
-local function update_recursion_techs(force)
-    if settings.global["mythos-hide-recursion"] and settings.global["mythos-hide-recursion"].value then
-        force.technologies["mythos-recursion-t1"].enabled = false
-        force.technologies["mythos-recursion-t2"].enabled = false
-    elseif settings.global["mythos-hide-recursion-2"] and settings.global["mythos-hide-recursion-2"].value then
-        force.technologies["mythos-recursion-t1"].enabled = true
-        force.technologies["mythos-recursion-t2"].enabled = false
-    else
-        force.technologies["mythos-recursion-t1"].enabled = true
-        force.technologies["mythos-recursion-t2"].enabled = true
-    end
-end
-
 mythos.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
     if event.setting_type == "runtime-global" then activate_factories() end
-
-    for _, force in pairs(game.forces) do
-        update_recursion_techs(force)
-    end
-end)
-
-mythos.on_event(defines.events.on_force_created, function(event)
-    local force = event.force
-    update_recursion_techs(force)
-end)
-
-mythos.on_event(mythos.events.on_init(), function()
-    for _, force in pairs(game.forces) do
-        update_recursion_techs(force)
-    end
 end)
 
 -- MYTHOS GENERATION --

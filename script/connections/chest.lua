@@ -2,7 +2,7 @@
 
 Chest.color = {r = 200 / 255, g = 110 / 255, b = 38 / 255}
 Chest.entity_types = {"container", "logistic-container", "infinity-container", "linked-container"}
-Chest.unlocked = function(force) return force.technologies["mythos-connection-type-chest"].researched end
+Chest.unlocked = function(force) return true end
 
 local blacklist = {"mythos-overlay-controller", "mythos-requester-chest-mythos-1", "mythos-requester-chest-mythos-2", "mythos-requester-chest-mythos-3"}
 local blacklisted = {}

@@ -2,7 +2,7 @@
 
 Circuit.color = {r = 255 / 255, g = 61 / 255, b = 61 / 255}
 Circuit.entity_types = {"mythos-circuit-connector"}
-Circuit.unlocked = function(force) return force.technologies["mythos-connection-type-circuit"].researched end
+Circuit.unlocked = function(force) return true end
 
 local function connect_two_poles_with_circuit_wires(pole_1, pole_2)
     for _, connector_type in pairs {

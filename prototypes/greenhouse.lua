@@ -4,24 +4,6 @@ if mods["space-is-fake"] then return end
 local F = "__mythos__"
 local pf = "p-q-"
 
-data:extend {{
-    name = "mythos-upgrade-greenhouse",
-    type = "technology",
-    icon = F .. "/graphics/technology/mythos-upgrade-greenhouse.png",
-    icon_size = 256,
-    prerequisites = {"mythos-architecture-t1", "mythos-interior-upgrade-lights"},
-    effects = {{
-        type = "nothing",
-        effect_description = ""
-    }},
-    unit = {
-        count = 2000,
-        ingredients = {{"automation-science-pack", 1}, {"logistic-science-pack", 1}, {"chemical-science-pack", 1}, {"production-science-pack", 1}},
-        time = 60
-    },
-    order = pf .. "a-d",
-}}
-
 for _, tower in pairs(data.raw["agricultural-tower"]) do
     tower.surface_conditions = tower.surface_conditions or {}
     table.insert(tower.surface_conditions, {
