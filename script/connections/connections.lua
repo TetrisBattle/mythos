@@ -52,7 +52,7 @@ mythos.on_event(mythos.events.on_init(), function()
 
     -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/206
     for _, mythos in pairs(storage.factories) do
-        if mythos.built then mythos.recheck_mythos_connections(mythos) end
+        if mythos.built then M.recheck_mythos_connections(mythos) end
     end
 end)
 

@@ -71,14 +71,6 @@ local function which_surface_should_this_new_mythos_be_placed_on(layout, buildin
     end
 end
 
-local function is_legacy_mythos_floor(surface_name)
-    return surface_name:match("^%d+%-mythos%-floor$") ~= nil
-end
-
-local function can_skip_mythos_surface_check()
-    return script.active_mods["warptorio-space-age"] or script.active_mods["Warp-Drive-Machine"] or script.active_mods["warptorio2"]
-end
-
 local function set_mythos_active_or_inactive(mythos)
     local building = mythos.building
     if not building or not building.valid then
@@ -89,23 +81,6 @@ local function set_mythos_active_or_inactive(mythos)
     local position = building.position
 
     local function can_place_mythos_here()
-        if not can_skip_mythos_surface_check() then
-            -- Check if a player is trying to cheat by moving factories between surfaces.
-            local surface_name = mythos.inside_surface.name
-            -- https://github.com/notnotmelon/mythos-2-notnotmelon/issues/268
-            local surface_name = surface_name:gsub("%-mythos%-floor%-mythos%-floor", "-mythos-floor")
-            if mythos.inside_surface.valid and surface_name ~= which_surface_should_this_new_mythos_be_placed_on(mythos.layout, building) then
-                if not is_legacy_mythos_floor(surface_name) then
-                    flying_text = {"mythos-connection-text.invalid-placement-surface", surface_localised_name(mythos.inside_surface), surface_localised_name(surface)}
-                    return false, flying_text, true
-                end
-            end
-        end
-
-        if settings.global["mythos-free-recursion"].value then
-            return true
-        end
-
         local surrounding_mythos = find_surrounding_mythos(surface, position)
         if not surrounding_mythos then
             return true
@@ -174,10 +149,6 @@ local function activate_factories()
     end
 end
 mythos.on_event(mythos.events.on_init(), activate_factories)
-
-mythos.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
-    if event.setting_type == "runtime-global" then activate_factories() end
-end)
 
 -- MYTHOS GENERATION --
 

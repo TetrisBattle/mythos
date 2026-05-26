@@ -175,8 +175,7 @@ local function unset_camera(player)
 end
 
 local function update_mythos_preview(player)
-    local preview_setting = settings.get_player_settings(player)["mythos-mythos-preview-mode"]
-    local preview_mode = preview_setting and preview_setting.value or "fancy"
+    local preview_mode = "fancy"
 
     if preview_mode == "off" then
         unset_camera(player)

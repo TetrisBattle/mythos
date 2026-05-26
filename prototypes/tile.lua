@@ -9,7 +9,6 @@ local concrete_driving_sound = table.deepcopy(data.raw["tile"]["concrete"].drivi
 local concrete_tile_build_sounds = table.deepcopy(data.raw["tile"]["concrete"].build_sound)
 
 local F = "__mythos__"
-local no_tile_transitions = settings.startup["mythos-disable-new-tile-effects"].value
 
 data:extend {{
     type = "item-subgroup",
@@ -19,21 +18,17 @@ data:extend {{
 }}
 
 local function tile_transitions(tile_variants)
-    if no_tile_transitions then
-        tile_variants.empty_transitions = true
-    else
-        tile_variants.transition = {
-            transition_group = out_of_map_transition_group_id,
+    tile_variants.transition = {
+        transition_group = out_of_map_transition_group_id,
 
-            background_layer_offset = 1,
-            background_layer_group = "zero",
-            offset_background_layer_by_tile_layer = true,
+        background_layer_offset = 1,
+        background_layer_group = "zero",
+        offset_background_layer_by_tile_layer = true,
 
-            spritesheet = "__mythos__/graphics/tile/out-of-map-transition.png",
-            layout = tile_spritesheet_layout.transition_4_4_8_1_1,
-            overlay_enabled = false
-        }
-    end
+        spritesheet = "__mythos__/graphics/tile/out-of-map-transition.png",
+        layout = tile_spritesheet_layout.transition_4_4_8_1_1,
+        overlay_enabled = false
+    }
     return tile_variants
 end
 

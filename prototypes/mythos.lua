@@ -24,19 +24,11 @@ data:extend {
             picture = {
                 layers = {
                     {
-                        filename = F .. "/graphics/mythos/mythos-shadow.png",
-                        width = 416,
-                        height = 320,
-                        scale = 0.35,
-                        shift = {0.75, 0},
-                        draw_as_shadow = true
-                    },
-                    {
-                        filename = F .. "/graphics/mythos/mythos.png",
-                        width = 416,
-                        height = 320,
-                        scale = 0.5,
-                        shift = {0.75, 0},
+                        filename = F .. "/graphics/mythos/mythos_256px.png",
+                        width = 256,
+                        height = 256,
+                        scale = 0.75,
+                        shift = {0, 0.5},
                     }
                 }
             },
