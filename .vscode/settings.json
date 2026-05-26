@@ -1,0 +1,9 @@
+{
+	"Lua.diagnostics.globals": [
+		"data"
+	],
+	"Lua.workspace.userThirdParty": [
+		"c:\\Users\\thien\\AppData\\Roaming\\Code\\User\\workspaceStorage\\235d3d450079f6b6d1ba6bfbcd3cb6fd\\justarandomgeek.factoriomod-debug\\sumneko-3rd"
+	],
+	"Lua.workspace.checkThirdParty": "ApplyInMemory"
+}
