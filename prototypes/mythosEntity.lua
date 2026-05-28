@@ -1,6 +1,6 @@
-local modName = "__mythos__"
+local modName     = "__mythos__"
 
-local mythos = {
+local mythosEntity      = {
 	name = "mythos",
 	icon = modName .. "/graphics/mythos144.png",
 	icon_size = 144,
@@ -10,7 +10,7 @@ local mythos = {
 	max_health = 500,
 	collision_box = { { -0.8, -0.8 }, { 0.8, 0.8 } },
 	selection_box = { { -1, -1 }, { 1, 1 } },
-	inventory_size = 48,
+	inventory_size = 99,
 	picture = {
 		layers = {
 			{
@@ -23,7 +23,7 @@ local mythos = {
 	},
 }
 
-local mythos_item = {
+local mythosItem = {
 	name = "mythos",
 	type = "item",
 	icon = modName .. "/graphics/mythos144.png",
@@ -32,4 +32,7 @@ local mythos_item = {
 	stack_size = 10,
 }
 
-data:extend({ mythos, mythos_item })
+data:extend({
+	mythosEntity,
+	mythosItem,
+})
