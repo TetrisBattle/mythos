@@ -1,3 +1,5 @@
+local PocketDimension = require("script.PocketDimension")
+
 local connectionTypes = {
 	["loader"]           = "loader",
 	["loader-1x1"]       = "loader",
@@ -72,10 +74,15 @@ function Mythos.new(mythosEntity)
 		byExternalPos[positionKey(externalPos.x, externalPos.y)] = slotKey
 	end
 
+	local dim = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force)
+
 	return setmetatable({
 		entity        = mythosEntity,
 		slots         = slots,
 		byExternalPos = byExternalPos,
+		inside_surface = dim,
+		inside_x       = PocketDimension.VIEW_X,
+		inside_y       = PocketDimension.VIEW_Y,
 	}, Mythos)
 end
 
@@ -163,6 +170,9 @@ end
 function Mythos:destroy()
 	for slotKey in pairs(self.slots) do
 		self:disconnect(slotKey)
+	end
+	if self.inside_surface and self.inside_surface.valid then
+		game.delete_surface(self.inside_surface)
 	end
 	storage.mythoi[self.entity.unit_number] = nil
 end

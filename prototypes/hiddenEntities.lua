@@ -42,7 +42,27 @@ if hiddenHeatPipe.heat_glow_sprites then
 	hiddenHeatPipe.heat_glow_sprites = makeInvisible(hiddenHeatPipe.heat_glow_sprites)
 end
 
+-- Hidden radar: reveals the pocket dimension interior without appearing on the map.
+local hiddenRadar = {
+	type                              = "radar",
+	name                              = "mythos-hidden-radar",
+	selectable_in_game                = false,
+	flags                             = { "not-on-map", "hide-alt-info" },
+	hidden                            = true,
+	collision_mask                    = { layers = {} },
+	energy_source                     = { type = "void" },
+	energy_usage                      = "250W",
+	energy_per_nearby_scan            = "250J",
+	energy_per_sector                 = "1kW",
+	max_distance_of_sector_revealed   = 0,
+	max_distance_of_nearby_sector_revealed = 1,
+	localised_name                    = "",
+	max_health                        = 1,
+	connects_to_other_radars          = false,
+}
+
 data:extend({
 	hiddenPipe,
 	hiddenHeatPipe,
+	hiddenRadar,
 })
