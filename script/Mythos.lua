@@ -131,6 +131,25 @@ function Mythos:connect(slotKey, entity)
 
 	slot.conn = { entity = entity, connType = connType, ioDirection = ioDirection }
 
+	-- Place matching belt inside the pocket dimension at the wall-gap position.
+	if connType == "belt" then
+		local beltLayout = PocketDimension.slotBeltLayout[slotKey]
+		if beltLayout then
+			local dir = ioDirection == "input" and beltLayout.inputDir or beltLayout.outputDir
+			local inner = self.inside_surface.create_entity{
+				name        = entity.name,
+				position    = beltLayout.pos,
+				direction   = dir,
+				force       = entity.force,
+				raise_built = false,
+			}
+			if inner then
+				inner.destructible = false
+				slot.conn.innerBelt = inner
+			end
+		end
+	end
+
 	local hiddenName = hiddenEntityName[connType]
 	if hiddenName then
 		local surface = self.entity.surface
@@ -153,9 +172,14 @@ function Mythos:disconnect(slotKey)
 	local slot = self.slots[slotKey]
 	if not slot or not slot.conn then return end
 
-	local connType = slot.conn.connType
+	local conn     = slot.conn
+	local connType = conn.connType
 	local innerPos = slot.inner
 	slot.conn = nil
+
+	if conn.innerBelt and conn.innerBelt.valid then
+		conn.innerBelt.destroy{ raise_destroy = false }
+	end
 
 	local hiddenName = hiddenEntityName[connType]
 	if hiddenName and not self:innerPositionStillNeeded(innerPos) then
@@ -204,6 +228,47 @@ function Mythos.findStateAndSlot(entity)
 			local slotKey = state:findSlotAt(entity.position)
 			if slotKey then return state, slotKey end
 		end
+	end
+end
+
+-- Moves all items from every lane of `from` into the matching lane of `to`.
+-- Any items that don't fit are returned to `from`.
+local function transferBeltLines(from, to)
+	for lane = 1, 2 do
+		local fromLine = from.get_transport_line(lane)
+		local toLine   = to.get_transport_line(lane)
+		if not toLine.can_insert_at_back() then goto continue end
+		for _, stack in pairs(fromLine.get_contents()) do
+			local taken = fromLine.remove_item({ name = stack.name, quality = stack.quality, count = stack.count })
+			if taken > 0 then
+				local inserted = toLine.insert_at_back({ name = stack.name, quality = stack.quality, count = taken })
+				if not inserted then
+					fromLine.insert_at_back({ name = stack.name, quality = stack.quality, count = taken })
+					goto continue  -- destination lane full, stop for this lane
+				end
+			end
+		end
+		::continue::
+	end
+end
+
+-- Called every 6 ticks to push items across all active belt connections.
+function Mythos.onNthTick()
+	for _, state in pairs(storage.mythoi) do
+		if not state.entity.valid then goto continue end
+		for _, slot in pairs(state.slots) do
+			local conn = slot.conn
+			if conn and conn.connType == "belt"
+					and conn.entity.valid
+					and conn.innerBelt and conn.innerBelt.valid then
+				if conn.ioDirection == "input" then
+					transferBeltLines(conn.entity, conn.innerBelt)
+				else
+					transferBeltLines(conn.innerBelt, conn.entity)
+				end
+			end
+		end
+		::continue::
 	end
 end
 

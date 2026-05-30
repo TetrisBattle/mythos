@@ -1,6 +1,21 @@
 local DIMENSION_SIZE = 32   -- floor side length in tiles
 local VIEW_X = DIMENSION_SIZE / 2  -- remote-view camera centre
 local VIEW_Y = DIMENSION_SIZE / 2
+local mid    = DIMENSION_SIZE / 2  -- centre of each wall side (gap straddles mid-1 and mid)
+
+-- Maps each mythos slot key to the belt entity position at the wall gap and the
+-- direction the belt should face depending on whether it is an input or output.
+-- pos: entity centre at the missing-wall tile (wall formula: tile+0.5).
+local slotBeltLayout = {
+	["left-top"]     = { pos = { -0.5,                  mid - 0.5 }, inputDir = defines.direction.east,  outputDir = defines.direction.west  },
+	["left-bottom"]  = { pos = { -0.5,                  mid + 0.5 }, inputDir = defines.direction.east,  outputDir = defines.direction.west  },
+	["right-top"]    = { pos = { DIMENSION_SIZE + 0.5,  mid - 0.5 }, inputDir = defines.direction.west,  outputDir = defines.direction.east  },
+	["right-bottom"] = { pos = { DIMENSION_SIZE + 0.5,  mid + 0.5 }, inputDir = defines.direction.west,  outputDir = defines.direction.east  },
+	["top-left"]     = { pos = { mid - 0.5, -0.5                  }, inputDir = defines.direction.south, outputDir = defines.direction.north },
+	["top-right"]    = { pos = { mid + 0.5, -0.5                  }, inputDir = defines.direction.south, outputDir = defines.direction.north },
+	["bottom-left"]  = { pos = { mid - 0.5, DIMENSION_SIZE + 0.5  }, inputDir = defines.direction.north, outputDir = defines.direction.south },
+	["bottom-right"] = { pos = { mid + 0.5, DIMENSION_SIZE + 0.5  }, inputDir = defines.direction.north, outputDir = defines.direction.south },
+}
 
 -- Creates the 32×32 pocket-dimension surface for one mythos entity.
 -- Floor tiles: (0,0)→(31,31).  Stone walls at the one-tile perimeter outside.
@@ -54,12 +69,16 @@ local function create(unit_number, force)
 		}
 	end
 	for i = -1, n do
-		wall(i, -1)  -- top row
-		wall(i,  n)  -- bottom row
+		if i ~= mid - 1 and i ~= mid then
+			wall(i, -1)  -- top row
+			wall(i,  n)  -- bottom row
+		end
 	end
 	for i = 0, n - 1 do
-		wall(-1, i)  -- left column
-		wall( n, i)  -- right column
+		if i ~= mid - 1 and i ~= mid then
+			wall(-1, i)  -- left column
+			wall( n, i)  -- right column
+		end
 	end
 
 	-- Hidden radar so the interior is revealed when remote-viewing.
@@ -75,7 +94,8 @@ local function create(unit_number, force)
 end
 
 return {
-	create = create,
-	VIEW_X = VIEW_X,
-	VIEW_Y = VIEW_Y,
+	create         = create,
+	VIEW_X         = VIEW_X,
+	VIEW_Y         = VIEW_Y,
+	slotBeltLayout = slotBeltLayout,
 }
