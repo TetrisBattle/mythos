@@ -13,7 +13,8 @@ script.on_load(function()
 end)
 
 registerEvents(Mythos.onEntityBuilt, Mythos.onEntityRemoved)
-script.on_nth_tick(6, Mythos.onNthTick)
+script.on_nth_tick(6,  Mythos.onNthTick)
+script.on_nth_tick(60, Mythos.onSlowTick)
 
 script.on_event("mythos-open-dimension", function(event)
 	local player = game.get_player((event --[[@as EventData.CustomInputEvent]]).player_index)

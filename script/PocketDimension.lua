@@ -3,18 +3,24 @@ local VIEW_X = DIMENSION_SIZE / 2  -- remote-view camera centre
 local VIEW_Y = DIMENSION_SIZE / 2
 local mid    = DIMENSION_SIZE / 2  -- centre of each wall side (gap straddles mid-1 and mid)
 
--- Maps each mythos slot key to the belt entity position at the wall gap and the
--- direction the belt should face depending on whether it is an input or output.
--- pos: entity centre at the missing-wall tile (wall formula: tile+0.5).
+-- Maps each mythos slot key to the wall-gap position and the gate sprite orientation.
+--   pos             : rendering.draw_sprite position (centre of the wall-gap tile).
+--   gateOrientation : RealOrientation (0–1) passed to rendering.draw_sprite.
+--     The image has its connection at the bottom, so:
+--       top wall    → 0    (no rotation,  connection faces south into room)
+--       right wall  → 0.25 (90° CW,       connection faces west  into room)
+--       bottom wall → 0.5  (180°,         connection faces north into room)
+--       left wall   → 0.75 (270° CW,      connection faces east  into room)
+-- innerBeltPos: the tile one step inside the floor where the player places their belt.
 local slotBeltLayout = {
-	["left-top"]     = { pos = { -0.5,                  mid - 0.5 }, inputDir = defines.direction.east,  outputDir = defines.direction.west  },
-	["left-bottom"]  = { pos = { -0.5,                  mid + 0.5 }, inputDir = defines.direction.east,  outputDir = defines.direction.west  },
-	["right-top"]    = { pos = { DIMENSION_SIZE + 0.5,  mid - 0.5 }, inputDir = defines.direction.west,  outputDir = defines.direction.east  },
-	["right-bottom"] = { pos = { DIMENSION_SIZE + 0.5,  mid + 0.5 }, inputDir = defines.direction.west,  outputDir = defines.direction.east  },
-	["top-left"]     = { pos = { mid - 0.5, -0.5                  }, inputDir = defines.direction.south, outputDir = defines.direction.north },
-	["top-right"]    = { pos = { mid + 0.5, -0.5                  }, inputDir = defines.direction.south, outputDir = defines.direction.north },
-	["bottom-left"]  = { pos = { mid - 0.5, DIMENSION_SIZE + 0.5  }, inputDir = defines.direction.north, outputDir = defines.direction.south },
-	["bottom-right"] = { pos = { mid + 0.5, DIMENSION_SIZE + 0.5  }, inputDir = defines.direction.north, outputDir = defines.direction.south },
+	["left-top"]     = { pos = { -0.5,                  mid - 0.5 }, innerBeltPos = { 0.5,                  mid - 0.5 }, gateOrientation = 0.75 },
+	["left-bottom"]  = { pos = { -0.5,                  mid + 0.5 }, innerBeltPos = { 0.5,                  mid + 0.5 }, gateOrientation = 0.75 },
+	["right-top"]    = { pos = { DIMENSION_SIZE + 0.5,  mid - 0.5 }, innerBeltPos = { DIMENSION_SIZE - 0.5, mid - 0.5 }, gateOrientation = 0.25 },
+	["right-bottom"] = { pos = { DIMENSION_SIZE + 0.5,  mid + 0.5 }, innerBeltPos = { DIMENSION_SIZE - 0.5, mid + 0.5 }, gateOrientation = 0.25 },
+	["top-left"]     = { pos = { mid - 0.5, -0.5                  }, innerBeltPos = { mid - 0.5, 0.5                  }, gateOrientation = 0    },
+	["top-right"]    = { pos = { mid + 0.5, -0.5                  }, innerBeltPos = { mid + 0.5, 0.5                  }, gateOrientation = 0    },
+	["bottom-left"]  = { pos = { mid - 0.5, DIMENSION_SIZE + 0.5  }, innerBeltPos = { mid - 0.5, DIMENSION_SIZE - 0.5  }, gateOrientation = 0.5  },
+	["bottom-right"] = { pos = { mid + 0.5, DIMENSION_SIZE + 0.5  }, innerBeltPos = { mid + 0.5, DIMENSION_SIZE - 0.5  }, gateOrientation = 0.5  },
 }
 
 -- Creates the 32×32 pocket-dimension surface for one mythos entity.
@@ -24,6 +30,10 @@ local function create(unit_number, force)
 		"mythos-dimension-" .. unit_number,
 		{ default_enable_all_autoplace_controls = false, width = 2, height = 2 }
 	)
+
+	-- Keep the pocket dimension permanently at full daylight brightness.
+	surface.daytime       = 0.5
+	surface.freeze_daytime = true
 
 	-- Mark chunks as fully generated so the renderer shows them.
 	-- Without this, void chunks stay black on the map even after tiles are placed.

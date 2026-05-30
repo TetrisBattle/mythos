@@ -61,8 +61,21 @@ local hiddenRadar = {
 	connects_to_other_radars          = false,
 }
 
+-- Gate sprite rendered inside the pocket dimension at each active belt connection.
+-- Uses rendering.draw_sprite at runtime so it is always visible, with orientation
+-- adjusted per wall side.
+local mythosGateSprite = {
+	type     = "sprite",
+	name     = "mythos-gate",
+	filename = "__mythos__/graphics/gate171x256.png",
+	width    = 171,
+	height   = 256,
+	scale    = 0.375,
+}
+
 data:extend({
 	hiddenPipe,
 	hiddenHeatPipe,
 	hiddenRadar,
+	mythosGateSprite,
 })
