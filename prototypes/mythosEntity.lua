@@ -6,14 +6,15 @@ local mythosEntity      = {
 	icon_size = 144,
 	type = "logistic-container",
 	logistic_mode = "requester",
-	logistic_slots_count = 100,
+	logistic_slots_count = 48,
 	render_not_in_network_icon = false,
 	flags = { "placeable-player", "player-creation" },
 	minable = { mining_time = 0.5, result = "mythos" },
 	max_health = 500,
 	collision_box = { { -0.8, -0.8 }, { 0.8, 0.8 } },
 	selection_box = { { -1, -1 }, { 1, 1 } },
-	inventory_size = 99,
+	inventory_size = 48,
+	trash_inventory_size = 20,
 	picture = {
 		layers = {
 			{

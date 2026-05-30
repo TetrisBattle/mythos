@@ -1,21 +1,29 @@
 local registerEvents = require("script.registerEvents")
-local Mythos = require("script.Mythos")
+local Mythos         = require("script.Mythos")
 
 script.on_init(function()
 	storage.mythoi = {}
 end)
 
 script.on_load(function()
-	-- Metatables are not saved; restore them so methods work after a load.
+	-- Metatables are not saved; restore them so stored states can call methods.
 	for _, state in pairs(storage.mythoi) do
 		setmetatable(state, Mythos)
 	end
 end)
 
+-- Core entity lifecycle events (build / remove).
 registerEvents(Mythos.onEntityBuilt, Mythos.onEntityRemoved)
+
+-- Tick handlers: belt transport + ghost building (fast), logistic requests + deletion retries (slow).
 script.on_nth_tick(6,  Mythos.onNthTick)
 script.on_nth_tick(60, Mythos.onSlowTick)
 
+-- Dimension-deletion: auto-mine marked entities into the mythos chest.
+script.on_event(defines.events.on_marked_for_deconstruction,  Mythos.onMarkedForDeconstruction)
+script.on_event(defines.events.on_cancelled_deconstruction,   Mythos.onCancelledDeconstruction)
+
+-- Opens the pocket dimension as a remote-view when the player uses the keybind.
 script.on_event("mythos-open-dimension", function(event)
 	local player = game.get_player((event --[[@as EventData.CustomInputEvent]]).player_index)
 	if not player then return end
