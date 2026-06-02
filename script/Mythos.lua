@@ -3,6 +3,7 @@ local util              = require("script.util")
 local Connections       = require("script.connections")
 local Logistics         = require("script.logistics")
 local DimensionDeletion = require("script.dimensionDeletion")
+local Electricity       = require("script.electricity")
 
 local positionKey       = util.positionKey
 
@@ -43,8 +44,18 @@ function Mythos.new(mythosEntity)
 
 	local slots, byExternalPos = Connections.buildSlots(cx, cy)
 
-	local dim = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force)
+	local dim, inner_acc = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force, mythosEntity.surface)
 	mythosEntity.request_from_buffers = true
+
+	-- Hidden accumulator on the outer surface: connects to the nearby electric
+	-- grid and is script-drained into the pocket dimension each tick.
+	local outer_acc = mythosEntity.surface.create_entity{
+		name        = "mythos-power-link-outer",
+		position    = mythosEntity.position,
+		force       = mythosEntity.force,
+		raise_built = false,
+	}
+	if outer_acc then outer_acc.destructible = false end
 
 	-- Draw permanent gate sprites at every connection point inside the dimension.
 	for slotKey, beltLayout in pairs(PocketDimension.slotBeltLayout) do
@@ -67,6 +78,8 @@ function Mythos.new(mythosEntity)
 		inside_x         = PocketDimension.VIEW_X,
 		inside_y         = PocketDimension.VIEW_Y,
 		pendingDeletions = {},
+		outer_acc        = outer_acc,
+		inner_acc        = inner_acc,
 	}, Mythos)
 end
 
@@ -105,7 +118,8 @@ function Mythos:hasContents(buffer)
 	end
 	if self.inside_surface and self.inside_surface.valid then
 		for _, e in pairs(self.inside_surface.find_entities()) do
-			if e.valid and e.name ~= "stone-wall" and e.name ~= "mythos-hidden-radar" then
+			if e.valid and e.name ~= "stone-wall" and e.name ~= "mythos-hidden-radar"
+					and e.name ~= "mythos-power-link-inner" and e.name ~= "mythos-power-hub-pole" then
 				return true
 			end
 		end
@@ -163,6 +177,13 @@ function Mythos:save(buffer)
 	storage.saved_dimensions = storage.saved_dimensions or {}
 	storage.saved_dimensions[saved_id] = { surface = self.inside_surface, items = items }
 
+	-- Outer accumulator must be destroyed when the mythos is picked up.
+	-- The inner accumulator stays with the saved surface and is restored later.
+	if self.outer_acc and self.outer_acc.valid then
+		self.outer_acc.destroy()
+	end
+	self.outer_acc = nil
+
 	for slotKey in pairs(self.slots) do
 		self:disconnect(slotKey)
 	end
@@ -197,6 +218,9 @@ end
 -- Disconnects all slots, deletes the pocket-dimension surface, and removes this
 -- instance from global storage.
 function Mythos:destroy()
+	if self.outer_acc and self.outer_acc.valid then
+		self.outer_acc.destroy()
+	end
 	for slotKey in pairs(self.slots) do
 		self:disconnect(slotKey)
 	end
@@ -211,6 +235,7 @@ end
 Connections.install(Mythos, connectionTypes)
 Logistics.install(Mythos)
 DimensionDeletion.install(Mythos, connectionTypes)
+Electricity.install(Mythos)
 
 -- ── Heat transport ───────────────────────────────────────────────────────────
 -- Equalises temperature between the outer and inner hidden heat-pipe proxies.
@@ -309,13 +334,15 @@ function Mythos.onNthTick()
 	end
 end
 
--- Called every 60 ticks: refreshes logistic requests and retries any deletions
--- that were blocked because the mythos chest was full.
+-- Called every 60 ticks: refreshes logistic requests, retries pending
+-- deletions, and transfers electricity from the outer grid into the pocket
+-- dimension.
 function Mythos.onSlowTick()
 	for _, state in pairs(storage.mythoi) do
 		if state.entity.valid then
 			state:updateRequests()
 			state:flushPendingDeletions()
+			state:transferElectricity()
 		end
 	end
 end
@@ -352,6 +379,35 @@ function Mythos.onEntityBuilt(event)
 			local cy = entity.position.y
 			local slots, byExternalPos = Connections.buildSlots(cx, cy)
 			-- Gate sprites already exist on the saved surface; no need to re-draw.
+			-- Recreate the outer accumulator (was destroyed when saved) and recover
+			-- the inner accumulator from the saved surface.
+			local outer_acc = entity.surface.create_entity{
+				name        = "mythos-power-link-outer",
+				position    = entity.position,
+				force       = entity.force,
+				raise_built = false,
+			}
+			if outer_acc then outer_acc.destructible = false end
+
+			local inner_accs = saved.surface.find_entities_filtered{ name = "mythos-power-link-inner" }
+			local inner_acc  = inner_accs[1]
+			if not inner_acc then
+				-- Fallback: create one if missing (e.g., pre-electricity save).
+				inner_acc = saved.surface.create_entity{
+					name        = "mythos-power-link-inner",
+					position    = { PocketDimension.VIEW_X, PocketDimension.VIEW_Y },
+					force       = entity.force,
+					raise_built = false,
+				}
+				if inner_acc then inner_acc.destructible = false end
+			end
+
+			-- Sync solar multiplier to the new outer surface.
+			local outer_surface = entity.surface
+			if outer_surface and outer_surface.valid and saved.surface.valid then
+				saved.surface.solar_power_multiplier = outer_surface.solar_power_multiplier
+			end
+
 			local state = setmetatable({
 				entity           = entity,
 				slots            = slots,
@@ -360,6 +416,8 @@ function Mythos.onEntityBuilt(event)
 				inside_x         = PocketDimension.VIEW_X,
 				inside_y         = PocketDimension.VIEW_Y,
 				pendingDeletions = {},
+				outer_acc        = outer_acc,
+				inner_acc        = inner_acc,
 			}, Mythos)
 			entity.request_from_buffers = true
 			local inv = entity.get_inventory(defines.inventory.chest)

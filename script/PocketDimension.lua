@@ -25,10 +25,15 @@ local slotBeltLayout = {
 
 -- Creates the 32×32 pocket-dimension surface for one mythos entity.
 -- Floor tiles: (0,0)→(31,31).  Stone walls at the one-tile perimeter outside.
-local function create(unit_number, force)
+-- outer_surface: the LuaSurface the mythos is placed on; used to copy the
+-- solar multiplier so solar panels inside match the planet the mythos is on.
+-- Returns: surface, inner_acc
+local function create(unit_number, force, outer_surface)
+	---@diagnostic disable-next-line: missing-fields
+	local mapGenSettings = { default_enable_all_autoplace_controls = false, width = 2, height = 2 }
 	local surface = game.create_surface(
 		"mythos-dimension-" .. unit_number,
-		{ default_enable_all_autoplace_controls = false, width = 2, height = 2 }
+		mapGenSettings
 	)
 
 	-- Keep the pocket dimension permanently at full daylight brightness.
@@ -100,7 +105,37 @@ local function create(unit_number, force)
 	}
 	if radar then radar.destructible = false end
 
-	return surface
+	-- Sync solar output to the planet the mythos is placed on.
+	-- Solar panels inside will produce power proportional to the outer
+	-- surface's solar_power_multiplier (e.g., Aquilo gets ~30% of Nauvis).
+	-- The dimension is kept at noon (daytime = 0.5) so solar panels always
+	-- run at their full fraction without a day/night cycle.
+	if outer_surface and outer_surface.valid then
+		surface.solar_power_multiplier = outer_surface.solar_power_multiplier
+	end
+
+	-- Hidden electric pole: creates the electric network that covers the full
+	-- 32×32 floor (supply_area_distance = 16 from the centre tile).  Without
+	-- this, the inner accumulator has no network to distribute into.
+	local hub_pole = surface.create_entity{
+		name        = "mythos-power-hub-pole",
+		position    = { DIMENSION_SIZE / 2, DIMENSION_SIZE / 2 },
+		force       = force,
+		raise_built = false,
+	}
+	if hub_pole then hub_pole.destructible = false end
+
+	-- Inner power accumulator: joins the hub pole's network and acts as the
+	-- battery that the script fills from the outer-surface accumulator.
+	local inner_acc = surface.create_entity{
+		name        = "mythos-power-link-inner",
+		position    = { DIMENSION_SIZE / 2, DIMENSION_SIZE / 2 },
+		force       = force,
+		raise_built = false,
+	}
+	if inner_acc then inner_acc.destructible = false end
+
+	return surface, inner_acc
 end
 
 return {

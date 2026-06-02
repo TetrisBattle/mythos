@@ -18,8 +18,19 @@ end)
 registerEvents(Mythos.onEntityBuilt, Mythos.onEntityRemoved)
 
 -- Tick handlers: belt transport + ghost building (fast), logistic requests + deletion retries (slow).
-script.on_nth_tick(6,  Mythos.onNthTick)
-script.on_nth_tick(60, Mythos.onSlowTick)
+script.on_nth_tick(6,   Mythos.onNthTick)
+script.on_nth_tick(60,  Mythos.onSlowTick)
+
+-- Solar sync: re-copies outer surface solar multiplier to pocket dimension
+-- every 5 seconds.  Keeps solar panel output correct if the mythos moves
+-- between surfaces (e.g., a space platform travelling between planets).
+script.on_nth_tick(300, function()
+	for _, state in pairs(storage.mythoi) do
+		if state.entity.valid then
+			state:syncSolar()
+		end
+	end
+end)
 
 -- Dimension-deletion: auto-mine marked entities into the mythos chest.
 script.on_event(defines.events.on_marked_for_deconstruction,  Mythos.onMarkedForDeconstruction)

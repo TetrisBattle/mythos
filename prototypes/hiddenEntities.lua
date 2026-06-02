@@ -61,6 +61,35 @@ local hiddenRadar = {
 	connects_to_other_radars          = false,
 }
 
+-- Hidden electric pole placed at the centre of the pocket dimension.
+-- supply_area_distance = 16 covers the full 32×32 floor (tiles 0–31 from centre at 16).
+-- maximum_wire_distance = 0 prevents the player wiring to it; the supply area alone
+-- forms the electric network that the inner accumulator and all player-built entities
+-- join automatically.
+---@type table
+local hiddenHubPole                      = table.deepcopy(data.raw["electric-pole"]["substation"])
+hiddenHubPole.name                       = "mythos-power-hub-pole"
+hiddenHubPole.localised_name             = { "" }
+hiddenHubPole.hidden                     = true
+hiddenHubPole.flags                      = hiddenFlags
+hiddenHubPole.collision_mask             = { layers = {} }
+hiddenHubPole.minable                    = nil
+hiddenHubPole.selection_box              = { { 0, 0 }, { 0, 0 } }
+hiddenHubPole.max_health                 = 1
+hiddenHubPole.supply_area_distance       = 16
+hiddenHubPole.maximum_wire_distance      = 0
+hiddenHubPole.pictures                   = {
+	filename      = "__core__/graphics/empty.png",
+	priority      = "extra-high",
+	width         = 1,
+	height        = 1,
+	direction_count = 4,
+}
+hiddenHubPole.light                      = nil
+hiddenHubPole.active_picture             = nil
+hiddenHubPole.connection_sprites         = nil
+hiddenHubPole.radius_visualisation_picture = nil
+
 -- Gate sprite rendered inside the pocket dimension at each active belt connection.
 -- Uses rendering.draw_sprite at runtime so it is always visible, with orientation
 -- adjusted per wall side.
@@ -73,9 +102,51 @@ local mythosGateSprite = {
 	scale    = 0.375,
 }
 
+-- Hidden accumulator placed on the outer surface at the mythos position.
+-- Connects to the external electric grid so the pocket dimension can draw
+-- power from it.  Script-drained every tick into the inner accumulator.
+---@type table
+local hiddenOuterAcc                      = table.deepcopy(data.raw["accumulator"]["accumulator"])
+hiddenOuterAcc.name                       = "mythos-power-link-outer"
+hiddenOuterAcc.localised_name             = { "" }
+hiddenOuterAcc.hidden                     = true
+hiddenOuterAcc.flags                      = hiddenFlags
+hiddenOuterAcc.collision_mask             = { layers = {} }
+hiddenOuterAcc.minable                    = nil
+hiddenOuterAcc.selection_box              = { { 0, 0 }, { 0, 0 } }
+hiddenOuterAcc.max_health                 = 1
+hiddenOuterAcc.charge_cooldown            = 1
+hiddenOuterAcc.discharge_cooldown         = 1
+hiddenOuterAcc.energy_source              = {
+	type              = "electric",
+	buffer_capacity   = "10MJ",
+	usage_priority    = "tertiary",
+	input_flow_limit  = "10GW",
+	output_flow_limit = "10GW",
+}
+hiddenOuterAcc.picture                    = makeInvisible(hiddenOuterAcc.picture)
+hiddenOuterAcc.sprites                    = makeInvisible(hiddenOuterAcc.sprites)
+hiddenOuterAcc.charge_animation           = makeInvisible(hiddenOuterAcc.charge_animation)
+hiddenOuterAcc.discharge_animation        = makeInvisible(hiddenOuterAcc.discharge_animation)
+hiddenOuterAcc.chargable_graphics         = nil
+hiddenOuterAcc.water_reflection           = nil
+hiddenOuterAcc.charge_light               = nil
+hiddenOuterAcc.discharge_light            = nil
+hiddenOuterAcc.circuit_wire_max_distance  = 0
+hiddenOuterAcc.circuit_wire_connection_points = nil
+hiddenOuterAcc.circuit_connector_sprites  = nil
+
+-- Hidden accumulator inside the pocket dimension.  Receives scripted energy
+-- from the outer accumulator and distributes it to the inside electric network.
+local hiddenInnerAcc                      = table.deepcopy(hiddenOuterAcc)
+hiddenInnerAcc.name                       = "mythos-power-link-inner"
+
 data:extend({
 	hiddenPipe,
 	hiddenHeatPipe,
 	hiddenRadar,
 	mythosGateSprite,
+	hiddenOuterAcc,
+	hiddenInnerAcc,
+	hiddenHubPole,
 })
