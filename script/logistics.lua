@@ -29,7 +29,6 @@ function Logistics.install(Mythos)
 			local stack  = stacks and stacks[1]
 
 			if stack then
-				-- Only revive if we have the required item in stock.
 				if inv.get_item_count(stack.name) < stack.count then goto continue end
 				inv.remove({ name = stack.name, count = stack.count })
 				if ghost.revive{ raise_revive = true } == nil then

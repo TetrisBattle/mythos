@@ -2,7 +2,9 @@ local registerEvents = require("script.registerEvents")
 local Mythos         = require("script.Mythos")
 
 script.on_init(function()
-	storage.mythoi = {}
+	storage.mythoi                = {}
+	storage.saved_dimensions      = {}
+	storage.pending_player_restore = {}
 end)
 
 script.on_load(function()
@@ -22,6 +24,10 @@ script.on_nth_tick(60, Mythos.onSlowTick)
 -- Dimension-deletion: auto-mine marked entities into the mythos chest.
 script.on_event(defines.events.on_marked_for_deconstruction,  Mythos.onMarkedForDeconstruction)
 script.on_event(defines.events.on_cancelled_deconstruction,   Mythos.onCancelledDeconstruction)
+
+-- Cache saved_id when player picks up a mythos-with-contents item so it can
+-- be retrieved in onEntityBuilt (which fires before the cursor is consumed).
+script.on_event(defines.events.on_player_cursor_stack_changed, Mythos.onCursorChanged)
 
 -- Opens the pocket dimension as a remote-view when the player uses the keybind.
 script.on_event("mythos-open-dimension", function(event)

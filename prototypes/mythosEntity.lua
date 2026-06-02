@@ -36,7 +36,29 @@ local mythosItem = {
 	stack_size = 10,
 }
 
+-- Same entity, but carries saved pocket-dimension contents.
+-- The base mythos icon is kept at original colours; a star overlay is added
+-- in the bottom-right corner so it is visually distinct from an empty mythos.
+local savedIconLayers = {
+	{ icon = modName .. "/graphics/mythos144.png", icon_size = 144 },
+}
+savedIconLayers[2] = {
+	icon      = "__base__/graphics/icons/signal/signal-star.png",
+	icon_size = 64,
+	scale     = 0.4,
+	shift     = { 8, 8 },
+}
+
+local mythosItemSaved = {
+	name         = "mythos-with-contents",
+	type         = "item-with-tags",
+	icons        = savedIconLayers,
+	place_result = "mythos",
+	stack_size   = 1,
+}
+
 data:extend({
 	mythosEntity,
 	mythosItem,
+	mythosItemSaved,
 })

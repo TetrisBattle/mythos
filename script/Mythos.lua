@@ -88,6 +88,112 @@ function Mythos:innerPositionStillNeeded(innerPos)
 	return false
 end
 
+-- Returns true when the mythos has items in its chest or non-default entities
+-- in the pocket dimension.  Pass the mining `buffer` when called from a mine
+-- event, because Factorio drains the chest into the buffer before it fires.
+function Mythos:hasContents(buffer)
+	if buffer then
+		for i = 1, #buffer do
+			local s = buffer[i]
+			if s.valid_for_read and s.name ~= "mythos" and s.name ~= "mythos-with-contents" then
+				return true
+			end
+		end
+	else
+		local inv = self.entity.get_inventory(defines.inventory.chest)
+		if inv and not inv.is_empty() then return true end
+	end
+	if self.inside_surface and self.inside_surface.valid then
+		for _, e in pairs(self.inside_surface.find_entities()) do
+			if e.valid and e.name ~= "stone-wall" and e.name ~= "mythos-hidden-radar" then
+				return true
+			end
+		end
+		-- find_entities() does not return ghost entities; check explicitly.
+		if #self.inside_surface.find_entities_filtered{ type = "entity-ghost" } > 0 then
+			return true
+		end
+		if #self.inside_surface.find_entities_filtered{ type = "tile-ghost" } > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+-- Preserves this mythos for future restoration: keeps the pocket-dimension alive,
+-- snapshots chest items (stripping them from `buffer` for mine events, or
+-- draining the chest for death events to prevent loot spill), disconnects all
+-- slots, and removes this instance from the active table WITHOUT deleting the
+-- surface.  Returns the saved_id to embed in the pickup item.
+function Mythos:save(buffer)
+	local saved_id = self.entity.unit_number
+	local items    = {}
+
+	if buffer then
+		-- Mining path: chest contents already moved to buffer by Factorio.
+		for i = 1, #buffer do
+			local s = buffer[i]
+			if s.valid_for_read and s.name ~= "mythos" and s.name ~= "mythos-with-contents" then
+				items[#items + 1] = {
+					name    = s.name,
+					count   = s.count,
+					quality = s.quality and s.quality.name or "normal",
+				}
+				s.clear()
+			end
+		end
+	else
+		-- Death / script-destroy path: chest not yet spilled.
+		local inv = self.entity.get_inventory(defines.inventory.chest)
+		if inv then
+			for i = 1, #inv do
+				local slot = inv[i]
+				if slot.valid_for_read then
+					items[#items + 1] = {
+						name    = slot.name,
+						count   = slot.count,
+						quality = slot.quality and slot.quality.name or "normal",
+					}
+				end
+			end
+			inv.clear()  -- prevent engine loot spill
+		end
+	end
+
+	storage.saved_dimensions = storage.saved_dimensions or {}
+	storage.saved_dimensions[saved_id] = { surface = self.inside_surface, items = items }
+
+	for slotKey in pairs(self.slots) do
+		self:disconnect(slotKey)
+	end
+	storage.mythoi[self.entity.unit_number] = nil
+	return saved_id
+end
+
+-- Returns the saved_id embedded in the item used to build `entity`, or nil.
+-- For player builds reads from the per-player cursor cache set by onCursorChanged.
+-- For robot builds attempts a best-effort read of event.stack.tags.
+function Mythos.extractSavedId(event)
+	-- Reject only when we can positively identify a non-saved item was used.
+	-- Allowing nil covers cases where Factorio does not populate event.item.
+	if event.item and event.item.name ~= "mythos-with-contents" then return nil end
+	if event.player_index then
+		storage.pending_player_restore = storage.pending_player_restore or {}
+		local saved_id = storage.pending_player_restore[event.player_index]
+		if saved_id then
+			storage.pending_player_restore[event.player_index] = nil
+			return saved_id
+		end
+	end
+	-- Robot build: attempt to read tags from the (possibly empty) cargo slot.
+	local stack = event.stack
+	if stack and stack.valid then
+		local ok, tags = pcall(function() return stack.tags end)
+		if ok and tags and tags.saved_id then return tags.saved_id end
+	end
+	return nil
+end
+
 -- Disconnects all slots, deletes the pocket-dimension surface, and removes this
 -- instance from global storage.
 function Mythos:destroy()
@@ -189,9 +295,38 @@ function Mythos.onEntityBuilt(event)
 
 	-- Case 2: a new mythos entity was placed.
 	if entity.name == "mythos" then
-		local state = Mythos.new(entity)
-		storage.mythoi[entity.unit_number] = state
-		state:connectExistingNeighbours()
+		local saved_id = Mythos.extractSavedId(event)
+		local saved    = saved_id and storage.saved_dimensions and storage.saved_dimensions[saved_id]
+		if saved then
+			-- Restore from a previously saved pocket dimension.
+			storage.saved_dimensions[saved_id] = nil
+			local cx = entity.position.x
+			local cy = entity.position.y
+			local slots, byExternalPos = Connections.buildSlots(cx, cy)
+			-- Gate sprites already exist on the saved surface; no need to re-draw.
+			local state = setmetatable({
+				entity           = entity,
+				slots            = slots,
+				byExternalPos    = byExternalPos,
+				inside_surface   = saved.surface,
+				inside_x         = PocketDimension.VIEW_X,
+				inside_y         = PocketDimension.VIEW_Y,
+				pendingDeletions = {},
+			}, Mythos)
+			entity.request_from_buffers = true
+			local inv = entity.get_inventory(defines.inventory.chest)
+			if inv and saved.items then
+				for _, item in pairs(saved.items) do
+					inv.insert({ name = item.name, count = item.count, quality = item.quality })
+				end
+			end
+			storage.mythoi[entity.unit_number] = state
+			state:connectExistingNeighbours()
+		else
+			local state = Mythos.new(entity)
+			storage.mythoi[entity.unit_number] = state
+			state:connectExistingNeighbours()
+		end
 		return
 	end
 
@@ -213,7 +348,42 @@ function Mythos.onEntityRemoved(event)
 	-- Case 1: the mythos entity itself was removed.
 	if entity.name == "mythos" then
 		local state = storage.mythoi[entity.unit_number]
-		if state then state:destroy() end
+		if state then
+			if state:hasContents(event.buffer) then
+				local saved_id = state:save(event.buffer)
+				if event.buffer then
+					-- Mined by player or robot: swap mythos → mythos-with-contents.
+					event.buffer.remove({ name = "mythos", count = 1 })
+					event.buffer.insert({ name = "mythos-with-contents", count = 1 })
+					for i = 1, #event.buffer do
+						local s = event.buffer[i]
+						if s.valid_for_read and s.name == "mythos-with-contents" then
+							s.tags = { saved_id = saved_id }
+							break
+						end
+					end
+					-- Prime the restore cache directly so it is available in onEntityBuilt
+					-- even if the cursor-stack tag mechanism fails (e.g. on_player_cursor_stack_changed
+					-- fires while the cursor is still the mining tool, clearing the cache).
+					if event.player_index then
+						storage.pending_player_restore = storage.pending_player_restore or {}
+						storage.pending_player_restore[event.player_index] = saved_id
+					end
+				else
+					-- Killed or script-destroyed: drop item on the ground.
+					local dropped = entity.surface.create_entity{
+						name     = "item-on-ground",
+						position = entity.position,
+						stack    = { name = "mythos-with-contents", count = 1 },
+					}
+					if dropped and dropped.valid then
+						dropped.stack.tags = { saved_id = saved_id }
+					end
+				end
+			else
+				state:destroy()
+			end
+		end
 		return
 	end
 
@@ -251,6 +421,21 @@ function Mythos.onEntityRemoved(event)
 	if not connectionTypes[entity.type] then return end
 	local state, slotKey = Mythos.findStateAndSlot(entity)
 	if state then state:disconnect(slotKey) end
+end
+
+-- Caches the saved_id from a mythos-with-contents cursor item so it is
+-- available in onEntityBuilt (which fires before the cursor is consumed).
+function Mythos.onCursorChanged(event)
+	storage.pending_player_restore = storage.pending_player_restore or {}
+	local player = game.get_player(event.player_index)
+	if not player then return end
+	local stack = player.cursor_stack
+	if stack and stack.valid_for_read and stack.name == "mythos-with-contents" then
+		local tags = stack.tags
+		storage.pending_player_restore[event.player_index] = tags and tags.saved_id
+	else
+		storage.pending_player_restore[event.player_index] = nil
+	end
 end
 
 return Mythos
