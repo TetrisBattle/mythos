@@ -46,6 +46,10 @@ function Mythos.new(mythosEntity)
 
 	local dim, inner_acc = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force, mythosEntity.surface)
 	mythosEntity.request_from_buffers = true
+	-- Prevent auto-trashing of items not currently in the logistic filter.
+	-- Without this, manually-inserted items (or over-delivered network items)
+	-- get moved to the trash slot the next time filters are narrowed.
+	mythosEntity.trash_not_requested = false
 
 	-- Hidden accumulator on the outer surface: connects to the nearby electric
 	-- grid and is script-drained into the pocket dimension each tick.
@@ -420,6 +424,7 @@ function Mythos.onEntityBuilt(event)
 				inner_acc        = inner_acc,
 			}, Mythos)
 			entity.request_from_buffers = true
+			entity.trash_not_requested = false
 			local inv = entity.get_inventory(defines.inventory.chest)
 			if inv and saved.items then
 				for _, item in pairs(saved.items) do
