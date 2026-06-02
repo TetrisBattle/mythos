@@ -4,12 +4,12 @@ local Connections       = require("script.connections")
 local Logistics         = require("script.logistics")
 local DimensionDeletion = require("script.dimensionDeletion")
 
-local positionKey = util.positionKey
+local positionKey       = util.positionKey
 
 -- ── Entity → connection-type mapping ──────────────────────────────────────────
 -- Used to decide how a slot should be wired when an entity is placed next to
 -- (or inside) a mythos.  Belts move items, pipes move fluid, heat-pipes move heat.
-local connectionTypes = {
+local connectionTypes   = {
 	["loader"]           = "loader",
 	["loader-1x1"]       = "loader",
 	["transport-belt"]   = "belt",
@@ -32,9 +32,9 @@ local connectionTypes = {
 -- Stores the pocket-dimension surface, slot geometry, and all active connections.
 -- Persisted in storage.mythoi[unit_number]; metatables are restored on game load.
 
-local Mythos = {}
-Mythos.__index        = Mythos
-Mythos.connectionTypes = connectionTypes  -- exposed for callers that need the map
+local Mythos            = {}
+Mythos.__index          = Mythos
+Mythos.connectionTypes  = connectionTypes -- exposed for callers that need the map
 
 -- Creates a new Mythos instance for a freshly placed entity.
 function Mythos.new(mythosEntity)
@@ -49,7 +49,7 @@ function Mythos.new(mythosEntity)
 	-- Draw permanent gate sprites at every connection point inside the dimension.
 	for slotKey, beltLayout in pairs(PocketDimension.slotBeltLayout) do
 		if slots[slotKey] then
-			slots[slotKey].gateRender = rendering.draw_sprite{
+			slots[slotKey].gateRender = rendering.draw_sprite {
 				sprite      = "mythos-gate",
 				target      = beltLayout.pos,
 				surface     = dim,
@@ -110,10 +110,10 @@ function Mythos:hasContents(buffer)
 			end
 		end
 		-- find_entities() does not return ghost entities; check explicitly.
-		if #self.inside_surface.find_entities_filtered{ type = "entity-ghost" } > 0 then
+		if #self.inside_surface.find_entities_filtered { type = "entity-ghost" } > 0 then
 			return true
 		end
-		if #self.inside_surface.find_entities_filtered{ type = "tile-ghost" } > 0 then
+		if #self.inside_surface.find_entities_filtered { type = "tile-ghost" } > 0 then
 			return true
 		end
 	end
@@ -156,7 +156,7 @@ function Mythos:save(buffer)
 					}
 				end
 			end
-			inv.clear()  -- prevent engine loot spill
+			inv.clear() -- prevent engine loot spill
 		end
 	end
 
@@ -212,6 +212,43 @@ Connections.install(Mythos, connectionTypes)
 Logistics.install(Mythos)
 DimensionDeletion.install(Mythos, connectionTypes)
 
+-- ── Heat transport ───────────────────────────────────────────────────────────
+-- Equalises temperature between the outer and inner hidden heat-pipe proxies.
+-- Averages the two temperatures and applies the result to both entities so the
+-- two networks converge each tick.
+local function transferHeat(a, b)
+	local avg = (a.temperature + b.temperature) * 0.5
+	a.temperature = avg
+	b.temperature = avg
+end
+
+-- ── Fluid transport ───────────────────────────────────────────────────────────
+-- Equalises fluid between the outer hidden pipe (connected to the external
+-- network via Factorio's native fluid sim) and the inner pocket-dimension pipe
+-- (which the player's internal network connects to).  Called every 6 ticks.
+-- Each of the two pipes is a full-capacity vanilla pipe (100 units), so we
+-- move half the difference each call to converge quickly without overshooting.
+local function transferFluid(a, b)
+	local aContents = a.get_fluid_contents()
+	local bContents = b.get_fluid_contents()
+	-- Merge all fluid names present on either side.
+	local fluids = {}
+	for name in pairs(aContents) do fluids[name] = true end
+	for name in pairs(bContents) do fluids[name] = true end
+	for fluidName in pairs(fluids) do
+		local aAmt = aContents[fluidName] or 0
+		local bAmt = bContents[fluidName] or 0
+		local diff = aAmt - bAmt
+		if diff > 0.01 then
+			local moved = a.remove_fluid({ name = fluidName, amount = diff * 0.5 })
+			if moved > 0 then b.insert_fluid({ name = fluidName, amount = moved }) end
+		elseif diff < -0.01 then
+			local moved = b.remove_fluid({ name = fluidName, amount = -diff * 0.5 })
+			if moved > 0 then a.insert_fluid({ name = fluidName, amount = moved }) end
+		end
+	end
+end
+
 -- ── Belt item transport ────────────────────────────────────────────────────────
 -- Moves all items from every lane of `from` into the matching lane of `to`.
 -- Items that do not fit are left on `from`.
@@ -247,13 +284,23 @@ function Mythos.onNthTick()
 		for _, slot in pairs(state.slots) do
 			local conn = slot.conn
 			if conn and conn.connType == "belt"
-					and conn.entity.valid
-					and conn.innerBelt and conn.innerBelt.valid then
+				and conn.entity.valid
+				and conn.innerBelt and conn.innerBelt.valid then
 				if conn.ioDirection == "input" then
 					transferBeltLines(conn.entity, conn.innerBelt)
 				else
 					transferBeltLines(conn.innerBelt, conn.entity)
 				end
+			end
+			if conn and conn.connType == "pipe"
+				and conn.outerProxy and conn.outerProxy.valid
+				and conn.innerProxy and conn.innerProxy.valid then
+				transferFluid(conn.outerProxy, conn.innerProxy)
+			end
+			if conn and conn.connType == "heat-pipe"
+				and conn.outerProxy and conn.outerProxy.valid
+				and conn.innerProxy and conn.innerProxy.valid then
+				transferHeat(conn.outerProxy, conn.innerProxy)
 			end
 		end
 
@@ -287,7 +334,7 @@ function Mythos.onEntityBuilt(event)
 		if state and state.entity.valid and connectionTypes[entity.type] == "belt" then
 			local slotKey = state:findInnerSlotAt(entity.position)
 			if slotKey and state:connectFromInner(slotKey, entity) then
-				entity.surface.play_sound{ path = "entity-close/assembling-machine-3", position = entity.position }
+				entity.surface.play_sound { path = "entity-close/assembling-machine-3", position = entity.position }
 			end
 		end
 		return
@@ -299,7 +346,8 @@ function Mythos.onEntityBuilt(event)
 		local saved    = saved_id and storage.saved_dimensions and storage.saved_dimensions[saved_id]
 		if saved then
 			-- Restore from a previously saved pocket dimension.
-			storage.saved_dimensions[saved_id] = nil
+			storage. ---@diagnostic disable-next-line: need-check-nil
+			saved_dimensions[saved_id] = nil
 			local cx = entity.position.x
 			local cy = entity.position.y
 			local slots, byExternalPos = Connections.buildSlots(cx, cy)
@@ -335,7 +383,7 @@ function Mythos.onEntityBuilt(event)
 	local state, slotKey = Mythos.findStateAndSlot(entity)
 	if not state then return end
 	if state:connect(slotKey, entity) then
-		entity.surface.play_sound{ path = "entity-close/assembling-machine-3", position = entity.position }
+		entity.surface.play_sound { path = "entity-close/assembling-machine-3", position = entity.position }
 	end
 end
 
@@ -371,7 +419,7 @@ function Mythos.onEntityRemoved(event)
 					end
 				else
 					-- Killed or script-destroyed: drop item on the ground.
-					local dropped = entity.surface.create_entity{
+					local dropped = entity.surface.create_entity {
 						name     = "item-on-ground",
 						position = entity.position,
 						stack    = { name = "mythos-with-contents", count = 1 },
@@ -391,8 +439,24 @@ function Mythos.onEntityRemoved(event)
 	local surfaceIndex = entity.surface_index
 	for _, state in pairs(storage.mythoi) do
 		if state.inside_surface and state.inside_surface.valid
-				and state.inside_surface.index == surfaceIndex
-				and state.entity.valid then
+			and state.inside_surface.index == surfaceIndex
+			and state.entity.valid then
+			-- Pocket-dimension walls are permanent: rebuild immediately and discard
+			-- the mined item so it is neither given to the player nor to the chest.
+			if entity.name == "stone-wall" then
+				state.inside_surface.create_entity {
+					name        = "stone-wall",
+					position    = entity.position,
+					force       = entity.force,
+					raise_built = false,
+				}
+				if event.buffer then
+					for i = 1, #event.buffer do
+						if event.buffer[i].valid_for_read then event.buffer[i].clear() end
+					end
+				end
+				return
+			end
 
 			-- Keep connection state consistent if a belt gate was removed.
 			if connectionTypes[entity.type] == "belt" then

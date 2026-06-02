@@ -141,6 +141,28 @@ function Connections.install(Mythos, connectionTypes)
 					raise_built = false,
 				}
 			end
+			-- For pipe and heat-pipe connections, also place a matching hidden proxy
+			-- inside the pocket dimension at the gate position so the player's
+			-- internal network connects to it.  Store both proxy references for the
+			-- fluid/heat transfer tick.
+			if connType == "pipe" or connType == "heat-pipe" then
+				local beltLayout = PocketDimension.slotBeltLayout[slotKey]
+				if not beltLayout then slot.conn = nil; return end
+				local gp = beltLayout.pos
+				local innerProxy = self.inside_surface.find_entity(hiddenName, { x = gp[1], y = gp[2] })
+				if not (innerProxy and innerProxy.valid) then
+					innerProxy = self.inside_surface.create_entity{
+						name        = hiddenName,
+						position    = { x = gp[1], y = gp[2] },
+						force       = entity.force,
+						raise_built = false,
+					}
+				end
+				if not innerProxy then slot.conn = nil; return end
+				local outerProxy = surface.find_entity(hiddenName, slot.inner)
+				slot.conn.outerProxy = outerProxy
+				slot.conn.innerProxy = innerProxy
+			end
 		end
 
 		return true
@@ -153,15 +175,21 @@ function Connections.install(Mythos, connectionTypes)
 		local slot = self.slots[slotKey]
 		if not slot or not slot.conn then return end
 
-		local connType = slot.conn.connType
-		local innerPos = slot.inner
+		local connType   = slot.conn.connType
+		local innerPos   = slot.inner
+		local innerProxy = slot.conn.innerProxy  -- pipe-only; may be nil
 		slot.conn = nil  -- The inner belt is player-placed; it stays in the world.
 
+		-- Destroy the outer hidden proxy when no corner-sharing slot still needs it.
 		local hiddenName = hiddenEntityName[connType]
 		if hiddenName and not self:innerPositionStillNeeded(innerPos) then
 			local proxy = self.entity.surface.find_entity(hiddenName, innerPos)
 			if proxy and proxy.valid then
 				proxy.destroy{ raise_destroy = false }
+			end
+			-- Also destroy the paired pocket-dimension proxy for pipe connections.
+			if innerProxy and innerProxy.valid then
+				innerProxy.destroy{ raise_destroy = false }
 			end
 		end
 	end
