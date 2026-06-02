@@ -36,6 +36,12 @@ local function create(unit_number, force, outer_surface)
 		mapGenSettings
 	)
 
+	-- Hide this surface from the map surface selector.
+	-- set_surface_hidden is per-force, so call it for every force.
+	for _, f in pairs(game.forces) do
+		f.set_surface_hidden(surface, true)
+	end
+
 	-- Keep the pocket dimension permanently at full daylight brightness.
 	surface.daytime       = 0.5
 	surface.freeze_daytime = true
