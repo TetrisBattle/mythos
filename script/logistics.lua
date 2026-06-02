@@ -47,7 +47,6 @@ function Logistics.install(Mythos)
 	-- Scans all ghost entities in the pocket dimension and updates the mythos
 	-- chest's logistic section so the network delivers exactly the items needed.
 	-- Items already in the chest that are no longer needed are marked as trash
-	-- (max = 0), returning them to the logistic network automatically.
 	function Mythos:updateRequests()
 		if not (self.entity.valid and self.inside_surface and self.inside_surface.valid) then return end
 
@@ -80,23 +79,6 @@ function Logistics.install(Mythos)
 				min   = count,
 				max   = count,
 			}
-		end
-
-		-- Trash items in the chest that are no longer required by any ghost.
-		local inv = self.entity.get_inventory(defines.inventory.chest)
-		if inv then
-			local trashed = {}
-			for i = 1, #inv do
-				local slot = inv[i]
-				if slot.valid_for_read and not needed[slot.name] and not trashed[slot.name] then
-					trashed[slot.name] = true
-					filters[#filters + 1] = {
-						value = { type = "item", name = slot.name, quality = "normal" },
-						min   = 0,
-						max   = 0,
-					}
-				end
-			end
 		end
 
 		section.filters = filters

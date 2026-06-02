@@ -21,7 +21,7 @@ local mythosEntity      = {
 				filename = modName .. "/graphics/mythos256.png",
 				width = 256,
 				height = 256,
-				scale = 0.4,
+				scale = 0.36,
 			},
 		},
 	},
