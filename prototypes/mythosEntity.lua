@@ -6,8 +6,11 @@ local mythosEntity      = {
 	icon_size = 144,
 	type = "logistic-container",
 	logistic_mode = "requester",
-	logistic_slots_count = 48,
+	max_logistic_slots = 48,
 	render_not_in_network_icon = false,
+	-- Hide vanilla logistic-request / alt-info icons above the entity; custom icons
+	-- are drawn via script (see Mythos:setIcon).
+	icon_draw_specification = { scale = 0, scale_for_many = 0 },
 	flags = { "placeable-player", "player-creation" },
 	minable = { mining_time = 0.5, result = "mythos" },
 	max_health = 500,

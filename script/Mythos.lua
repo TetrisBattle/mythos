@@ -4,6 +4,7 @@ local Connections       = require("script.connections")
 local Logistics         = require("script.logistics")
 local DimensionDeletion = require("script.dimensionDeletion")
 local Electricity       = require("script.electricity")
+local IconGui           = require("script.iconGui")
 
 local positionKey       = util.positionKey
 
@@ -28,6 +29,15 @@ local connectionTypes   = {
 	["boiler"]           = "heat-pipe",
 }
 
+-- Factorio 2.0: trash_not_requested lives on LuaLogisticPoint, not LuaEntity.
+local function configureMythosLogistics(entity)
+	entity.request_from_buffers = true
+	local point = entity.get_logistic_point(defines.logistic_member_index.logistic_container)
+	if point then
+		point.trash_not_requested = false
+	end
+end
+
 -- ── Mythos class ───────────────────────────────────────────────────────────────
 -- One instance per placed mythos entity.
 -- Stores the pocket-dimension surface, slot geometry, and all active connections.
@@ -45,11 +55,10 @@ function Mythos.new(mythosEntity)
 	local slots, byExternalPos = Connections.buildSlots(cx, cy)
 
 	local dim, inner_acc = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force, mythosEntity.surface)
-	mythosEntity.request_from_buffers = true
 	-- Prevent auto-trashing of items not currently in the logistic filter.
 	-- Without this, manually-inserted items (or over-delivered network items)
 	-- get moved to the trash slot the next time filters are narrowed.
-	mythosEntity.trash_not_requested = false
+	configureMythosLogistics(mythosEntity)
 
 	-- Hidden accumulator on the outer surface: connects to the nearby electric
 	-- grid and is script-drained into the pocket dimension each tick.
@@ -179,7 +188,11 @@ function Mythos:save(buffer)
 	end
 
 	storage.saved_dimensions = storage.saved_dimensions or {}
-	storage.saved_dimensions[saved_id] = { surface = self.inside_surface, items = items }
+	storage.saved_dimensions[saved_id] = {
+		surface      = self.inside_surface,
+		items        = items,
+		custom_icons = self.custom_icons,
+	}
 
 	-- Outer accumulator must be destroyed when the mythos is picked up.
 	-- The inner accumulator stays with the saved surface and is restored later.
@@ -222,6 +235,12 @@ end
 -- Disconnects all slots, deletes the pocket-dimension surface, and removes this
 -- instance from global storage.
 function Mythos:destroy()
+	if self.icon_renders then
+		for _, r in pairs(self.icon_renders) do
+			if r and r.valid then r.destroy() end
+		end
+	end
+	self.icon_renders = nil
 	if self.outer_acc and self.outer_acc.valid then
 		self.outer_acc.destroy()
 	end
@@ -232,6 +251,90 @@ function Mythos:destroy()
 		game.delete_surface(self.inside_surface)
 	end
 	storage.mythoi[self.entity.unit_number] = nil
+end
+
+-- ── Custom icons ───────────────────────────────────────────────────────────────
+-- Up to 4 custom icons can be displayed above the mythos entity in the world.
+-- `index` is 1-4; `signal` is a SignalID {type, name} from choose-elem-button,
+-- or nil to clear that slot.  Icons are never derived from chest contents.
+
+-- Redraws all active icons with layout-aware positions and scales.
+-- Layout rules:
+--   1 icon  → large, centred above entity
+--   2 icons → side by side, medium scale
+--   3 icons → 2 on top row, 1 centred on bottom row
+--   4 icons → 2×2 grid
+function Mythos:refreshIconRenders()
+	self.icon_renders = self.icon_renders or {}
+	self.custom_icons = self.custom_icons or {}
+
+	-- Destroy all current renders.
+	for i, r in pairs(self.icon_renders) do
+		if r and r.valid then r.destroy() end
+		self.icon_renders[i] = nil
+	end
+
+	-- Collect active (non-nil) icon slots in order.
+	local active = {}
+	for i = 1, 4 do
+		if self.custom_icons[i] then
+			active[#active + 1] = { idx = i, signal = self.custom_icons[i] }
+		end
+	end
+	local n = #active
+	if n == 0 then return end
+
+	-- Determine offsets and scale based on count.
+	-- Y = -1.5 places icons just above the 3-tile-tall entity top edge.
+	local offsets, scale
+	if n == 1 then
+		scale   = 0.9
+		offsets = { { 0, -0.1 } }
+	elseif n == 2 then
+		scale   = 0.55
+		offsets = {
+			{ -0.45, -0.1 },
+			{  0.45, -0.1 },
+		}
+	elseif n == 3 then
+		scale   = 0.55
+		offsets = {
+			{ -0.45, -0.5 },
+			{  0.45, -0.5 },
+			{  0,     0.3 },
+		}
+	else  -- n == 4
+		scale   = 0.55
+		offsets = {
+			{ -0.45, -0.5 },
+			{  0.45, -0.5 },
+			{ -0.45,  0.3 },
+			{  0.45,  0.3 },
+		}
+	end
+
+	for i, entry in ipairs(active) do
+		local sprite = IconGui.spritePath(entry.signal)
+		if sprite then
+			local off = offsets[i] or { 0, -1.6 }
+			self.icon_renders[entry.idx] = rendering.draw_sprite {
+				sprite       = sprite,
+				target       = { entity = self.entity, offset = off },
+				surface      = self.entity.surface,
+				x_scale      = scale,
+				y_scale      = scale,
+				render_layer = "entity-info-icon-above",
+			}
+		end
+	end
+end
+
+function Mythos:setIcon(index, signal)
+	self.icon_renders = self.icon_renders or {}
+	self.custom_icons = self.custom_icons or {}
+
+	self.custom_icons[index] = signal or nil
+	self:refreshIconRenders()
 end
 
 -- ── Sub-system installation ────────────────────────────────────────────────────
@@ -423,8 +526,7 @@ function Mythos.onEntityBuilt(event)
 				outer_acc        = outer_acc,
 				inner_acc        = inner_acc,
 			}, Mythos)
-			entity.request_from_buffers = true
-			entity.trash_not_requested = false
+			configureMythosLogistics(entity)
 			local inv = entity.get_inventory(defines.inventory.chest)
 			if inv and saved.items then
 				for _, item in pairs(saved.items) do
@@ -432,6 +534,11 @@ function Mythos.onEntityBuilt(event)
 				end
 			end
 			storage.mythoi[entity.unit_number] = state
+			if saved.custom_icons then
+				for idx, signal in pairs(saved.custom_icons) do
+					state:setIcon(idx, signal)
+				end
+			end
 			state:connectExistingNeighbours()
 		else
 			local state = Mythos.new(entity)
