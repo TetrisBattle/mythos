@@ -377,11 +377,19 @@ end
 -- ── Dimension resize ──────────────────────────────────────────────────────────
 
 -- Slot keys that belong to each edge (used by resize helpers).
+local function edgeSlotKeys(edge)
+	local keys = {}
+	for i = 1, PocketDimension.GATES_PER_SIDE do
+		keys[i] = edge .. "-" .. i
+	end
+	return keys
+end
+
 local edgeSlots = {
-	left   = { "left-top",    "left-bottom"   },
-	right  = { "right-top",   "right-bottom"  },
-	top    = { "top-left",    "top-right"     },
-	bottom = { "bottom-left", "bottom-right"  },
+	left   = edgeSlotKeys("left"),
+	right  = edgeSlotKeys("right"),
+	top    = edgeSlotKeys("top"),
+	bottom = edgeSlotKeys("bottom"),
 }
 
 -- Returns the effective slot-belt layout entry for `slotKey`.
@@ -451,7 +459,7 @@ local function axisSize(bounds, edge)
 	return floorHeight(bounds)
 end
 
--- Even-sized floors keep the 2-tile gate gap centred; odd sizes step by 1 first.
+-- Even-sized floors keep gate spacing symmetric; odd sizes step by 1 first.
 local function resizeStepsForEdge(bounds, edge)
 	local size = axisSize(bounds, edge)
 	if size % 2 == 0 then

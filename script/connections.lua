@@ -1,5 +1,5 @@
 -- ── Slot Connection System ────────────────────────────────────────────────────
--- Manages the eight external connection slots on a mythos entity.
+-- Manages the external connection slots on a mythos entity (4 per side).
 -- Each slot can hold one active connection (belt, pipe, or heat-pipe) bridging
 -- the outside world to the pocket dimension interior.
 --
@@ -16,16 +16,22 @@ local positionKey     = util.positionKey
 --   externalX/Y : tile where the player-placed connector must sit (outside mythos)
 --   innerX/Y    : tile inside the mythos footprint where the hidden proxy goes
 --   outwardDir  : direction FROM the mythos centre TOWARD the external connector
-local slotLayout = {
-	["left-top"]     = { externalX = -1.5, externalY = -0.5, innerX = -0.5, innerY = -0.5, outwardDir = defines.direction.west  },
-	["left-bottom"]  = { externalX = -1.5, externalY =  0.5, innerX = -0.5, innerY =  0.5, outwardDir = defines.direction.west  },
-	["right-top"]    = { externalX =  1.5, externalY = -0.5, innerX =  0.5, innerY = -0.5, outwardDir = defines.direction.east  },
-	["right-bottom"] = { externalX =  1.5, externalY =  0.5, innerX =  0.5, innerY =  0.5, outwardDir = defines.direction.east  },
-	["top-left"]     = { externalX = -0.5, externalY = -1.5, innerX = -0.5, innerY = -0.5, outwardDir = defines.direction.north },
-	["top-right"]    = { externalX =  0.5, externalY = -1.5, innerX =  0.5, innerY = -0.5, outwardDir = defines.direction.north },
-	["bottom-left"]  = { externalX = -0.5, externalY =  1.5, innerX = -0.5, innerY =  0.5, outwardDir = defines.direction.south },
-	["bottom-right"] = { externalX =  0.5, externalY =  1.5, innerX =  0.5, innerY =  0.5, outwardDir = defines.direction.south },
-}
+-- Tile offsets along each 4×4 face (1 = top / left).
+local GATE_OFFSETS = { -1.5, -0.5, 0.5, 1.5 }
+
+local function buildSlotLayout()
+	local layout = {}
+	for i = 1, PocketDimension.GATES_PER_SIDE do
+		local off = GATE_OFFSETS[i]
+		layout["left-" .. i]   = { externalX = -2.5, externalY = off, innerX = -1.5, innerY = off, outwardDir = defines.direction.west  }
+		layout["right-" .. i]  = { externalX =  2.5, externalY = off, innerX =  1.5, innerY = off, outwardDir = defines.direction.east  }
+		layout["top-" .. i]    = { externalX = off, externalY = -2.5, innerX = off, innerY = -1.5, outwardDir = defines.direction.north }
+		layout["bottom-" .. i] = { externalX = off, externalY =  2.5, innerX = off, innerY =  1.5, outwardDir = defines.direction.south }
+	end
+	return layout
+end
+
+local slotLayout = buildSlotLayout()
 
 local oppositeDir = {
 	[defines.direction.north] = defines.direction.south,

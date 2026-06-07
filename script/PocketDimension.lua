@@ -1,6 +1,5 @@
 local DEFAULT_WIDTH  = 32
 local DEFAULT_HEIGHT = 16
-local DIMENSION_SIZE = DEFAULT_WIDTH   -- width axis; slot layout uses this
 local DEFAULT_Y_MAX  = DEFAULT_WIDTH - 1
 local DEFAULT_Y_MIN  = DEFAULT_Y_MAX - DEFAULT_HEIGHT + 1
 local DEFAULT_FLOOR_BOUNDS = {
@@ -11,13 +10,25 @@ local DEFAULT_FLOOR_BOUNDS = {
 }
 local VIEW_X = DEFAULT_WIDTH / 2
 local VIEW_Y = (DEFAULT_Y_MIN + DEFAULT_Y_MAX) / 2
-local mid    = DIMENSION_SIZE / 2  -- centre of the default 32×32 wall (gap straddles mid-1 and mid)
--- Legacy constant: gap index for the default full-height floor.
-local GAP    = mid  -- = 16
 
--- Tile index of the upper row of the 2-tile gate gap, centred on [min, max].
-local function gapCentre(min_coord, max_coord)
-	return math.floor((min_coord + max_coord + 1) / 2)
+local GATES_PER_SIDE = 4
+
+-- GATES_PER_SIDE consecutive floor-tile indices clustered in the wall centre.
+local function gateCoordsAlong(min_coord, max_coord)
+	local span = max_coord - min_coord + 1
+	local start = min_coord + math.floor((span - GATES_PER_SIDE) / 2)
+	local coords = {}
+	for i = 0, GATES_PER_SIDE - 1 do
+		coords[i + 1] = start + i
+	end
+	return coords
+end
+
+local function allGateCoordsFit(min_coord, max_coord)
+	for _, c in ipairs(gateCoordsAlong(min_coord, max_coord)) do
+		if c < min_coord or c > max_coord then return false end
+	end
+	return true
 end
 
 local function floorCentre(bounds)
@@ -165,7 +176,7 @@ end
 -- Arrow buttons resize in 8-tile steps; typed sizes snap to 2-tile (even) accuracy.
 local RESIZE_STEP   = 8
 local FLOOR_SNAP    = 2
-local MIN_DIMENSION = 2
+local MIN_DIMENSION = GATES_PER_SIDE
 
 -- Rounds a typed size up to the nearest even value (minimum MIN_DIMENSION).
 local function snapSizeUpEven(size)
@@ -289,22 +300,37 @@ local function inferFloorBounds(surface)
 	return { x_min = x_min, x_max = x_max, y_min = y_min, y_max = y_max }
 end
 
--- Computes the 8 gate/belt positions for arbitrary floor bounds.
--- Each wall's 2-tile gap is centred on that axis so side gates stay mid-wall when
--- height changes and top/bottom gates stay mid-wall when width changes.
+-- Computes gate/belt positions for arbitrary floor bounds.
+-- Each wall gets GATES_PER_SIDE adjacent gates centred on that axis.
 local function computeSlotBeltLayoutForBounds(x_min, x_max, y_min, y_max)
-	local x_gap = gapCentre(x_min, x_max)
-	local y_gap = gapCentre(y_min, y_max)
-	return {
-		["left-top"]     = { pos = { x_min - 0.5, y_gap - 0.5 }, innerBeltPos = { x_min + 0.5, y_gap - 0.5 }, gateOrientation = 0.75 },
-		["left-bottom"]  = { pos = { x_min - 0.5, y_gap + 0.5 }, innerBeltPos = { x_min + 0.5, y_gap + 0.5 }, gateOrientation = 0.75 },
-		["right-top"]    = { pos = { x_max + 1.5, y_gap - 0.5 }, innerBeltPos = { x_max + 0.5, y_gap - 0.5 }, gateOrientation = 0.25 },
-		["right-bottom"] = { pos = { x_max + 1.5, y_gap + 0.5 }, innerBeltPos = { x_max + 0.5, y_gap + 0.5 }, gateOrientation = 0.25 },
-		["top-left"]     = { pos = { x_gap - 0.5, y_min - 0.5 }, innerBeltPos = { x_gap - 0.5, y_min + 0.5 }, gateOrientation = 0    },
-		["top-right"]    = { pos = { x_gap + 0.5, y_min - 0.5 }, innerBeltPos = { x_gap + 0.5, y_min + 0.5 }, gateOrientation = 0    },
-		["bottom-left"]  = { pos = { x_gap - 0.5, y_max + 1.5 }, innerBeltPos = { x_gap - 0.5, y_max + 0.5 }, gateOrientation = 0.5  },
-		["bottom-right"] = { pos = { x_gap + 0.5, y_max + 1.5 }, innerBeltPos = { x_gap + 0.5, y_max + 0.5 }, gateOrientation = 0.5  },
-	}
+	local layout = {}
+	for i, y in ipairs(gateCoordsAlong(y_min, y_max)) do
+		local yc = y + 0.5  -- tile index → tile centre
+		layout["left-" .. i] = {
+			pos             = { x_min - 0.5, yc },
+			innerBeltPos    = { x_min + 0.5, yc },
+			gateOrientation = 0.75,
+		}
+		layout["right-" .. i] = {
+			pos             = { x_max + 1.5, yc },
+			innerBeltPos    = { x_max + 0.5, yc },
+			gateOrientation = 0.25,
+		}
+	end
+	for i, x in ipairs(gateCoordsAlong(x_min, x_max)) do
+		local xc = x + 0.5
+		layout["top-" .. i] = {
+			pos             = { xc, y_min - 0.5 },
+			innerBeltPos    = { xc, y_min + 0.5 },
+			gateOrientation = 0,
+		}
+		layout["bottom-" .. i] = {
+			pos             = { xc, y_max + 1.5 },
+			innerBeltPos    = { xc, y_max + 0.5 },
+			gateOrientation = 0.5,
+		}
+	end
+	return layout
 end
 
 -- Default layout for new dimensions (derived from default floor bounds).
@@ -419,8 +445,7 @@ local function contractEdge(surface, bounds, edge, force, steps)
 		local new_x_max = x_max - steps
 		local new_width = new_x_max - x_min + 1
 		if new_width < MIN_DIMENSION then return nil end
-		local x_gap = gapCentre(x_min, new_x_max)
-		if x_gap - 1 < x_min or x_gap > new_x_max then return nil end
+		if not allGateCoordsFit(x_min, new_x_max) then return nil end
 		for x = x_max, new_x_max + 1, -1 do
 			for y = y_min, y_max do
 				removeTiles[#removeTiles + 1] = { x, y }
@@ -431,8 +456,7 @@ local function contractEdge(surface, bounds, edge, force, steps)
 		local new_y_min = y_min + steps
 		local new_height = y_max - new_y_min + 1
 		if new_height < MIN_DIMENSION then return nil end
-		local y_gap = gapCentre(new_y_min, y_max)
-		if y_gap - 1 < new_y_min or y_gap > y_max then return nil end
+		if not allGateCoordsFit(new_y_min, y_max) then return nil end
 		for y = y_min, new_y_min - 1 do
 			for x = x_min, x_max do
 				removeTiles[#removeTiles + 1] = { x, y }
@@ -463,7 +487,7 @@ return {
 	DEFAULT_FLOOR_BOUNDS            = DEFAULT_FLOOR_BOUNDS,
 	VIEW_X                          = VIEW_X,
 	VIEW_Y                          = VIEW_Y,
-	GAP                             = GAP,
+	GATES_PER_SIDE                  = GATES_PER_SIDE,
 	RESIZE_STEP                     = RESIZE_STEP,
 	MIN_DIMENSION                   = MIN_DIMENSION,
 	snapSizeUpEven                  = snapSizeUpEven,
