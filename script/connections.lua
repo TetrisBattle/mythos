@@ -9,6 +9,7 @@
 
 local PocketDimension = require("script.PocketDimension")
 local util            = require("script.util")
+local Registry        = require("script.registry")
 local positionKey     = util.positionKey
 
 -- ── Slot geometry ──────────────────────────────────────────────────────────────
@@ -49,14 +50,7 @@ local hiddenEntityName = {
 
 -- Constant lookup: pocket-dimension inner belt position → slot key.
 -- Derived from PocketDimension layout; identical for every mythos instance.
-local innerPosToSlot = (function()
-	local t = {}
-	for slotKey, beltLayout in pairs(PocketDimension.slotBeltLayout) do
-		local ip = beltLayout.innerBeltPos
-		t[positionKey(ip[1], ip[2])] = slotKey
-	end
-	return t
-end)()
+local innerPosToSlot = util.buildInnerPosToSlot(PocketDimension.slotBeltLayout)
 
 -- ── Public API ─────────────────────────────────────────────────────────────────
 local Connections = {}
@@ -264,7 +258,7 @@ function Connections.install(Mythos, connectionTypes)
 	-- Searches all live Mythos instances for one whose external slot matches the
 	-- given entity's world position.  Returns (state, slotKey) or nil.
 	function Mythos.findStateAndSlot(entity)
-		for _, state in pairs(storage.mythoi) do
+		for _, state in pairs(Registry.all()) do
 			if state.entity.valid then
 				local slotKey = state:findSlotAt(entity.position)
 				if slotKey then return state, slotKey end

@@ -4,10 +4,11 @@
 -- can pick up to 4 signals as custom icons, rendered in world-space above the
 -- entity.  The icons are NOT derived automatically from chest contents.
 
+local Registry = require("script.registry")
+
 local IconGui = {}
 
 local FRAME_NAME  = "mythos-icon-panel"
-local ICON_COUNT  = 4
 local BTN_PREFIX  = "mythos-icon-button-" -- followed by 1-4
 
 -- Signal-type → sprite-path prefix mapping.
@@ -47,7 +48,7 @@ function IconGui.open(player, entity)
 	local existing = player.gui.relative[FRAME_NAME]
 	if existing and existing.valid then existing.destroy() end
 
-	local state = storage.mythoi[entity.unit_number]
+	local state = Registry.get(entity.unit_number)
 	if not state then return end
 
 	local frame = player.gui.relative.add {
@@ -102,7 +103,7 @@ function IconGui.onElemChanged(event)
 	local tags = element.tags
 	if not (tags and tags.mythos_unit and tags.slot) then return end
 
-	local state = storage.mythoi[tags.mythos_unit]
+	local state = Registry.get(tags.mythos_unit)
 	if not (state and state.entity and state.entity.valid) then return end
 
 	state:setIcon(tags.slot, element.elem_value) -- elem_value is nil when cleared

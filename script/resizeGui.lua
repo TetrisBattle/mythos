@@ -3,6 +3,8 @@
 -- bottom-right corner of the screen.
 
 local PocketDimension = require("script.PocketDimension")
+local Registry        = require("script.registry")
+local util            = require("script.util")
 local ResizeGui       = {}
 local FRAME_NAME   = "mythos-resize-panel"
 local BTN_PREFIX   = "mythos-resize-"
@@ -45,12 +47,12 @@ end
 
 local function widthOf(state)
 	local b = state.floor_bounds or defaultBounds()
-	return b.x_max - b.x_min + 1
+	return util.floorWidth(b)
 end
 
 local function heightOf(state)
 	local b = state.floor_bounds or defaultBounds()
-	return b.y_max - b.y_min + 1
+	return util.floorHeight(b)
 end
 
 local function getFrame(player)
@@ -98,7 +100,7 @@ end
 
 local function stateFromTags(tags)
 	if not (tags and tags.mythos_unit) then return nil end
-	return storage.mythoi[tags.mythos_unit]
+	return Registry.get(tags.mythos_unit)
 end
 
 local function reportError(player, errKey)
@@ -130,7 +132,7 @@ local function playerState(player_index)
 		if n == WIDTH_FIELD or n == HEIGHT_FIELD then return nil end
 	end
 	local unit = storage.viewing and storage.viewing[player_index]
-	local state = unit and storage.mythoi[unit]
+	local state = unit and Registry.get(unit)
 	if not state then return nil end
 	return player, state
 end

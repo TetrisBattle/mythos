@@ -10,22 +10,11 @@
 -- furnaces with fuel and ingredients inside — all contents transfer atomically.
 -- If even one item cannot fit the entire operation is deferred.
 
+local Registry = require("script.registry")
+
 local DimensionDeletion = {}
 
 function DimensionDeletion.install(Mythos, connectionTypes)
-
-	-- Returns the Mythos state whose pocket dimension has the given surface index,
-	-- or nil if the surface does not belong to any live pocket dimension.
-	local function findStateForSurface(surfaceIndex)
-		for _, state in pairs(storage.mythoi) do
-			if state.inside_surface
-					and state.inside_surface.valid
-					and state.inside_surface.index == surfaceIndex
-					and state.entity.valid then
-				return state
-			end
-		end
-	end
 
 	-- Attempts to mine `entity` directly into the mythos chest.
 	-- entity.mine() is atomic: it only destroys the entity if every item
@@ -84,7 +73,7 @@ function DimensionDeletion.install(Mythos, connectionTypes)
 		local mineable = entity.prototype.mineable_properties
 		if not (mineable and mineable.minable) then return end
 
-		local state = findStateForSurface(entity.surface_index)
+		local state = Registry.findByInsideSurfaceIndex(entity.surface_index)
 		if not state then return end
 
 		if not state:tryDeleteEntity(entity) then
@@ -100,7 +89,7 @@ function DimensionDeletion.install(Mythos, connectionTypes)
 		local entity = event.entity
 		if not (entity and entity.valid) then return end
 
-		local state = findStateForSurface(entity.surface_index)
+		local state = Registry.findByInsideSurfaceIndex(entity.surface_index)
 		if not state or not state.pendingDeletions then return end
 
 		for i = #state.pendingDeletions, 1, -1 do

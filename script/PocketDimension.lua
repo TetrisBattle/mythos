@@ -1,3 +1,5 @@
+local util = require("script.util")
+
 local DEFAULT_WIDTH  = 32
 local DEFAULT_HEIGHT = 16
 local DEFAULT_Y_MAX  = DEFAULT_WIDTH - 1
@@ -153,13 +155,9 @@ end
 local function syncInfrastructure(surface, bounds)
 	local cx, cy = floorCentre(bounds)
 	local pos = { cx, cy }
-	for _, name in ipairs{
-		"mythos-hidden-radar",
-		"mythos-power-hub-pole",
-		"mythos-power-link-inner",
-	} do
-		for _, e in pairs(surface.find_entities_filtered{ name = name }) do
-			if e.valid then e.teleport(pos) end
+	for name in pairs(util.REMOTE_VIEW_ENTITY_NAMES) do
+		for _, entity in pairs(surface.find_entities_filtered{ name = name }) do
+			if entity.valid then entity.teleport(pos) end
 		end
 	end
 	return cx, cy
@@ -397,19 +395,10 @@ local function expandEdge(surface, bounds, edge, force, steps)
 	return { x_min = x_min, x_max = x_max, y_min = y_min, y_max = y_max }
 end
 
--- Hidden infrastructure — not player-placed obstructions.
-local CONTRACT_IGNORE = {
-	["mythos-hidden-radar"]     = true,
-	["mythos-power-hub-pole"]   = true,
-	["mythos-power-link-inner"] = true,
-	["mythos-hidden-pipe"]      = true,
-	["mythos-hidden-heat-pipe"] = true,
-}
-
 local function tileBlockedByPlayerEntity(surface, tx, ty)
 	local area = { { tx, ty }, { tx + 1, ty + 1 } }
 	for _, e in ipairs(surface.find_entities_filtered{ area = area }) do
-		if e.valid and not CONTRACT_IGNORE[e.name] then
+		if e.valid and not util.isInfrastructureEntityName(e.name) then
 			return true
 		end
 	end

@@ -1,0 +1,169 @@
+local MythosRestore = require("script.mythosRestore")
+local Registry      = require("script.registry")
+local util          = require("script.util")
+
+local MythosEvents = {}
+
+local function playConnectSound(surface, position)
+	surface.play_sound { path = "entity-close/assembling-machine-3", position = position }
+end
+
+local function giveSavedItemToBuffer(buffer, saved_id)
+	buffer.remove({ name = "mythos", count = 1 })
+	buffer.insert({ name = "mythos-with-contents", count = 1 })
+	for i = 1, #buffer do
+		local stack = buffer[i]
+		if stack.valid_for_read and stack.name == "mythos-with-contents" then
+			stack.tags = { saved_id = saved_id }
+			break
+		end
+	end
+end
+
+local function dropSavedItem(entity, saved_id)
+	local dropped = entity.surface.create_entity {
+		name     = "item-on-ground",
+		position = entity.position,
+		stack    = { name = "mythos-with-contents", count = 1 },
+	}
+	if dropped and dropped.valid then
+		dropped.stack.tags = { saved_id = saved_id }
+	end
+end
+
+local function primePlayerRestoreCache(event, saved_id)
+	if not event.player_index then return end
+	storage.pending_player_restore = storage.pending_player_restore or {}
+	storage.pending_player_restore[event.player_index] = saved_id
+end
+
+local function moveRemovalBufferToChest(state, buffer)
+	local inv = state.entity.get_inventory(defines.inventory.chest)
+	if not inv then return end
+	for i = 1, #buffer do
+		local stack = buffer[i]
+		if stack.valid_for_read then
+			inv.insert(stack)
+			stack.clear()
+		end
+	end
+end
+
+function MythosEvents.install(Mythos, connectionTypes)
+
+	-- Returns the saved_id embedded in the item used to build `entity`, or nil.
+	function Mythos.extractSavedId(event)
+		if event.item and event.item.name ~= "mythos-with-contents" then return nil end
+		if event.player_index then
+			storage.pending_player_restore = storage.pending_player_restore or {}
+			local saved_id = storage.pending_player_restore[event.player_index]
+			if saved_id then
+				storage.pending_player_restore[event.player_index] = nil
+				return saved_id
+			end
+		end
+
+		local stack = event.stack
+		if stack and stack.valid then
+			local ok, tags = pcall(function() return stack.tags end)
+			if ok and tags and tags.saved_id then return tags.saved_id end
+		end
+	end
+
+	function Mythos.onEntityBuilt(event)
+		local entity = event.entity
+		if not (entity and entity.valid) then return end
+
+		local unitNum = util.parseDimensionUnitNumber(entity.surface)
+		if unitNum then
+			local state = Registry.get(unitNum)
+			if state and state.entity.valid and connectionTypes[entity.type] == "belt" then
+				local slotKey = state:findInnerSlotAt(entity.position)
+				if slotKey and state:connectFromInner(slotKey, entity) then
+					playConnectSound(entity.surface, entity.position)
+				end
+			end
+			return
+		end
+
+		if entity.name == "mythos" then
+			local saved_id = Mythos.extractSavedId(event)
+			local saved_dimensions = storage.saved_dimensions
+			local saved = saved_id and saved_dimensions and saved_dimensions[saved_id]
+			if saved and saved_id and saved_dimensions then
+				saved_dimensions[saved_id] = nil
+				local state = MythosRestore.fromSaved(Mythos, entity, saved)
+				Registry.set(entity.unit_number, state)
+				state:connectExistingNeighbours()
+			else
+				local state = Mythos.new(entity)
+				Registry.set(entity.unit_number, state)
+				state:connectExistingNeighbours()
+			end
+			return
+		end
+
+		if not connectionTypes[entity.type] then return end
+		local state, slotKey = Mythos.findStateAndSlot(entity)
+		if not state then return end
+		if state:connect(slotKey, entity) then
+			playConnectSound(entity.surface, entity.position)
+		end
+	end
+
+	function Mythos.onEntityRemoved(event)
+		local entity = event.entity
+		if not (entity and entity.valid) then return end
+
+		if entity.name == "mythos" then
+			local state = Registry.get(entity.unit_number)
+			if state then
+				if state:hasContents(event.buffer) then
+					local saved_id = state:save(event.buffer)
+					if event.buffer then
+						giveSavedItemToBuffer(event.buffer, saved_id)
+						primePlayerRestoreCache(event, saved_id)
+					else
+						dropSavedItem(entity, saved_id)
+					end
+				else
+					state:destroy()
+				end
+			end
+			return
+		end
+
+		local state = Registry.findByInsideSurfaceIndex(entity.surface_index)
+		if state then
+			if connectionTypes[entity.type] == "belt" then
+				local slotKey = state:findInnerSlotAt(entity.position)
+				if slotKey then state:disconnect(slotKey) end
+			end
+
+			if event.buffer then
+				moveRemovalBufferToChest(state, event.buffer)
+			end
+			return
+		end
+
+		if not connectionTypes[entity.type] then return end
+		local outsideState, slotKey = Mythos.findStateAndSlot(entity)
+		if outsideState then outsideState:disconnect(slotKey) end
+	end
+
+	function Mythos.onCursorChanged(event)
+		storage.pending_player_restore = storage.pending_player_restore or {}
+		local player = game.get_player(event.player_index)
+		if not player then return end
+		local stack = player.cursor_stack
+		if stack and stack.valid_for_read and stack.name == "mythos-with-contents" then
+			local tags = stack.tags
+			storage.pending_player_restore[event.player_index] = tags and tags.saved_id
+		else
+			storage.pending_player_restore[event.player_index] = nil
+		end
+	end
+
+end
+
+return MythosEvents

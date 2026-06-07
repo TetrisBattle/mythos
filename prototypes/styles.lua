@@ -7,12 +7,6 @@ styles["mythos_resize_frame"] = {
 	horizontally_stretchable = "off",
 }
 
-styles["mythos_resize_inner"] = {
-	type                     = "frame_style",
-	parent                   = "inside_shallow_frame_with_padding",
-	horizontally_stretchable = "off",
-}
-
 styles["mythos_resize_field"] = {
 	type   = "textbox_style",
 	parent = "short_number_textfield",

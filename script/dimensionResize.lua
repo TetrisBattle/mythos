@@ -1,0 +1,213 @@
+local PocketDimension = require("script.PocketDimension")
+local util            = require("script.util")
+
+local DimensionResize = {}
+
+local function layoutForBounds(bounds)
+	return PocketDimension.computeSlotBeltLayoutForBounds(
+		bounds.x_min, bounds.x_max, bounds.y_min, bounds.y_max
+	)
+end
+
+local function gateTarget(pos)
+	return { x = pos[1], y = pos[2] }
+end
+
+local function drawGateSpritesForLayout(slots, layout, surface)
+	for slotKey, slot in pairs(slots) do
+		if slot.gateRender and slot.gateRender.valid then
+			slot.gateRender.destroy()
+		end
+		slot.gateRender = nil
+
+		local beltLayout = layout[slotKey]
+		if beltLayout then
+			slot.gateRender = rendering.draw_sprite{
+				sprite      = "mythos-gate",
+				target      = gateTarget(beltLayout.pos),
+				surface     = surface,
+				orientation = beltLayout.gateOrientation,
+				y_scale     = 0.75,
+			}
+		end
+	end
+end
+
+local edgeSlots = {
+	left   = util.edgeSlotKeys("left", PocketDimension.GATES_PER_SIDE),
+	right  = util.edgeSlotKeys("right", PocketDimension.GATES_PER_SIDE),
+	top    = util.edgeSlotKeys("top", PocketDimension.GATES_PER_SIDE),
+	bottom = util.edgeSlotKeys("bottom", PocketDimension.GATES_PER_SIDE),
+}
+
+local RESIZE_STEP = PocketDimension.RESIZE_STEP
+
+local function axisSize(bounds, edge)
+	if edge == "right" or edge == "left" then
+		return util.floorWidth(bounds)
+	end
+	return util.floorHeight(bounds)
+end
+
+-- Even-sized floors keep gate spacing symmetric; odd sizes step by 1 first.
+local function resizeStepsForEdge(bounds, edge)
+	local size = axisSize(bounds, edge)
+	if size % 2 == 0 then
+		return RESIZE_STEP
+	end
+	return 1
+end
+
+local function syncViewPosition(self)
+	if not self.floor_bounds then return end
+	self.inside_x, self.inside_y = PocketDimension.floorCentre(self.floor_bounds)
+end
+
+local function finalizeFloorBounds(self, refreshGates)
+	syncViewPosition(self)
+	if self.inside_surface and self.inside_surface.valid and self.floor_bounds then
+		PocketDimension.ensureRemoteViewReady(
+			self.inside_surface, self.floor_bounds, self.entity.force
+		)
+	end
+	if refreshGates ~= false then
+		self:refreshGateRenders()
+	end
+end
+
+local function applyFloorBounds(self, newBounds, refreshGates, deferFinalize)
+	self.floor_bounds = newBounds
+	if deferFinalize then return end
+	finalizeFloorBounds(self, refreshGates)
+end
+
+local function resizeAxis(self, edge, current, target, deferGateRefresh)
+	while current < target do
+		local steps = math.min(RESIZE_STEP, target - current)
+		if current % 2 ~= 0 then
+			steps = 1
+		end
+		local ok, err = self:expandEdge(edge, deferGateRefresh, steps)
+		if not ok then return false, err end
+		current = current + steps
+	end
+
+	while current > target do
+		local steps = math.min(RESIZE_STEP, current - target)
+		if current % 2 ~= 0 then
+			steps = 1
+		end
+		local ok, err = self:contractEdge(edge, deferGateRefresh, steps)
+		if not ok then return false, err end
+		current = current - steps
+	end
+
+	return true
+end
+
+function DimensionResize.install(Mythos)
+
+	function Mythos:getSlotBeltLayout(slotKey)
+		if not self.floor_bounds then
+			self:syncFloorBoundsFromTiles()
+		end
+		local layout = self.slotBeltLayoutInst
+		if not layout and self.floor_bounds then
+			layout = layoutForBounds(self.floor_bounds)
+			self.slotBeltLayoutInst = layout
+		end
+		return layout and layout[slotKey]
+	end
+
+	function Mythos:isEdgeConnected(edge)
+		for _, slotKey in ipairs(edgeSlots[edge]) do
+			if self.slots[slotKey] and self.slots[slotKey].conn then
+				return true
+			end
+		end
+		return false
+	end
+
+	-- Floor tiles are the source of truth for gate placement.
+	function Mythos:syncFloorBoundsFromTiles()
+		if self.inside_surface and self.inside_surface.valid then
+			self.floor_bounds = PocketDimension.inferFloorBounds(self.inside_surface)
+		elseif not self.floor_bounds then
+			self.floor_bounds = util.copyBounds(PocketDimension.DEFAULT_FLOOR_BOUNDS)
+		end
+	end
+
+	function Mythos:refreshGateRenders()
+		if not (self.slots and self.inside_surface and self.inside_surface.valid) then return end
+		self:syncFloorBoundsFromTiles()
+		local layout = layoutForBounds(self.floor_bounds)
+		self.slotBeltLayoutInst = layout
+		self.innerPosToSlotInst = util.buildInnerPosToSlot(layout)
+		drawGateSpritesForLayout(self.slots, layout, self.inside_surface)
+	end
+
+	function Mythos:expandEdge(edge, deferGateRefresh, steps)
+		if not edgeSlots[edge] then return false, "mythos-gui.resize-invalid-edge" end
+
+		if self:isEdgeConnected(edge) then
+			return false, "mythos-gui.resize-has-connections"
+		end
+
+		self:syncFloorBoundsFromTiles()
+		steps = steps or resizeStepsForEdge(self.floor_bounds, edge)
+		local newBounds = PocketDimension.expandEdge(
+			self.inside_surface, self.floor_bounds, edge, self.entity.force, steps
+		)
+		applyFloorBounds(self, newBounds, not deferGateRefresh, deferGateRefresh)
+		return true
+	end
+
+	function Mythos:contractEdge(edge, deferGateRefresh, steps)
+		if edge ~= "right" and edge ~= "top" then
+			return false, "mythos-gui.resize-invalid-edge"
+		end
+
+		if self:isEdgeConnected(edge) then
+			return false, "mythos-gui.resize-has-connections"
+		end
+
+		self:syncFloorBoundsFromTiles()
+		steps = steps or resizeStepsForEdge(self.floor_bounds, edge)
+		local newBounds, blocked = PocketDimension.contractEdge(
+			self.inside_surface, self.floor_bounds, edge, self.entity.force, steps
+		)
+		if not newBounds then
+			if blocked then
+				return false, "mythos-gui.resize-has-entities"
+			end
+			return false, "mythos-gui.resize-min-size"
+		end
+
+		applyFloorBounds(self, newBounds, not deferGateRefresh, deferGateRefresh)
+		return true
+	end
+
+	function Mythos:resizeTo(targetWidth, targetHeight)
+		targetWidth  = PocketDimension.snapSizeUpEven(targetWidth)
+		targetHeight = PocketDimension.snapSizeUpEven(targetHeight)
+		if targetWidth < PocketDimension.MIN_DIMENSION or targetHeight < PocketDimension.MIN_DIMENSION then
+			return false, "mythos-gui.resize-invalid-size"
+		end
+
+		self:syncFloorBoundsFromTiles()
+		local width  = util.floorWidth(self.floor_bounds)
+		local height = util.floorHeight(self.floor_bounds)
+
+		local ok, err = resizeAxis(self, "right", width, targetWidth, true)
+		if not ok then return false, err end
+
+		ok, err = resizeAxis(self, "top", height, targetHeight, true)
+		if not ok then return false, err end
+
+		finalizeFloorBounds(self, true)
+		return true
+	end
+
+end
+
+return DimensionResize
