@@ -1,12 +1,14 @@
--- ── Pocket-Dimension Resize GUI ────────────────────────────────────────────────
--- Shown while remote-viewing a pocket dimension.  Auto-sized, anchored to the
--- bottom-right corner of the screen.
+-- ── Mythos Config GUI (resize + custom icons) ─────────────────────────────────
+-- Shown while remote-viewing a pocket dimension.  Anchored bottom-right.
 
 local PocketDimension = require("script.PocketDimension")
 local Registry        = require("script.registry")
 local util            = require("script.util")
-local ResizeGui       = {}
-local FRAME_NAME   = "mythos-resize-panel"
+local IconGui         = require("script.iconGui")
+
+local ResizeGui = {}
+
+local FRAME_NAME   = "mythos-config-panel"
 local BTN_PREFIX   = "mythos-resize-"
 local WIDTH_FIELD  = "mythos-resize-width-field"
 local HEIGHT_FIELD = "mythos-resize-height-field"
@@ -25,21 +27,19 @@ local arrowAction = {
 	left  = { edge = "right", expand = false },
 }
 
-local SCREEN_MARGIN_RIGHT  = 32  -- inset from the right edge (vanilla UI border)
-local SCREEN_MARGIN_BOTTOM = 32  -- inset from the bottom edge
-local FRAME_CHROME_W = 12  -- horizontal frame padding (estimate)
-local FRAME_CHROME_H = 38  -- caption bar + vertical padding (estimate)
+local SCREEN_MARGIN_RIGHT  = 32
+local SCREEN_MARGIN_BOTTOM = 32
+local FRAME_CHROME_W       = 12
+local FRAME_CHROME_H       = 38
+
+local LABEL_WIDTH   = 52
+local FIELD_WIDTH   = 80
+local CELL_SIZE     = 28
+local ROW_SPACING   = 6
 
 local function scaled(player, value)
 	return math.floor(value * player.display_scale + 0.5)
 end
-
-local LABEL_WIDTH      = 52
-local FIELD_WIDTH      = 80
-local CELL_SIZE        = 28
-local ROW_SPACING      = 6
-
--- ── Helpers ───────────────────────────────────────────────────────────────────
 
 local function defaultBounds()
 	return PocketDimension.DEFAULT_FLOOR_BOUNDS
@@ -67,11 +67,12 @@ local function findByName(element, name)
 	end
 end
 
--- Factorio does not expose rendered GUI dimensions; derive from layout constants.
 local function panelDimensions(player)
-	local rowWidth  = LABEL_WIDTH + ROW_SPACING + FIELD_WIDTH + ROW_SPACING + CELL_SIZE * 2
-	local rowsHeight = CELL_SIZE + ROW_SPACING + CELL_SIZE
-	return scaled(player, rowWidth + FRAME_CHROME_W),
+	local rowWidth = LABEL_WIDTH + ROW_SPACING + FIELD_WIDTH + ROW_SPACING + CELL_SIZE * 2
+	local iconWidth = LABEL_WIDTH + ROW_SPACING + CELL_SIZE * 4 + 4 * 4
+	local contentWidth = math.max(rowWidth, iconWidth)
+	local rowsHeight = CELL_SIZE + ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE
+	return scaled(player, contentWidth + FRAME_CHROME_W),
 		scaled(player, rowsHeight + FRAME_CHROME_H)
 end
 
@@ -130,6 +131,7 @@ local function playerState(player_index)
 	if opened and opened.valid then
 		local n = opened.name
 		if n == WIDTH_FIELD or n == HEIGHT_FIELD then return nil end
+		if IconGui.isIconButton(n) then return nil end
 	end
 	local unit = storage.viewing and storage.viewing[player_index]
 	local state = unit and Registry.get(unit)
@@ -153,8 +155,6 @@ local function applyTypedSize(player, state)
 		refreshFields(frame, state)
 	end
 end
-
--- ── Panel build ───────────────────────────────────────────────────────────────
 
 local function addArrowButton(parent, name, caption, tooltip, unit, width, height)
 	local btn = parent.add{
@@ -185,7 +185,6 @@ local function addSizeField(parent, name, value, unit)
 	}
 end
 
--- Row: label | input | ▲ ▼
 local function addHeightRow(parent, unit, state)
 	local row = parent.add{ type = "flow", direction = "horizontal" }
 	row.style.vertical_align = "center"
@@ -204,7 +203,6 @@ local function addHeightRow(parent, unit, state)
 		unit, CELL_SIZE, CELL_SIZE)
 end
 
--- Row: label | input | ◄►
 local function addWidthRow(parent, unit, state)
 	local row = parent.add{ type = "flow", direction = "horizontal" }
 	row.style.vertical_align = "center"
@@ -223,17 +221,42 @@ local function addWidthRow(parent, unit, state)
 		unit, CELL_SIZE, CELL_SIZE)
 end
 
+local function addIconRow(parent, unit, state)
+	local row = parent.add{ type = "flow", direction = "horizontal" }
+	row.style.vertical_align = "center"
+	row.style.horizontal_spacing = 4
+
+	local label = row.add{ type = "label", caption = { "mythos-gui.icon-title" } }
+	label.style.width = LABEL_WIDTH
+
+	local icons = state.custom_icons or {}
+	for idx = 1, 4 do
+		local btn = row.add{
+			type      = "choose-elem-button",
+			name      = IconGui.buttonName(idx),
+			elem_type = "signal",
+			tags      = { mythos_unit = unit, slot = idx },
+		}
+		btn.style.width  = CELL_SIZE
+		btn.style.height = CELL_SIZE
+		if icons[idx] then
+			btn.elem_value = icons[idx]
+		end
+	end
+end
+
 local function buildPanel(player, state)
 	local unit = state.entity.unit_number
 
 	local frame = player.gui.screen.add{
 		type      = "frame",
 		name      = FRAME_NAME,
-		caption   = { "mythos-gui.resize-title" },
+		caption   = { "mythos-gui.config-title" },
 		direction = "vertical",
 		style     = "mythos_resize_frame",
 	}
 	frame.auto_center = false
+
 	local rows = frame.add{
 		type      = "flow",
 		direction = "vertical",
@@ -242,6 +265,7 @@ local function buildPanel(player, state)
 
 	addWidthRow(rows, unit, state)
 	addHeightRow(rows, unit, state)
+	addIconRow(rows, unit, state)
 
 	ResizeGui.reposition(player)
 	return frame
@@ -261,8 +285,12 @@ end
 function ResizeGui.close(player)
 	local screenFrame = player.gui.screen[FRAME_NAME]
 	if screenFrame and screenFrame.valid then screenFrame.destroy() end
+	local legacy = player.gui.screen["mythos-resize-panel"]
+	if legacy and legacy.valid then legacy.destroy() end
 	local relativeFrame = player.gui.relative[FRAME_NAME]
 	if relativeFrame and relativeFrame.valid then relativeFrame.destroy() end
+	local legacyRelative = player.gui.relative["mythos-icon-panel"]
+	if legacyRelative and legacyRelative.valid then legacyRelative.destroy() end
 end
 
 function ResizeGui.refresh(player, state)
@@ -273,8 +301,6 @@ function ResizeGui.refresh(player, state)
 	end
 	refreshFields(frame, state)
 end
-
--- ── Input routing ─────────────────────────────────────────────────────────────
 
 function ResizeGui.onButtonClick(event)
 	local element = event.element

@@ -1,5 +1,6 @@
 require "prototypes.hiddenEntities"
 require "prototypes.mythosEntity"
+require "prototypes.mythosInventoryEntity"
 require "prototypes.recipe"
 require "prototypes.keybinds"
 require "prototypes.styles"

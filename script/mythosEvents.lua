@@ -1,6 +1,7 @@
-local MythosRestore = require("script.mythosRestore")
-local Registry      = require("script.registry")
-local util          = require("script.util")
+local MythosRestore   = require("script.mythosRestore")
+local Registry        = require("script.registry")
+local MythosInventory = require("script.mythosInventory")
+local util            = require("script.util")
 
 local MythosEvents = {}
 
@@ -37,21 +38,24 @@ local function primePlayerRestoreCache(event, saved_id)
 	storage.pending_player_restore[event.player_index] = saved_id
 end
 
-local function moveRemovalBufferToChest(state, buffer)
-	local inv = state.entity.get_inventory(defines.inventory.chest)
-	if not inv then return end
+local function moveRemovalBufferToInventory(state, buffer)
+	local force = state.entity.force
+	local pos   = state.entity.position
 	for i = 1, #buffer do
 		local stack = buffer[i]
 		if stack.valid_for_read then
-			inv.insert(stack)
-			stack.clear()
+			local leftover = MythosInventory.insertStack(force, pos, stack)
+			if leftover <= 0 then
+				stack.clear()
+			else
+				stack.count = leftover
+			end
 		end
 	end
 end
 
 function MythosEvents.install(Mythos, connectionTypes)
 
-	-- Returns the saved_id embedded in the item used to build `entity`, or nil.
 	function Mythos.extractSavedId(event)
 		if event.item and event.item.name ~= "mythos-with-contents" then return nil end
 		if event.player_index then
@@ -73,6 +77,11 @@ function MythosEvents.install(Mythos, connectionTypes)
 	function Mythos.onEntityBuilt(event)
 		local entity = event.entity
 		if not (entity and entity.valid) then return end
+
+		if entity.name == "mythos-inventory" then
+			MythosInventory.onBuilt(entity)
+			return
+		end
 
 		local unitNum = util.parseDimensionUnitNumber(entity.surface)
 		if unitNum then
@@ -115,6 +124,11 @@ function MythosEvents.install(Mythos, connectionTypes)
 		local entity = event.entity
 		if not (entity and entity.valid) then return end
 
+		if entity.name == "mythos-inventory" then
+			MythosInventory.unregister(entity.unit_number)
+			return
+		end
+
 		if entity.name == "mythos" then
 			local state = Registry.get(entity.unit_number)
 			if state then
@@ -141,7 +155,7 @@ function MythosEvents.install(Mythos, connectionTypes)
 			end
 
 			if event.buffer then
-				moveRemovalBufferToChest(state, event.buffer)
+				moveRemovalBufferToInventory(state, event.buffer)
 			end
 			return
 		end

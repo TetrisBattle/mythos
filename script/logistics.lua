@@ -1,87 +1,110 @@
 -- ── Logistics System ──────────────────────────────────────────────────────────
--- Manages auto-building of ghost entities and logistic requests for a
--- pocket dimension.
---
---   buildGhosts()    – consumes items from the mythos chest to revive ghosts  (6-tick)
---   updateRequests() – syncs the chest's logistic section to match ghost needs (60-tick)
+-- Manages auto-building of ghost entities using items from Mythos Inventory chests.
+
+local MythosInventory = require("script.mythosInventory")
 
 local Logistics = {}
 
+local function refundRequests(inventories, requests)
+	local items = {}
+	for _, req in ipairs(requests) do
+		items[#items + 1] = {
+			name    = req.name,
+			count   = req.count or 1,
+			quality = req.quality,
+		}
+	end
+	MythosInventory.insertItemsIntoInventories(inventories, items)
+end
+
+local function materializeGhost(ghost, inventories, requests)
+	for _, req in ipairs(requests) do
+		local needed = req.count or 1
+		if MythosInventory.getItemCountFromInventories(inventories, req) < needed then
+			return false
+		end
+	end
+
+	local consumed = {}
+	for _, req in ipairs(requests) do
+		local needed  = req.count or 1
+		local removed = MythosInventory.removeItemsFromInventories(inventories, req)
+		if removed < needed then
+			if removed > 0 then
+				consumed[#consumed + 1] = {
+					name    = req.name,
+					count   = removed,
+					quality = req.quality,
+				}
+			end
+			refundRequests(inventories, consumed)
+			return false
+		end
+		consumed[#consumed + 1] = {
+			name    = req.name,
+			count   = removed,
+			quality = req.quality,
+		}
+	end
+
+	local quality
+	if ghost.quality and ghost.quality.valid then
+		quality = ghost.quality.name
+	end
+	if not quality and requests[1] then
+		quality = requests[1].quality
+	end
+	local params  = {
+		name        = ghost.ghost_name,
+		position    = ghost.position,
+		direction   = ghost.direction,
+		force       = ghost.force,
+		raise_built = true,
+	}
+	if quality then
+		params.quality = quality
+	end
+
+	local created = ghost.surface.create_entity(params)
+	if not (created and created.valid) then
+		refundRequests(inventories, consumed)
+		return false
+	end
+
+	ghost.destroy{ raise_destroy = false }
+	return true
+end
+
 function Logistics.install(Mythos)
 
-	-- Tries to revive every ghost in the pocket dimension by consuming items
-	-- from the mythos chest inventory.  Ghosts that cannot be revived (e.g.,
-	-- blocked by a collision) return their items and are skipped.
 	function Mythos:buildGhosts()
 		if not (self.entity.valid and self.inside_surface and self.inside_surface.valid) then return end
 
+		local inventories = MythosInventory.sortedInventoriesForMythos(self)
+		if #inventories == 0 then return end
+
+		local needs = MythosInventory.aggregateGhostNeeds(self.inside_surface, inventories)
+		for _, chest in ipairs(MythosInventory.requesterInventoriesForMythos(self)) do
+			if #needs > 0 then
+				MythosInventory.syncGhostLogisticRequests(chest, needs)
+			else
+				MythosInventory.clearGhostLogisticRequests(chest)
+			end
+		end
+
 		local ghosts = self.inside_surface.find_entities_filtered{ type = "entity-ghost" }
-		if #ghosts == 0 then return end
-
-		local inv = self.entity.get_inventory(defines.inventory.chest)
-		if not inv then return end
-
 		for _, ghost in pairs(ghosts) do
 			if not ghost.valid then goto continue end
 
-			local proto  = ghost.ghost_prototype
-			local stacks = proto and proto.items_to_place_this
-			local stack  = stacks and stacks[1]
-
-			if stack then
-				if inv.get_item_count(stack.name) < stack.count then goto continue end
-				inv.remove({ name = stack.name, count = stack.count })
-				if ghost.revive{ raise_revive = true } == nil then
-					-- Revive failed (collision, etc.); return the consumed items.
-					inv.insert({ name = stack.name, count = stack.count })
-				end
+			local requests = MythosInventory.ghostRequests(ghost)
+			if requests and #requests > 0 then
+				materializeGhost(ghost, inventories, requests)
 			else
-				-- Entities with no place-item (e.g., decoratives) are free to revive.
 				ghost.revive{ raise_revive = true }
 			end
 
 			::continue::
 		end
-	end
-
-	-- Scans all ghost entities in the pocket dimension and updates the mythos
-	-- chest's logistic section so the network delivers exactly the items needed.
-
-	function Mythos:updateRequests()
-		if not (self.entity.valid and self.inside_surface and self.inside_surface.valid) then return end
-
-		-- Count how many of each item the pending ghosts require.
-		local needed = {}
-		for _, ghost in pairs(self.inside_surface.find_entities_filtered{ type = "entity-ghost" }) do
-			if ghost.valid then
-				local proto  = ghost.ghost_prototype
-				local stacks = proto and proto.items_to_place_this
-				local stack  = stacks and stacks[1]
-				if stack then
-					needed[stack.name] = (needed[stack.name] or 0) + stack.count
-				end
-			end
-		end
-
-		-- Retrieve (or create) the first logistic section on the chest.
-		local sections = self.entity.get_logistic_sections()
-		if not sections then return end
-		local section = sections.get_section(1) or sections.add_section()
-		if not section then return end
-
-		local filters = {}
-
-		-- Request exactly the needed amount.
-		-- Setting min = max causes any excess to be returned to the network.
-		for itemName, count in pairs(needed) do
-			filters[#filters + 1] = {
-				value = { type = "item", name = itemName, quality = "normal" },
-				min   = count,
-				max   = count,
-			}
-		end
-
-		section.filters = filters
 	end
 
 end

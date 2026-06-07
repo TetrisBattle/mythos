@@ -31,28 +31,28 @@ function Icons.install(Mythos)
 
 		local offsets, scale
 		if count == 1 then
-			scale = 0.9
-			offsets = { { 0, -0.1 } }
+			scale = 2.4
+			offsets = { { 0, -0.25 } }
 		elseif count == 2 then
-			scale = 0.55
+			scale = 1.47
 			offsets = {
-				{ -0.45, -0.1 },
-				{  0.45, -0.1 },
+				{ -0.78, -0.25 },
+				{  0.78, -0.25 },
 			}
 		elseif count == 3 then
-			scale = 0.55
+			scale = 1.47
 			offsets = {
-				{ -0.45, -0.5 },
-				{  0.45, -0.5 },
-				{  0,     0.3 },
+				{ -0.78, -0.74 },
+				{  0.78, -0.74 },
+				{  0,    0.64 },
 			}
 		else
-			scale = 0.55
+			scale = 1.47
 			offsets = {
-				{ -0.45, -0.5 },
-				{  0.45, -0.5 },
-				{ -0.45,  0.3 },
-				{  0.45,  0.3 },
+				{ -0.78, -0.74 },
+				{  0.78, -0.74 },
+				{ -0.78,  0.64 },
+				{  0.78,  0.64 },
 			}
 		end
 

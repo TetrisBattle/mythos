@@ -1,15 +1,14 @@
-local Registry = require("script.registry")
+local Registry        = require("script.registry")
+local MythosInventory = require("script.mythosInventory")
 
 local Transport = {}
 
--- Equalises temperature between the outer and inner hidden heat-pipe proxies.
 local function transferHeat(a, b)
 	local avg = (a.temperature + b.temperature) * 0.5
 	a.temperature = avg
 	b.temperature = avg
 end
 
--- Equalises fluid between the outer hidden pipe and the inner pocket pipe.
 local function transferFluid(a, b)
 	local aContents = a.get_fluid_contents()
 	local bContents = b.get_fluid_contents()
@@ -31,7 +30,6 @@ local function transferFluid(a, b)
 	end
 end
 
--- Moves all items from every lane of `from` into the matching lane of `to`.
 local function transferBeltLines(from, to)
 	for lane = 1, 2 do
 		local fromLine = from.get_transport_line(lane)
@@ -97,11 +95,12 @@ function Transport.install(Mythos)
 	function Mythos.onSlowTick()
 		Registry.forEach(function(state)
 			if state.entity.valid then
-				state:updateRequests()
 				state:flushPendingDeletions()
 				state:transferElectricity()
 			end
 		end)
+
+		MythosInventory.tickSlow()
 	end
 
 end

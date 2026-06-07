@@ -2,7 +2,7 @@ data:extend({
 	{
 		type = "custom-input",
 		name = "mythos-open-dimension",
-		key_sequence = "CONTROL + mouse-button-2",
+		key_sequence = "mouse-button-1",
 		consuming = "none",
 	},
 	{

@@ -1,15 +1,8 @@
 local PocketDimension = require("script.PocketDimension")
 local Connections     = require("script.connections")
+local MythosInventory = require("script.mythosInventory")
 
 local MythosRestore = {}
-
-function MythosRestore.configureLogistics(entity)
-	entity.request_from_buffers = true
-	local point = entity.get_logistic_point(defines.logistic_member_index.logistic_container)
-	if point then
-		point.trash_not_requested = false
-	end
-end
 
 function MythosRestore.createOuterAccumulator(entity)
 	local outer_acc = entity.surface.create_entity{
@@ -35,14 +28,6 @@ local function findOrCreateInnerAccumulator(surface, force)
 	}
 	if inner_acc then inner_acc.destructible = false end
 	return inner_acc
-end
-
-local function insertSavedItems(entity, items)
-	local inv = entity.get_inventory(defines.inventory.chest)
-	if not (inv and items) then return end
-	for _, item in pairs(items) do
-		inv.insert({ name = item.name, count = item.count, quality = item.quality })
-	end
 end
 
 local function restoreCustomIcons(state, customIcons)
@@ -84,8 +69,7 @@ function MythosRestore.fromSaved(Mythos, entity, saved)
 	end
 	state:refreshGateRenders()
 
-	MythosRestore.configureLogistics(entity)
-	insertSavedItems(entity, saved.items)
+	MythosInventory.insertItems(entity.force, entity.position, saved.items)
 	restoreCustomIcons(state, saved.custom_icons)
 
 	return state

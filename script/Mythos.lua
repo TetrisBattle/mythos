@@ -51,10 +51,6 @@ function Mythos.new(mythosEntity)
 	local slots, byExternalPos = Connections.buildSlots(cx, cy)
 
 	local dim, inner_acc = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force, mythosEntity.surface)
-	-- Prevent auto-trashing of items not currently in the logistic filter.
-	-- Without this, manually-inserted items (or over-delivered network items)
-	-- get moved to the trash slot the next time filters are narrowed.
-	MythosRestore.configureLogistics(mythosEntity)
 
 	-- Hidden accumulator on the outer surface: connects to the nearby electric
 	-- grid and is script-drained into the pocket dimension each tick.
@@ -100,9 +96,8 @@ function Mythos:innerPositionStillNeeded(innerPos)
 	return false
 end
 
--- Returns true when the mythos has items in its chest or non-default entities
--- in the pocket dimension.  Pass the mining `buffer` when called from a mine
--- event, because Factorio drains the chest into the buffer before it fires.
+-- Returns true when the pocket dimension has non-default content.
+-- Pass the mining `buffer` when called from a mine event for legacy item checks.
 function Mythos:hasContents(buffer)
 	if buffer then
 		for i = 1, #buffer do
@@ -111,9 +106,6 @@ function Mythos:hasContents(buffer)
 				return true
 			end
 		end
-	else
-		local inv = self.entity.get_inventory(defines.inventory.chest)
-		if inv and not inv.is_empty() then return true end
 	end
 	if self.inside_surface and self.inside_surface.valid then
 		for _, e in pairs(self.inside_surface.find_entities()) do
@@ -133,16 +125,13 @@ function Mythos:hasContents(buffer)
 end
 
 -- Preserves this mythos for future restoration: keeps the pocket-dimension alive,
--- snapshots chest items (stripping them from `buffer` for mine events, or
--- draining the chest for death events to prevent loot spill), disconnects all
--- slots, and removes this instance from the active table WITHOUT deleting the
--- surface.  Returns the saved_id to embed in the pickup item.
+-- snapshots any saved item list from `buffer`, disconnects all slots, and removes
+-- this instance from the active table WITHOUT deleting the surface.
 function Mythos:save(buffer)
 	local saved_id = self.entity.unit_number
 	local items    = {}
 
 	if buffer then
-		-- Mining path: chest contents already moved to buffer by Factorio.
 		for i = 1, #buffer do
 			local s = buffer[i]
 			if util.isStoredChestItem(s) then
@@ -153,22 +142,6 @@ function Mythos:save(buffer)
 				}
 				s.clear()
 			end
-		end
-	else
-		-- Death / script-destroy path: chest not yet spilled.
-		local inv = self.entity.get_inventory(defines.inventory.chest)
-		if inv then
-			for i = 1, #inv do
-				local slot = inv[i]
-				if slot.valid_for_read then
-					items[#items + 1] = {
-						name    = slot.name,
-						count   = slot.count,
-						quality = slot.quality and slot.quality.name or "normal",
-					}
-				end
-			end
-			inv.clear() -- prevent engine loot spill
 		end
 	end
 
