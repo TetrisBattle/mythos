@@ -79,13 +79,6 @@ function DimensionDeletion.install(Mythos, connectionTypes)
 		local entity = event.entity
 		if not (entity and entity.valid) then return end
 
-		-- Pocket-dimension walls are permanent and must not be removed.
-		if entity.name == "stone-wall"
-				and entity.surface.name:match("^mythos%-dimension%-") then
-			entity.cancel_deconstruction(entity.force)
-			return
-		end
-
 		-- Non-minable entities (hidden infrastructure, etc.) can never be
 		-- transferred to the chest, so ignore them entirely.
 		local mineable = entity.prototype.mineable_properties

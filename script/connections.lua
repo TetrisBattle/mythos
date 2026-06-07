@@ -83,7 +83,12 @@ end
 function Connections.install(Mythos, connectionTypes)
 
 	-- Returns the slot key if pos matches a gate position inside any pocket dimension.
+	-- Checks the per-instance lookup first (set after a resize) then the shared default.
 	function Mythos:findInnerSlotAt(pos)
+		if self.innerPosToSlotInst then
+			local key = self.innerPosToSlotInst[positionKey(pos.x, pos.y)]
+			if key then return key end
+		end
 		return innerPosToSlot[positionKey(pos.x, pos.y)]
 	end
 
@@ -112,7 +117,7 @@ function Connections.install(Mythos, connectionTypes)
 		-- Belt connections also require a matching inner belt placed by the player
 		-- at the gate position inside the pocket dimension.
 		if connType == "belt" then
-			local beltLayout = PocketDimension.slotBeltLayout[slotKey]
+			local beltLayout = self:getSlotBeltLayout(slotKey)
 			if not beltLayout then slot.conn = nil; return end
 
 			local ip = beltLayout.innerBeltPos
@@ -146,7 +151,7 @@ function Connections.install(Mythos, connectionTypes)
 			-- internal network connects to it.  Store both proxy references for the
 			-- fluid/heat transfer tick.
 			if connType == "pipe" or connType == "heat-pipe" then
-				local beltLayout = PocketDimension.slotBeltLayout[slotKey]
+			local beltLayout = self:getSlotBeltLayout(slotKey)
 				if not beltLayout then slot.conn = nil; return end
 				local gp = beltLayout.pos
 				local innerProxy = self.inside_surface.find_entity(hiddenName, { x = gp[1], y = gp[2] })

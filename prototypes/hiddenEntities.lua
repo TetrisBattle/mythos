@@ -54,15 +54,17 @@ local hiddenRadar = {
 	energy_usage                      = "250W",
 	energy_per_nearby_scan            = "250J",
 	energy_per_sector                 = "1kW",
-	max_distance_of_sector_revealed   = 0,
-	max_distance_of_nearby_sector_revealed = 1,
+	-- Nearby reveal must be <= sector reveal.  Sized so remote-view stays
+	-- charted when the pocket dimension is resized well beyond the default.
+	max_distance_of_sector_revealed          = 16,
+	max_distance_of_nearby_sector_revealed   = 8,
 	localised_name                    = "",
 	max_health                        = 1,
 	connects_to_other_radars          = false,
 }
 
 -- Hidden electric pole placed at the centre of the pocket dimension.
--- supply_area_distance = 16 covers the full 32×32 floor (tiles 0–31 from centre at 16).
+-- supply_area_distance = 64 covers resized floors up to 128 tiles across from centre.
 -- maximum_wire_distance = 0 prevents the player wiring to it; the supply area alone
 -- forms the electric network that the inner accumulator and all player-built entities
 -- join automatically.
@@ -76,7 +78,7 @@ hiddenHubPole.collision_mask             = { layers = {} }
 hiddenHubPole.minable                    = nil
 hiddenHubPole.selection_box              = { { 0, 0 }, { 0, 0 } }
 hiddenHubPole.max_health                 = 1
-hiddenHubPole.supply_area_distance       = 16
+hiddenHubPole.supply_area_distance       = 64
 hiddenHubPole.maximum_wire_distance      = 0
 hiddenHubPole.pictures                   = {
 	filename      = "__core__/graphics/empty.png",

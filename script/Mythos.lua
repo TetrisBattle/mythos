@@ -8,6 +8,44 @@ local IconGui           = require("script.iconGui")
 
 local positionKey       = util.positionKey
 
+local function buildInnerPosToSlot(layout)
+	local t = {}
+	for slotKey, beltLayout in pairs(layout) do
+		local ip = beltLayout.innerBeltPos
+		t[positionKey(ip[1], ip[2])] = slotKey
+	end
+	return t
+end
+
+local function layoutForBounds(bounds)
+	return PocketDimension.computeSlotBeltLayoutForBounds(
+		bounds.x_min, bounds.x_max, bounds.y_min, bounds.y_max
+	)
+end
+
+local function gateTarget(pos)
+	return { x = pos[1], y = pos[2] }
+end
+
+local function refreshAllGateRenders(slots, layout, surface)
+	for slotKey, slot in pairs(slots) do
+		if slot.gateRender and slot.gateRender.valid then
+			slot.gateRender.destroy()
+		end
+		slot.gateRender = nil
+		local beltLayout = layout[slotKey]
+		if beltLayout then
+			slot.gateRender = rendering.draw_sprite{
+				sprite      = "mythos-gate",
+				target      = gateTarget(beltLayout.pos),
+				surface     = surface,
+				orientation = beltLayout.gateOrientation,
+				y_scale     = 0.75,
+			}
+		end
+	end
+end
+
 -- ── Entity → connection-type mapping ──────────────────────────────────────────
 -- Used to decide how a slot should be wired when an entity is placed next to
 -- (or inside) a mythos.  Belts move items, pipes move fluid, heat-pipes move heat.
@@ -70,29 +108,28 @@ function Mythos.new(mythosEntity)
 	}
 	if outer_acc then outer_acc.destructible = false end
 
-	-- Draw permanent gate sprites at every connection point inside the dimension.
-	for slotKey, beltLayout in pairs(PocketDimension.slotBeltLayout) do
-		if slots[slotKey] then
-			slots[slotKey].gateRender = rendering.draw_sprite {
-				sprite      = "mythos-gate",
-				target      = beltLayout.pos,
-				surface     = dim,
-				orientation = beltLayout.gateOrientation,
-				y_scale     = 0.75,
-			}
-		end
-	end
+	local floor_bounds = {
+		x_min = PocketDimension.DEFAULT_FLOOR_BOUNDS.x_min,
+		x_max = PocketDimension.DEFAULT_FLOOR_BOUNDS.x_max,
+		y_min = PocketDimension.DEFAULT_FLOOR_BOUNDS.y_min,
+		y_max = PocketDimension.DEFAULT_FLOOR_BOUNDS.y_max,
+	}
+	local gateLayout = layoutForBounds(floor_bounds)
+	refreshAllGateRenders(slots, gateLayout, dim)
 
 	return setmetatable({
-		entity           = mythosEntity,
-		slots            = slots,
-		byExternalPos    = byExternalPos,
-		inside_surface   = dim,
-		inside_x         = PocketDimension.VIEW_X,
-		inside_y         = PocketDimension.VIEW_Y,
-		pendingDeletions = {},
-		outer_acc        = outer_acc,
-		inner_acc        = inner_acc,
+		entity              = mythosEntity,
+		slots               = slots,
+		byExternalPos       = byExternalPos,
+		inside_surface      = dim,
+		inside_x            = PocketDimension.VIEW_X,
+		inside_y            = PocketDimension.VIEW_Y,
+		pendingDeletions    = {},
+		outer_acc           = outer_acc,
+		inner_acc           = inner_acc,
+		floor_bounds        = floor_bounds,
+		slotBeltLayoutInst  = gateLayout,
+		innerPosToSlotInst  = buildInnerPosToSlot(gateLayout),
 	}, Mythos)
 end
 
@@ -131,7 +168,7 @@ function Mythos:hasContents(buffer)
 	end
 	if self.inside_surface and self.inside_surface.valid then
 		for _, e in pairs(self.inside_surface.find_entities()) do
-			if e.valid and e.name ~= "stone-wall" and e.name ~= "mythos-hidden-radar"
+			if e.valid and e.name ~= "mythos-hidden-radar"
 					and e.name ~= "mythos-power-link-inner" and e.name ~= "mythos-power-hub-pole" then
 				return true
 			end
@@ -337,6 +374,208 @@ function Mythos:setIcon(index, signal)
 	self:refreshIconRenders()
 end
 
+-- ── Dimension resize ──────────────────────────────────────────────────────────
+
+-- Slot keys that belong to each edge (used by resize helpers).
+local edgeSlots = {
+	left   = { "left-top",    "left-bottom"   },
+	right  = { "right-top",   "right-bottom"  },
+	top    = { "top-left",    "top-right"     },
+	bottom = { "bottom-left", "bottom-right"  },
+}
+
+-- Returns the effective slot-belt layout entry for `slotKey`.
+-- Uses the per-instance override when the dimension has been resized; falls
+-- back to the shared module-level layout for dimensions at the default size.
+function Mythos:getSlotBeltLayout(slotKey)
+	if not self.floor_bounds then
+		self:syncFloorBoundsFromTiles()
+	end
+	local layout = self.slotBeltLayoutInst
+	if not layout and self.floor_bounds then
+		layout = layoutForBounds(self.floor_bounds)
+		self.slotBeltLayoutInst = layout
+	end
+	return layout and layout[slotKey]
+end
+
+-- Returns true when at least one slot on `edge` has an active connection.
+function Mythos:isEdgeConnected(edge)
+	for _, slotKey in ipairs(edgeSlots[edge]) do
+		if self.slots[slotKey] and self.slots[slotKey].conn then
+			return true
+		end
+	end
+	return false
+end
+
+local defaultFloorBounds = PocketDimension.DEFAULT_FLOOR_BOUNDS
+
+-- Floor tiles are the source of truth for gate placement.
+function Mythos:syncFloorBoundsFromTiles()
+	if self.inside_surface and self.inside_surface.valid then
+		self.floor_bounds = PocketDimension.inferFloorBounds(self.inside_surface)
+	elseif not self.floor_bounds then
+		self.floor_bounds = {
+			x_min = defaultFloorBounds.x_min,
+			x_max = defaultFloorBounds.x_max,
+			y_min = defaultFloorBounds.y_min,
+			y_max = defaultFloorBounds.y_max,
+		}
+	end
+end
+
+function Mythos:refreshGateRenders()
+	if not (self.slots and self.inside_surface and self.inside_surface.valid) then return end
+	self:syncFloorBoundsFromTiles()
+	local layout = layoutForBounds(self.floor_bounds)
+	self.slotBeltLayoutInst = layout
+	self.innerPosToSlotInst = buildInnerPosToSlot(layout)
+	refreshAllGateRenders(self.slots, layout, self.inside_surface)
+end
+
+local function floorWidth(bounds)
+	return bounds.x_max - bounds.x_min + 1
+end
+
+local function floorHeight(bounds)
+	return bounds.y_max - bounds.y_min + 1
+end
+
+local RESIZE_STEP = PocketDimension.RESIZE_STEP
+
+local function axisSize(bounds, edge)
+	if edge == "right" or edge == "left" then
+		return floorWidth(bounds)
+	end
+	return floorHeight(bounds)
+end
+
+-- Even-sized floors keep the 2-tile gate gap centred; odd sizes step by 1 first.
+local function resizeStepsForEdge(bounds, edge)
+	local size = axisSize(bounds, edge)
+	if size % 2 == 0 then
+		return RESIZE_STEP
+	end
+	return 1
+end
+
+local function syncViewPosition(self)
+	local b = self.floor_bounds
+	if not b then return end
+	self.inside_x, self.inside_y = PocketDimension.floorCentre(b)
+end
+
+local function finalizeFloorBounds(self, refreshGates)
+	syncViewPosition(self)
+	if self.inside_surface and self.inside_surface.valid and self.floor_bounds then
+		PocketDimension.ensureRemoteViewReady(
+			self.inside_surface, self.floor_bounds, self.entity.force
+		)
+	end
+	if refreshGates ~= false then
+		self:refreshGateRenders()
+	end
+end
+
+local function applyFloorBounds(self, newBounds, refreshGates, deferFinalize)
+	self.floor_bounds = newBounds
+	if deferFinalize then return end
+	finalizeFloorBounds(self, refreshGates)
+end
+
+-- Expands toward `edge` by RESIZE_STEP tiles (or one when the axis size is odd).
+-- Pass deferGateRefresh=true when batching (e.g. resizeTo) to redraw once at the end.
+-- Optional `steps` overrides the default step count.
+-- Returns true on success, or false + error-message-key on failure.
+function Mythos:expandEdge(edge, deferGateRefresh, steps)
+	if not edgeSlots[edge] then return false, "mythos-gui.resize-invalid-edge" end
+
+	if self:isEdgeConnected(edge) then
+		return false, "mythos-gui.resize-has-connections"
+	end
+
+	self:syncFloorBoundsFromTiles()
+	steps = steps or resizeStepsForEdge(self.floor_bounds, edge)
+	local newBounds = PocketDimension.expandEdge(
+		self.inside_surface, self.floor_bounds, edge, self.entity.force, steps
+	)
+	applyFloorBounds(self, newBounds, not deferGateRefresh, deferGateRefresh)
+	return true
+end
+
+-- Shrinks from the free edge (right or top) by RESIZE_STEP tiles (or one when odd).
+function Mythos:contractEdge(edge, deferGateRefresh, steps)
+	local contractEdge = PocketDimension.contractEdge
+	if edge ~= "right" and edge ~= "top" then
+		return false, "mythos-gui.resize-invalid-edge"
+	end
+
+	if self:isEdgeConnected(edge) then
+		return false, "mythos-gui.resize-has-connections"
+	end
+
+	self:syncFloorBoundsFromTiles()
+	steps = steps or resizeStepsForEdge(self.floor_bounds, edge)
+	local newBounds, blocked = contractEdge(
+		self.inside_surface, self.floor_bounds, edge, self.entity.force, steps
+	)
+	if not newBounds then
+		if blocked then
+			return false, "mythos-gui.resize-has-entities"
+		end
+		return false, "mythos-gui.resize-min-size"
+	end
+
+	applyFloorBounds(self, newBounds, not deferGateRefresh, deferGateRefresh)
+	return true
+end
+
+local function resizeAxis(self, edge, current, target, deferGateRefresh)
+	while current < target do
+		local steps = math.min(RESIZE_STEP, target - current)
+		if current % 2 ~= 0 then
+			steps = 1
+		end
+		local ok, err = self:expandEdge(edge, deferGateRefresh, steps)
+		if not ok then return false, err end
+		current = current + steps
+	end
+	while current > target do
+		local steps = math.min(RESIZE_STEP, current - target)
+		if current % 2 ~= 0 then
+			steps = 1
+		end
+		local ok, err = self:contractEdge(edge, deferGateRefresh, steps)
+		if not ok then return false, err end
+		current = current - steps
+	end
+	return true
+end
+
+-- Resizes to the target width / height (anchor corner stays fixed).
+-- Odd typed values are rounded up to the nearest even size.
+function Mythos:resizeTo(targetWidth, targetHeight)
+	targetWidth  = PocketDimension.snapSizeUpEven(targetWidth)
+	targetHeight = PocketDimension.snapSizeUpEven(targetHeight)
+	if targetWidth < PocketDimension.MIN_DIMENSION or targetHeight < PocketDimension.MIN_DIMENSION then
+		return false, "mythos-gui.resize-invalid-size"
+	end
+
+	self:syncFloorBoundsFromTiles()
+	local width  = floorWidth(self.floor_bounds)
+	local height = floorHeight(self.floor_bounds)
+
+	local ok, err = resizeAxis(self, "right", width, targetWidth, true)
+	if not ok then return false, err end
+
+	ok, err = resizeAxis(self, "top", height, targetHeight, true)
+	if not ok then return false, err end
+
+	finalizeFloorBounds(self, true)
+	return true
+end
+
 -- ── Sub-system installation ────────────────────────────────────────────────────
 -- Each module adds its methods directly onto the Mythos prototype.
 Connections.install(Mythos, connectionTypes)
@@ -485,7 +724,6 @@ function Mythos.onEntityBuilt(event)
 			local cx = entity.position.x
 			local cy = entity.position.y
 			local slots, byExternalPos = Connections.buildSlots(cx, cy)
-			-- Gate sprites already exist on the saved surface; no need to re-draw.
 			-- Recreate the outer accumulator (was destroyed when saved) and recover
 			-- the inner accumulator from the saved surface.
 			local outer_acc = entity.surface.create_entity{
@@ -526,6 +764,7 @@ function Mythos.onEntityBuilt(event)
 				outer_acc        = outer_acc,
 				inner_acc        = inner_acc,
 			}, Mythos)
+			state:refreshGateRenders()
 			configureMythosLogistics(entity)
 			local inv = entity.get_inventory(defines.inventory.chest)
 			if inv and saved.items then
@@ -611,23 +850,6 @@ function Mythos.onEntityRemoved(event)
 		if state.inside_surface and state.inside_surface.valid
 			and state.inside_surface.index == surfaceIndex
 			and state.entity.valid then
-			-- Pocket-dimension walls are permanent: rebuild immediately and discard
-			-- the mined item so it is neither given to the player nor to the chest.
-			if entity.name == "stone-wall" then
-				state.inside_surface.create_entity {
-					name        = "stone-wall",
-					position    = entity.position,
-					force       = entity.force,
-					raise_built = false,
-				}
-				if event.buffer then
-					for i = 1, #event.buffer do
-						if event.buffer[i].valid_for_read then event.buffer[i].clear() end
-					end
-				end
-				return
-			end
-
 			-- Keep connection state consistent if a belt gate was removed.
 			if connectionTypes[entity.type] == "belt" then
 				local slotKey = state:findInnerSlotAt(entity.position)
