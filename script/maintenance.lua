@@ -50,14 +50,6 @@ function Maintenance.restoreIconRenders()
 	end)
 end
 
-function Maintenance.removeLegacyWalls()
-	Registry.forEach(function(state)
-		if state.inside_surface and state.inside_surface.valid then
-			PocketDimension.removePerimeterWalls(state.inside_surface)
-		end
-	end)
-end
-
 function Maintenance.refreshExistingDimensionViews()
 	Registry.forEach(function(state)
 		if not (state.entity and state.entity.valid) then return end
@@ -86,7 +78,6 @@ function Maintenance.onConfigurationChanged()
 	pruneInvalidStates()
 	Maintenance.reconnectOrphanMythoi()
 	Maintenance.restoreIconRenders()
-	Maintenance.removeLegacyWalls()
 	Maintenance.refreshExistingDimensionViews()
 	Maintenance.refreshAllDimensionGateRenders()
 	MythosInventory.bootstrapExisting()

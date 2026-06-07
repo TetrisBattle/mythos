@@ -120,14 +120,28 @@ function MythosEvents.install(Mythos, connectionTypes)
 		end
 	end
 
+	function Mythos.onPrePlayerMinedItem(event)
+		local entity = event.entity
+		if not (entity and entity.valid and entity.name == "mythos-inventory") then return end
+		MythosInventory.onRemoved(entity)
+	end
+
 	function Mythos.onEntityRemoved(event)
 		local entity = event.entity
-		if not (entity and entity.valid) then return end
+		if not entity then return end
 
-		if entity.name == "mythos-inventory" then
-			MythosInventory.unregister(entity.unit_number)
+		local unit_number = entity.unit_number
+		if unit_number and storage.mythos_inventories and storage.mythos_inventories[unit_number] then
+			MythosInventory.onRemoved(entity)
 			return
 		end
+
+		if entity.name == "mythos-inventory" then
+			MythosInventory.onRemoved(entity)
+			return
+		end
+
+		if not entity.valid then return end
 
 		if entity.name == "mythos" then
 			local state = Registry.get(entity.unit_number)

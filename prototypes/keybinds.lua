@@ -4,6 +4,7 @@ data:extend({
 		name = "mythos-open-dimension",
 		key_sequence = "mouse-button-1",
 		consuming = "none",
+		include_selected_prototype = true,
 	},
 	{
 		type = "custom-input",

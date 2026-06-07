@@ -1,15 +1,14 @@
 local modName = "__mythos__"
 
+-- Linked storage shared across every mythos-inventory on a force.
 local inventoryEntity = {
 	name                       = "mythos-inventory",
 	icon                       = modName .. "/graphics/mythos_inventory.png",
 	icon_size                  = 256,
-	type                       = "logistic-container",
-	logistic_mode              = "requester",
-	max_logistic_slots         = 100,
-	render_not_in_network_icon = false,
-	icon_draw_specification    = { scale = 0, scale_for_many = 0 },
-	flags                      = { "placeable-player", "player-creation" },
+	type                       = "linked-container",
+	link_id                    = 1,
+	gui_mode                   = "none",
+	flags                      = { "placeable-player", "player-creation", "hide-alt-info" },
 	minable                    = { mining_time = 0.5, result = "mythos-inventory" },
 	max_health                 = 500,
 	collision_box              = { { -1.7, -1.7 }, { 1.7, 1.7 } },

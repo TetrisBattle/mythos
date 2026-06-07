@@ -37,9 +37,20 @@ end
 
 local function shouldIgnoreOpenInput(player, event)
 	if not player then return true end
+	if event and event.cursor_over_gui then return true end
 	if event and event.cursor_gui_element and event.cursor_gui_element.valid then return true end
+
+	-- Quickbar / inventory clicks expose items; ignore only those, not tiles under mythos edges.
+	if event and event.selected_prototype and event.selected_prototype.base_type == "item" then
+		return true
+	end
+
 	local stack = player.cursor_stack
 	if stack and stack.valid_for_read then return true end
+
+	local ghost = player.cursor_ghost
+	if ghost and ghost.valid then return true end
+
 	return false
 end
 

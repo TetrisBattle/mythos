@@ -83,16 +83,8 @@ function Logistics.install(Mythos)
 		local inventories = MythosInventory.sortedInventoriesForMythos(self)
 		if #inventories == 0 then return end
 
-		local needs = MythosInventory.aggregateGhostNeeds(self.inside_surface, inventories)
-		for _, chest in ipairs(MythosInventory.requesterInventoriesForMythos(self)) do
-			if #needs > 0 then
-				MythosInventory.syncGhostLogisticRequests(chest, needs)
-			else
-				MythosInventory.clearGhostLogisticRequests(chest)
-			end
-		end
-
 		local ghosts = self.inside_surface.find_entities_filtered{ type = "entity-ghost" }
+
 		for _, ghost in pairs(ghosts) do
 			if not ghost.valid then goto continue end
 

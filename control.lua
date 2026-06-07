@@ -49,6 +49,8 @@ end)
 
 registerEvents(Mythos.onEntityBuilt, Mythos.onEntityRemoved)
 
+script.on_event(defines.events.on_pre_player_mined_item, Mythos.onPrePlayerMinedItem)
+
 script.on_nth_tick(6,   Mythos.onNthTick)
 script.on_nth_tick(60,  Mythos.onSlowTick)
 
@@ -65,7 +67,13 @@ script.on_event(defines.events.on_cancelled_deconstruction,   Mythos.onCancelled
 script.on_event(defines.events.on_player_cursor_stack_changed, Mythos.onCursorChanged)
 
 script.on_event(defines.events.on_gui_opened, function(event)
-	if event.gui_type == defines.gui_type.controller then
+	if event.gui_type == defines.gui_type.entity then
+		local entity = event.entity
+		if entity and entity.valid and entity.name == "mythos" then
+			local player = game.get_player(event.player_index)
+			if player then IconGui.open(player, entity) end
+		end
+	elseif event.gui_type == defines.gui_type.controller then
 		RemoteView.onControllerGuiOpened(event)
 	end
 end)
@@ -95,16 +103,15 @@ end)
 
 script.on_event(defines.events.on_player_changed_surface, RemoteView.onPlayerChangedSurface)
 
-script.on_event(defines.events.on_gui_click, function(event)
-	ResizeGui.onButtonClick(event)
-end)
+script.on_event(defines.events.on_gui_click, ResizeGui.onButtonClick)
 
 script.on_event(defines.events.on_gui_confirmed, function(event)
 	local element = event.element
 	if not (element and element.valid) then return end
-	if element.name ~= "mythos-resize-width-field"
-			and element.name ~= "mythos-resize-height-field" then return end
-	ResizeGui.onTextConfirmed(event)
+	if element.name == "mythos-resize-width-field"
+			or element.name == "mythos-resize-height-field" then
+		ResizeGui.onTextConfirmed(event)
+	end
 end)
 
 local function bindResizeArrow(name, direction)

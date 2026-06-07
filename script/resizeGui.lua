@@ -285,12 +285,8 @@ end
 function ResizeGui.close(player)
 	local screenFrame = player.gui.screen[FRAME_NAME]
 	if screenFrame and screenFrame.valid then screenFrame.destroy() end
-	local legacy = player.gui.screen["mythos-resize-panel"]
-	if legacy and legacy.valid then legacy.destroy() end
 	local relativeFrame = player.gui.relative[FRAME_NAME]
 	if relativeFrame and relativeFrame.valid then relativeFrame.destroy() end
-	local legacyRelative = player.gui.relative["mythos-icon-panel"]
-	if legacyRelative and legacyRelative.valid then legacyRelative.destroy() end
 end
 
 function ResizeGui.refresh(player, state)
