@@ -40,7 +40,8 @@ end
 
 local CHUNK_SIZE    = 32
 local CHUNK_MARGIN  = 2   -- whole chunks of void kept around the floor
-local FLOOR_TILE    = "lab-dark-2"
+local FLOOR_TILE         = "mythos-dimension-floor"
+local LEGACY_FLOOR_TILE  = "lab-dark-2"
 
 local function isFloorTile(x, y, bounds)
 	return x >= bounds.x_min and x <= bounds.x_max
@@ -200,7 +201,8 @@ end
 -- outer_surface: the LuaSurface the mythos is placed on; used to copy the
 -- solar multiplier so solar panels inside match the planet the mythos is on.
 -- Returns: surface, inner_acc
-local function create(unit_number, force, outer_surface)
+local function create(unit_number, force, outer_surface, opts)
+	opts = opts or {}
 	---@diagnostic disable-next-line: missing-fields
 	local mapGenSettings = { default_enable_all_autoplace_controls = false, width = 0, height = 0 }
 	local surface = game.create_surface(
@@ -209,9 +211,13 @@ local function create(unit_number, force, outer_surface)
 	)
 
 	-- Hide this surface from the map surface selector.
-	-- set_surface_hidden is per-force, so call it for every force.
-	for _, f in pairs(game.forces) do
-		f.set_surface_hidden(surface, true)
+	-- set_surface_hidden is per-force; clone placement defers other forces.
+	if opts.defer_force_hiding and force then
+		force.set_surface_hidden(surface, true)
+	else
+		for _, f in pairs(game.forces) do
+			f.set_surface_hidden(surface, true)
+		end
 	end
 	suppressTerrainGeneration(surface)
 
@@ -223,11 +229,13 @@ local function create(unit_number, force, outer_surface)
 	local tiles = {}
 	for x = DEFAULT_FLOOR_BOUNDS.x_min, DEFAULT_FLOOR_BOUNDS.x_max do
 		for y = DEFAULT_FLOOR_BOUNDS.y_min, DEFAULT_FLOOR_BOUNDS.y_max do
-			tiles[#tiles + 1] = { name = "lab-dark-2", position = { x, y } }
+			tiles[#tiles + 1] = { name = FLOOR_TILE, position = { x, y } }
 		end
 	end
 	surface.set_tiles(tiles)
-	ensureRemoteViewReady(surface, DEFAULT_FLOOR_BOUNDS, force)
+	if not opts.defer_remote_view_prep then
+		ensureRemoteViewReady(surface, DEFAULT_FLOOR_BOUNDS, force)
+	end
 
 	local cx, cy = floorCentre(DEFAULT_FLOOR_BOUNDS)
 	local centre = { cx, cy }
@@ -278,7 +286,11 @@ end
 -- Scans floor tiles and returns the axis-aligned bounds table.
 local function inferFloorBounds(surface)
 	local x_min, x_max, y_min, y_max
-	for _, tile in pairs(surface.find_tiles_filtered{ name = FLOOR_TILE }) do
+	local floorTiles = surface.find_tiles_filtered{ name = FLOOR_TILE }
+	if #floorTiles == 0 then
+		floorTiles = surface.find_tiles_filtered{ name = LEGACY_FLOOR_TILE }
+	end
+	for _, tile in pairs(floorTiles) do
 		-- tile.position is the tile centre (n.5); floor yields the tile index.
 		local tx = math.floor(tile.position.x)
 		local ty = math.floor(tile.position.y)
@@ -361,28 +373,28 @@ local function expandEdge(surface, bounds, edge, force, steps)
 		for _ = 1, steps do
 			x_min = x_min - 1
 			for y = y_min, y_max do
-				newTiles[#newTiles + 1] = { name = "lab-dark-2", position = { x_min, y } }
+				newTiles[#newTiles + 1] = { name = FLOOR_TILE, position = { x_min, y } }
 			end
 		end
 	elseif edge == "right" then
 		for _ = 1, steps do
 			x_max = x_max + 1
 			for y = y_min, y_max do
-				newTiles[#newTiles + 1] = { name = "lab-dark-2", position = { x_max, y } }
+				newTiles[#newTiles + 1] = { name = FLOOR_TILE, position = { x_max, y } }
 			end
 		end
 	elseif edge == "top" then
 		for _ = 1, steps do
 			y_min = y_min - 1
 			for x = x_min, x_max do
-				newTiles[#newTiles + 1] = { name = "lab-dark-2", position = { x, y_min } }
+				newTiles[#newTiles + 1] = { name = FLOOR_TILE, position = { x, y_min } }
 			end
 		end
 	elseif edge == "bottom" then
 		for _ = 1, steps do
 			y_max = y_max + 1
 			for x = x_min, x_max do
-				newTiles[#newTiles + 1] = { name = "lab-dark-2", position = { x, y_max } }
+				newTiles[#newTiles + 1] = { name = FLOOR_TILE, position = { x, y_max } }
 			end
 		end
 	else
@@ -470,6 +482,7 @@ end
 
 return {
 	create                          = create,
+	syncRemoteViewInfrastructure    = syncInfrastructure,
 	removePerimeterWalls            = removePerimeterWalls,
 	DEFAULT_WIDTH                   = DEFAULT_WIDTH,
 	DEFAULT_HEIGHT                  = DEFAULT_HEIGHT,

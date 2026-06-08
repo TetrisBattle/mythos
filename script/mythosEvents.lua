@@ -1,6 +1,7 @@
 local MythosRestore   = require("script.mythosRestore")
+local MythosClone     = require("script.mythosClone")
 local Registry        = require("script.registry")
-local MythosInventory = require("script.mythosInventory")
+local VirtualChest = require("script.virtualChest")
 local util            = require("script.util")
 
 local MythosEvents = {}
@@ -44,7 +45,7 @@ local function moveRemovalBufferToInventory(state, buffer)
 	for i = 1, #buffer do
 		local stack = buffer[i]
 		if stack.valid_for_read then
-			local leftover = MythosInventory.insertStack(force, pos, stack)
+			local leftover = VirtualChest.insertStack(force, pos, stack)
 			if leftover <= 0 then
 				stack.clear()
 			else
@@ -74,17 +75,52 @@ function MythosEvents.install(Mythos, connectionTypes)
 		end
 	end
 
+	local function initPlacedMythos(entity, event)
+		MythosClone.schedulePlacement(Mythos, entity, event)
+	end
+
+	local function rejectNestedMythos(entity, event)
+		local state = Registry.get(entity.unit_number)
+		if state then
+			state:destroy()
+		end
+
+		local surface = entity.surface
+		local pos     = entity.position
+		local force   = entity.force
+		entity.destroy{ raise_destroy = false }
+		surface.spill_item_stack{
+			position = pos,
+			stack    = { name = "mythos", count = 1 },
+			force    = force,
+		}
+
+		if event.player_index then
+			local player = game.get_player(event.player_index)
+			if player then
+				player.print({ "mythos.nested-mythos-forbidden" })
+			end
+		end
+	end
+
 	function Mythos.onEntityBuilt(event)
+		if MythosClone.isBulkCloning() then return end
+
 		local entity = event.entity
 		if not (entity and entity.valid) then return end
 
-		if entity.name == "mythos-inventory" then
-			MythosInventory.onBuilt(entity)
+		if entity.name == VirtualChest.PROTOTYPE then
+			VirtualChest.onBuilt(entity)
 			return
 		end
 
 		local unitNum = util.parseDimensionUnitNumber(entity.surface)
 		if unitNum then
+			if entity.name == "mythos" then
+				rejectNestedMythos(entity, event)
+				return
+			end
+
 			local state = Registry.get(unitNum)
 			if state and state.entity.valid and connectionTypes[entity.type] == "belt" then
 				local slotKey = state:findInnerSlotAt(entity.position)
@@ -96,19 +132,7 @@ function MythosEvents.install(Mythos, connectionTypes)
 		end
 
 		if entity.name == "mythos" then
-			local saved_id = Mythos.extractSavedId(event)
-			local saved_dimensions = storage.saved_dimensions
-			local saved = saved_id and saved_dimensions and saved_dimensions[saved_id]
-			if saved and saved_id and saved_dimensions then
-				saved_dimensions[saved_id] = nil
-				local state = MythosRestore.fromSaved(Mythos, entity, saved)
-				Registry.set(entity.unit_number, state)
-				state:connectExistingNeighbours()
-			else
-				local state = Mythos.new(entity)
-				Registry.set(entity.unit_number, state)
-				state:connectExistingNeighbours()
-			end
+			initPlacedMythos(entity, event)
 			return
 		end
 
@@ -122,8 +146,8 @@ function MythosEvents.install(Mythos, connectionTypes)
 
 	function Mythos.onPrePlayerMinedItem(event)
 		local entity = event.entity
-		if not (entity and entity.valid and entity.name == "mythos-inventory") then return end
-		MythosInventory.onRemoved(entity)
+		if not (entity and entity.valid and entity.name == VirtualChest.PROTOTYPE) then return end
+		VirtualChest.onRemoved(entity)
 	end
 
 	function Mythos.onEntityRemoved(event)
@@ -131,13 +155,13 @@ function MythosEvents.install(Mythos, connectionTypes)
 		if not entity then return end
 
 		local unit_number = entity.unit_number
-		if unit_number and storage.mythos_inventories and storage.mythos_inventories[unit_number] then
-			MythosInventory.onRemoved(entity)
+		if unit_number and storage.virtualChests and storage.virtualChests[unit_number] then
+			VirtualChest.onRemoved(entity)
 			return
 		end
 
-		if entity.name == "mythos-inventory" then
-			MythosInventory.onRemoved(entity)
+		if entity.name == VirtualChest.PROTOTYPE then
+			VirtualChest.onRemoved(entity)
 			return
 		end
 
@@ -190,6 +214,7 @@ function MythosEvents.install(Mythos, connectionTypes)
 		else
 			storage.pending_player_restore[event.player_index] = nil
 		end
+
 	end
 
 end

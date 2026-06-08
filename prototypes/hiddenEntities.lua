@@ -65,9 +65,9 @@ local hiddenRadar = {
 
 -- Hidden electric pole placed at the centre of the pocket dimension.
 -- supply_area_distance = 64 covers resized floors up to 128 tiles across from centre.
--- maximum_wire_distance = 0 prevents the player wiring to it; the supply area alone
--- forms the electric network that the inner accumulator and all player-built entities
--- join automatically.
+-- maximum_wire_distance matches supply so player poles anywhere on the floor
+-- auto-wire into the same network as the inner accumulator (wire_distance = 0
+-- left player pole networks isolated so accumulators never received power).
 ---@type table
 local hiddenHubPole                      = table.deepcopy(data.raw["electric-pole"]["substation"])
 hiddenHubPole.name                       = "mythos-power-hub-pole"
@@ -79,7 +79,8 @@ hiddenHubPole.minable                    = nil
 hiddenHubPole.selection_box              = { { 0, 0 }, { 0, 0 } }
 hiddenHubPole.max_health                 = 1
 hiddenHubPole.supply_area_distance       = 64
-hiddenHubPole.maximum_wire_distance      = 0
+hiddenHubPole.maximum_wire_distance      = 64
+hiddenHubPole.draw_copper_wires          = false
 hiddenHubPole.pictures                   = {
 	filename      = "__core__/graphics/empty.png",
 	priority      = "extra-high",
@@ -91,6 +92,11 @@ hiddenHubPole.light                      = nil
 hiddenHubPole.active_picture             = nil
 hiddenHubPole.connection_sprites         = nil
 hiddenHubPole.radius_visualisation_picture = nil
+
+-- Hidden pole on the placement surface at the mythos position.  Bridges the outer
+-- accumulator into the surrounding electric grid so it can charge from nearby poles.
+local hiddenOuterPole                      = table.deepcopy(hiddenHubPole)
+hiddenOuterPole.name                       = "mythos-power-outer-pole"
 
 -- Gate sprite rendered inside the pocket dimension at each active belt connection.
 -- Uses rendering.draw_sprite at runtime so it is always visible, with orientation
@@ -107,6 +113,9 @@ local mythosGateSprite = {
 -- Hidden accumulator placed on the outer surface at the mythos position.
 -- Connects to the external electric grid so the pocket dimension can draw
 -- power from it.  Script-drained every tick into the inner accumulator.
+-- Must be type "accumulator" (not electric-energy-interface): EEI shares
+-- tertiary priority with player accumulators and prevents them from charging
+-- on the same network even while other consumers are powered.
 ---@type table
 local hiddenOuterAcc                      = table.deepcopy(data.raw["accumulator"]["accumulator"])
 hiddenOuterAcc.name                       = "mythos-power-link-outer"
@@ -138,10 +147,43 @@ hiddenOuterAcc.circuit_wire_max_distance  = 0
 hiddenOuterAcc.circuit_wire_connection_points = nil
 hiddenOuterAcc.circuit_connector_sprites  = nil
 
--- Hidden accumulator inside the pocket dimension.  Receives scripted energy
--- from the outer accumulator and distributes it to the inside electric network.
-local hiddenInnerAcc                      = table.deepcopy(hiddenOuterAcc)
-hiddenInnerAcc.name                       = "mythos-power-link-inner"
+-- Inner power injector inside the pocket dimension.  Uses electric-energy-interface
+-- as a producer (not accumulator) so it does not compete with player accumulators
+-- on tertiary priority.  Script fills the buffer from the outer link and sets
+-- power_production (runtime) to discharge into the inside grid.
+local hiddenInnerLink = {
+	type                      = "electric-energy-interface",
+	name                      = "mythos-power-link-inner",
+	localised_name            = { "" },
+	hidden                    = true,
+	selectable_in_game        = false,
+	flags                     = hiddenFlags,
+	collision_mask            = { layers = {} },
+	minable                   = nil,
+	selection_box             = { { 0, 0 }, { 0, 0 } },
+	max_health                = 1,
+	gui_mode                  = "none",
+	energy_source             = {
+		type                     = "electric",
+		buffer_capacity          = "10MJ",
+		usage_priority           = "secondary-output",
+		input_flow_limit         = "10GW",
+		output_flow_limit        = "10GW",
+		render_no_power_icon     = true,
+		render_no_network_icon   = true,
+	},
+	energy_production         = "0W",
+	energy_usage              = "0W",
+	icon_draw_specification   = { scale = 0 },
+	alert_when_damaged        = false,
+	picture                   = {
+		filename = "__core__/graphics/empty.png",
+		priority = "extra-high",
+		width    = 1,
+		height   = 1,
+	},
+	circuit_wire_max_distance = 0,
+}
 
 data:extend({
 	hiddenPipe,
@@ -149,6 +191,7 @@ data:extend({
 	hiddenRadar,
 	mythosGateSprite,
 	hiddenOuterAcc,
-	hiddenInnerAcc,
+	hiddenInnerLink,
 	hiddenHubPole,
+	hiddenOuterPole,
 })

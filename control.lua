@@ -7,7 +7,7 @@ local Registry          = require("script.registry")
 local util              = require("script.util")
 local Maintenance       = require("script.maintenance")
 local RemoteView        = require("script.remoteView")
-local MythosInventory   = require("script.mythosInventory")
+local VirtualChest      = require("script.virtualChest")
 
 local pending_gate_refresh = false
 
@@ -17,7 +17,9 @@ script.on_init(function()
 	storage.pending_player_restore = {}
 	storage.viewing                = {}
 	storage.pending_resize_gui     = {}
-	storage.mythos_inventories     = {}
+	storage.virtualChests          = {}
+	storage.mythos_next_snapshot_id = 0
+	storage.mythos_pending_paste    = nil
 end)
 
 script.on_load(function()
@@ -48,6 +50,12 @@ script.on_event(defines.events.on_chunk_generated, function(event)
 end)
 
 registerEvents(Mythos.onEntityBuilt, Mythos.onEntityRemoved)
+
+script.on_event(defines.events.on_entity_cloned, Mythos.onEntityCloned)
+
+script.on_event(defines.events.on_entity_settings_pasted, Mythos.onEntitySettingsPasted)
+
+script.on_event(defines.events.on_player_setup_blueprint, Mythos.onPlayerSetupBlueprint)
 
 script.on_event(defines.events.on_pre_player_mined_item, Mythos.onPrePlayerMinedItem)
 
@@ -86,8 +94,9 @@ script.on_nth_tick(1, function()
 	if pending_gate_refresh then
 		pending_gate_refresh = false
 		Maintenance.refreshAfterLoad()
-		MythosInventory.bootstrapExisting()
+		VirtualChest.bootstrapExisting()
 	end
+	Mythos.processDeferredClones()
 	RemoteView.openPendingResizeGuis()
 end)
 

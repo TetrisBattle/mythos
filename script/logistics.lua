@@ -1,7 +1,7 @@
 -- ── Logistics System ──────────────────────────────────────────────────────────
--- Manages auto-building of ghost entities using items from Mythos Inventory chests.
+-- Manages auto-building of ghost entities using items from Virtual chests.
 
-local MythosInventory = require("script.mythosInventory")
+local VirtualChest = require("script.virtualChest")
 
 local Logistics = {}
 
@@ -14,13 +14,13 @@ local function refundRequests(inventories, requests)
 			quality = req.quality,
 		}
 	end
-	MythosInventory.insertItemsIntoInventories(inventories, items)
+	VirtualChest.insertItemsIntoInventories(inventories, items)
 end
 
 local function materializeGhost(ghost, inventories, requests)
 	for _, req in ipairs(requests) do
 		local needed = req.count or 1
-		if MythosInventory.getItemCountFromInventories(inventories, req) < needed then
+		if VirtualChest.getItemCountFromInventories(inventories, req) < needed then
 			return false
 		end
 	end
@@ -28,7 +28,7 @@ local function materializeGhost(ghost, inventories, requests)
 	local consumed = {}
 	for _, req in ipairs(requests) do
 		local needed  = req.count or 1
-		local removed = MythosInventory.removeItemsFromInventories(inventories, req)
+		local removed = VirtualChest.removeItemsFromInventories(inventories, req)
 		if removed < needed then
 			if removed > 0 then
 				consumed[#consumed + 1] = {
@@ -80,19 +80,15 @@ function Logistics.install(Mythos)
 	function Mythos:buildGhosts()
 		if not (self.entity.valid and self.inside_surface and self.inside_surface.valid) then return end
 
-		local inventories = MythosInventory.sortedInventoriesForMythos(self)
-		if #inventories == 0 then return end
-
+		local inventories = VirtualChest.sortedInventoriesForMythos(self)
 		local ghosts = self.inside_surface.find_entities_filtered{ type = "entity-ghost" }
 
 		for _, ghost in pairs(ghosts) do
 			if not ghost.valid then goto continue end
 
-			local requests = MythosInventory.ghostRequests(ghost)
-			if requests and #requests > 0 then
+			local requests = VirtualChest.ghostRequests(ghost)
+			if #inventories > 0 and requests and #requests > 0 then
 				materializeGhost(ghost, inventories, requests)
-			else
-				ghost.revive{ raise_revive = true }
 			end
 
 			::continue::

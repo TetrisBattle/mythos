@@ -5,11 +5,17 @@ local mythosEntity = {
 	icon              = modName .. "/graphics/mythos144.png",
 	icon_size         = 144,
 	type              = "simple-entity-with-owner",
-	flags             = { "placeable-player", "player-creation" },
+	flags             = { "placeable-player", "player-creation", "hide-alt-info" },
 	minable           = { mining_time = 0.5, result = "mythos" },
 	max_health        = 500,
 	collision_box     = { { -1.7, -1.7 }, { 1.7, 1.7 } },
 	selection_box     = { { -2, -2 }, { 2, 2 } },
+	tile_buildability_rules = {
+		{
+			area            = { { -2, -2 }, { 2, 2 } },
+			colliding_tiles = { layers = { mythos_dimension_floor = true } },
+		},
+	},
 	picture           = {
 		layers = {
 			{

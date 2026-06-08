@@ -1,5 +1,5 @@
 local Registry        = require("script.registry")
-local MythosInventory = require("script.mythosInventory")
+local VirtualChest = require("script.virtualChest")
 
 local Transport = {}
 
@@ -96,11 +96,13 @@ function Transport.install(Mythos)
 		Registry.forEach(function(state)
 			if state.entity.valid then
 				state:flushPendingDeletions()
+				state:syncOuterElectricNetwork()
+				state:syncInsideElectricNetwork()
 				state:transferElectricity()
 			end
 		end)
 
-		MythosInventory.tickSlow()
+		VirtualChest.tickSlow()
 	end
 
 end

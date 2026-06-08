@@ -11,17 +11,17 @@ local mythos = {
 	energy_required = 1,
 }
 
-local mythosInventory = {
-	name = "mythos-inventory",
+local virtualChest = {
+	name = "virtual-chest",
 	type = "recipe",
 	enabled = true,
 	ingredients = {
 		{ type = "item", name = "electronic-circuit", amount = 5 },
 	},
 	results = {
-		{ type = "item", name = "mythos-inventory", amount = 1 },
+		{ type = "item", name = "virtual-chest", amount = 1 },
 	},
 	energy_required = 2,
 }
 
-data:extend({ mythos, mythosInventory })
+data:extend({ mythos, virtualChest })

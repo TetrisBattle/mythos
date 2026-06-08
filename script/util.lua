@@ -48,7 +48,7 @@ end
 local CONTENT_ITEM_NAMES = {
 	mythos = true,
 	["mythos-with-contents"] = true,
-	["mythos-inventory"] = true,
+	["virtual-chest"] = true,
 }
 
 function Util.isStoredChestItem(stack)

@@ -9,6 +9,7 @@ local Transport         = require("script.transport")
 local Icons             = require("script.icons")
 local MythosRestore     = require("script.mythosRestore")
 local MythosEvents      = require("script.mythosEvents")
+local MythosClone       = require("script.mythosClone")
 local Registry          = require("script.registry")
 
 local positionKey       = util.positionKey
@@ -52,9 +53,9 @@ function Mythos.new(mythosEntity)
 
 	local dim, inner_acc = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force, mythosEntity.surface)
 
-	-- Hidden accumulator on the outer surface: connects to the nearby electric
-	-- grid and is script-drained into the pocket dimension each tick.
-	local outer_acc = MythosRestore.createOuterAccumulator(mythosEntity)
+	-- Hidden accumulator on the placement surface (skipped when nested inside
+	-- another mythos; nested mythoi draw from the parent inner accumulator).
+	local outer_acc = MythosRestore.createOuterAccumulatorForEntity(mythosEntity)
 
 	local floor_bounds = {
 		x_min = PocketDimension.DEFAULT_FLOOR_BOUNDS.x_min,
@@ -150,12 +151,13 @@ function Mythos:save(buffer)
 		surface      = self.inside_surface,
 		items        = items,
 		custom_icons = self.custom_icons,
+		floor_bounds = self.floor_bounds,
 	}
 
-	-- Outer accumulator must be destroyed when the mythos is picked up.
+	-- Outer power bridge must be destroyed when the mythos is picked up.
 	-- The inner accumulator stays with the saved surface and is restored later.
-	if self.outer_acc and self.outer_acc.valid then
-		self.outer_acc.destroy()
+	if self.entity and self.entity.valid then
+		MythosRestore.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
 	end
 	self.outer_acc = nil
 
@@ -175,9 +177,10 @@ function Mythos:destroy()
 		end
 	end
 	self.icon_renders = nil
-	if self.outer_acc and self.outer_acc.valid then
-		self.outer_acc.destroy()
+	if self.entity and self.entity.valid then
+		MythosRestore.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
 	end
+	self.outer_acc = nil
 	for slotKey in pairs(self.slots) do
 		self:disconnect(slotKey)
 	end
@@ -197,5 +200,6 @@ DimensionResize.install(Mythos)
 Transport.install(Mythos)
 Icons.install(Mythos)
 MythosEvents.install(Mythos, connectionTypes)
+MythosClone.install(Mythos)
 
 return Mythos
