@@ -79,6 +79,25 @@ function MythosEvents.install(Mythos, connectionTypes)
 		MythosClone.schedulePlacement(Mythos, entity, event)
 	end
 
+	local function rejectVirtualChestInDimension(entity, event)
+		local surface = entity.surface
+		local pos     = entity.position
+		local force   = entity.force
+		entity.destroy{ raise_destroy = false }
+		surface.spill_item_stack{
+			position = pos,
+			stack    = { name = VirtualChest.PROTOTYPE, count = 1 },
+			force    = force,
+		}
+
+		if event.player_index then
+			local player = game.get_player(event.player_index)
+			if player then
+				player.print({ "mythos-gui.virtual-chest-dimension-forbidden" })
+			end
+		end
+	end
+
 	local function rejectNestedMythos(entity, event)
 		local state = Registry.get(entity.unit_number)
 		if state then
@@ -110,6 +129,10 @@ function MythosEvents.install(Mythos, connectionTypes)
 		if not (entity and entity.valid) then return end
 
 		if entity.name == VirtualChest.PROTOTYPE then
+			if util.parseDimensionUnitNumber(entity.surface) then
+				rejectVirtualChestInDimension(entity, event)
+				return
+			end
 			VirtualChest.onBuilt(entity)
 			return
 		end

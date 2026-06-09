@@ -25,6 +25,12 @@ local virtualChestEntity = {
 		{ -1 + OFFSET_X, -1 + OFFSET_Y },
 		{  1 + OFFSET_X,  1 + OFFSET_Y },
 	},
+	tile_buildability_rules   = {
+		{
+			area            = { { -1, -1 }, { 1, 1 } },
+			colliding_tiles = { layers = { mythos_dimension_floor = true } },
+		},
+	},
 	circuit_wire_max_distance = 0,
 	draw_circuit_wires        = false,
 	draw_copper_wires         = false,
