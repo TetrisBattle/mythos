@@ -7,10 +7,12 @@ local util            = require("script.util")
 local MythosClone = {}
 
 local PASTE_TTL                 = 3600
-local ENTITIES_PER_TICK         = 40
-local FINISHES_PER_TICK         = 2
-local CLONE_PLACEMENTS_PER_TICK = 1
-local SURFACE_HIDES_PER_TICK    = 8
+local ENTITIES_PER_TICK         = 250
+local FINISHES_PER_TICK         = 4
+local CLONE_PLACEMENTS_PER_TICK = 8
+local SURFACE_HIDES_PER_TICK    = 16
+-- Copy-paste completes in one shot below this count; larger interiors stream in faster batches.
+local IMMEDIATE_CLONE_MAX       = 400
 
 -- Session-only queues; copy-paste work is never resumed after save/load.
 local bulk_clone_depth       = 0
@@ -314,12 +316,49 @@ local function queueDeferredFinish(fn)
 	deferred_finish_jobs[#deferred_finish_jobs + 1] = fn
 end
 
-local function queueDeferredDimensionApply(Mythos, state, sourceState, destForce, on_complete)
+local function tryCompleteApplyJob(job)
+	local state = job.state
+	if not (state and state.entity and state.entity.valid
+			and state.inside_surface and state.inside_surface.valid) then
+		return false
+	end
+
+	local sourceSurface = job.sourceState.inside_surface
+	if not (sourceSurface and sourceSurface.valid) then return false end
+
+	if job.needs_entity_collect then
+		job.entities = collectCloneableEntities(sourceSurface)
+		job.needs_entity_collect = false
+		job.cursor = 1
+	end
+
+	if job.needs_floor_prep and job.sourceBounds then
+		prepareDestinationFloor(state, job.sourceBounds)
+		job.needs_floor_prep = false
+	end
+
+	local entity_count = job.entities and #job.entities or 0
+	if entity_count > IMMEDIATE_CLONE_MAX then
+		return false
+	end
+
+	if entity_count > 0 then
+		runBulkClone(sourceSurface, job.entities, state.inside_surface, job.destForce)
+		processPendingEntityClones(job.Mythos)
+	end
+
+	finishDimensionApply(state, job.sourceState, job.destForce)
+	if job.on_complete then job.on_complete() end
+	return true
+end
+
+local function queueDeferredDimensionApply(Mythos, state, sourceState, destForce, on_complete, opts)
+	opts = opts or {}
 	local sourceSurface = sourceState.inside_surface
 	if not (sourceSurface and sourceSurface.valid) then return false end
 
 	local sourceBounds = resolveSourceBounds(sourceState)
-	deferred_apply_jobs[#deferred_apply_jobs + 1] = {
+	local job = {
 		Mythos               = Mythos,
 		state                = state,
 		sourceState          = sourceState,
@@ -330,7 +369,13 @@ local function queueDeferredDimensionApply(Mythos, state, sourceState, destForce
 		needs_entity_collect = true,
 		needs_floor_prep     = sourceBounds ~= nil,
 		on_complete          = on_complete,
+		prefer_immediate     = opts.immediate == true,
 	}
+	deferred_apply_jobs[#deferred_apply_jobs + 1] = job
+
+	if job.prefer_immediate and tryCompleteApplyJob(job) then
+		table.remove(deferred_apply_jobs, #deferred_apply_jobs)
+	end
 	return true
 end
 
@@ -353,7 +398,7 @@ local function executePlacementIntent(intent)
 	elseif intent.kind == "entity" then
 		local source = intent.source_entity
 		if source and source.valid then
-			MythosClone.cloneFromEntity(intent.Mythos, source, intent.entity)
+			MythosClone.cloneFromEntity(intent.Mythos, source, intent.entity, { immediate = true })
 		end
 	end
 end
@@ -398,6 +443,10 @@ function MythosClone.processDeferredApplies()
 			job.entities = collectCloneableEntities(sourceSurface)
 			job.needs_entity_collect = false
 			job.cursor = 1
+			if tryCompleteApplyJob(job) then
+				table.remove(deferred_apply_jobs, i)
+				goto continue
+			end
 			i = i + 1
 			goto continue
 		end
@@ -405,6 +454,10 @@ function MythosClone.processDeferredApplies()
 		if job.needs_floor_prep then
 			prepareDestinationFloor(state, job.sourceBounds)
 			job.needs_floor_prep = false
+			if tryCompleteApplyJob(job) then
+				table.remove(deferred_apply_jobs, i)
+				goto continue
+			end
 			if #job.entities == 0 then
 				finishDimensionApply(state, job.sourceState, job.destForce)
 				if job.on_complete then job.on_complete() end
@@ -450,7 +503,7 @@ local function finishNormalPlacement(Mythos, entity)
 	state:connectExistingNeighbours()
 end
 
-local function cloneToEntity(Mythos, destEntity, sourceState)
+local function cloneToEntity(Mythos, destEntity, sourceState, opts)
 	if not (destEntity and destEntity.valid and sourceState) then return false end
 
 	local sourceSurface = sourceState.inside_surface
@@ -485,7 +538,7 @@ local function cloneToEntity(Mythos, destEntity, sourceState)
 
 	return queueDeferredDimensionApply(Mythos, state, sourceState, destEntity.force, function()
 		state:connectExistingNeighbours()
-	end)
+	end, opts)
 end
 
 local function setPendingPaste(player_index, saved_ids)
@@ -558,7 +611,7 @@ local function tryCloneFromPlayerCopySource(Mythos, entity, event)
 	if not (source and source.valid and source.name == "mythos") then return false end
 	if source.unit_number == entity.unit_number then return false end
 
-	MythosClone.cloneFromEntity(Mythos, source, entity)
+	MythosClone.cloneFromEntity(Mythos, source, entity, { immediate = true })
 	return Registry.get(entity.unit_number) ~= nil
 end
 
@@ -697,7 +750,7 @@ function MythosClone.cloneFromSavedId(Mythos, entity, saved_id, consume)
 			return
 		end
 		local sourceState = resolveLazySourceState(saved)
-		if sourceState and cloneToEntity(Mythos, entity, sourceState) then
+		if sourceState and cloneToEntity(Mythos, entity, sourceState, nil) then
 			return
 		end
 		finishNormalPlacement(Mythos, entity)
@@ -705,7 +758,7 @@ function MythosClone.cloneFromSavedId(Mythos, entity, saved_id, consume)
 	end
 
 	local sourceState = sourceStateFromSaved(saved)
-	if not sourceState or not cloneToEntity(Mythos, entity, sourceState) then
+	if not sourceState or not cloneToEntity(Mythos, entity, sourceState, nil) then
 		finishNormalPlacement(Mythos, entity)
 	end
 end
@@ -755,7 +808,7 @@ function MythosClone.processPendingSurfaceHides()
 	end
 end
 
-function MythosClone.cloneFromEntity(Mythos, sourceEntity, destEntity)
+function MythosClone.cloneFromEntity(Mythos, sourceEntity, destEntity, opts)
 	if not (destEntity and destEntity.valid) then return end
 
 	local sourceState = resolveSourceState(sourceEntity)
@@ -766,7 +819,7 @@ function MythosClone.cloneFromEntity(Mythos, sourceEntity, destEntity)
 		return
 	end
 
-	if not cloneToEntity(Mythos, destEntity, sourceState) then
+	if not cloneToEntity(Mythos, destEntity, sourceState, opts) then
 		if not Registry.get(destEntity.unit_number) then
 			finishNormalPlacement(Mythos, destEntity)
 		end
@@ -950,7 +1003,7 @@ function MythosClone.install(Mythos)
 		if not (source and source.valid and dest and dest.valid) then return end
 		if source.name ~= "mythos" or dest.name ~= "mythos" then return end
 
-		MythosClone.cloneFromEntity(Mythos, source, dest)
+		MythosClone.cloneFromEntity(Mythos, source, dest, { immediate = true })
 	end
 
 	function Mythos.onPlayerSetupBlueprint(event)
