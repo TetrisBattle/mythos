@@ -7,7 +7,7 @@ local Registry          = require("script.registry")
 local util              = require("script.util")
 local Maintenance       = require("script.maintenance")
 local RemoteView        = require("script.remoteView")
-local VirtualChest      = require("script.virtualChest")
+local SettingsSync      = require("script.settingsSync")
 
 local pending_gate_refresh = false
 
@@ -20,6 +20,7 @@ script.on_init(function()
 	storage.virtualChests          = {}
 	storage.mythos_next_snapshot_id = 0
 	storage.mythos_pending_paste    = nil
+	SettingsSync.apply()
 end)
 
 script.on_load(function()
@@ -94,7 +95,7 @@ script.on_nth_tick(1, function()
 	if pending_gate_refresh then
 		pending_gate_refresh = false
 		Maintenance.refreshAfterLoad()
-		VirtualChest.bootstrapExisting()
+		SettingsSync.apply()
 	end
 	Mythos.processDeferredClones()
 	RemoteView.openPendingResizeGuis()
@@ -133,3 +134,5 @@ bindResizeArrow("mythos-resize-up",    "up")
 bindResizeArrow("mythos-resize-down",  "down")
 bindResizeArrow("mythos-resize-left",  "left")
 bindResizeArrow("mythos-resize-right", "right")
+
+script.on_event(defines.events.on_runtime_mod_setting_changed, SettingsSync.onRuntimeModSettingChanged)

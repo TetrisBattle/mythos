@@ -1,6 +1,6 @@
 local PocketDimension = require("script.PocketDimension")
 local Registry        = require("script.registry")
-local VirtualChest = require("script.virtualChest")
+local SettingsSync    = require("script.settingsSync")
 local Mythos          = require("script.Mythos")
 local MythosRestore   = require("script.mythosRestore")
 local util            = require("script.util")
@@ -179,7 +179,7 @@ function Maintenance.onConfigurationChanged()
 	Maintenance.restoreIconRenders()
 	Maintenance.refreshExistingDimensionViews()
 	Maintenance.refreshAllDimensionGateRenders()
-	VirtualChest.bootstrapExisting()
+	SettingsSync.apply()
 end
 
 function Maintenance.refreshAfterLoad()

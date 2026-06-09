@@ -2,6 +2,7 @@
 -- Manages auto-building of ghost entities using items from Virtual chests.
 
 local VirtualChest = require("script.virtualChest")
+local Config       = require("script.config")
 
 local Logistics = {}
 
@@ -56,6 +57,11 @@ local function materializeGhost(ghost, inventories, requests)
 	return true
 end
 
+local function materializeGhostFree(ghost)
+	local _, created = ghost.silent_revive{ raise_revive = true }
+	return created and created.valid
+end
+
 function Logistics.install(Mythos)
 
 	function Mythos:buildGhosts()
@@ -63,12 +69,17 @@ function Logistics.install(Mythos)
 
 		local inventories = VirtualChest.sortedInventoriesForMythos(self)
 		local ghosts = self.inside_surface.find_entities_filtered{ type = "entity-ghost" }
+		local no_cost = Config.noCost()
 
 		for _, ghost in pairs(ghosts) do
 			if not ghost.valid then goto continue end
 
 			local requests = VirtualChest.ghostRequests(ghost)
-			if #inventories > 0 and requests and #requests > 0 then
+			if not (requests and #requests > 0) then goto continue end
+
+			if no_cost then
+				materializeGhostFree(ghost)
+			elseif #inventories > 0 then
 				materializeGhost(ghost, inventories, requests)
 			end
 

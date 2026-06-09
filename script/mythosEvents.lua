@@ -1,7 +1,8 @@
 local MythosRestore   = require("script.mythosRestore")
 local MythosClone     = require("script.mythosClone")
 local Registry        = require("script.registry")
-local VirtualChest = require("script.virtualChest")
+local VirtualChest    = require("script.virtualChest")
+local Config          = require("script.config")
 local util            = require("script.util")
 
 local MythosEvents = {}
@@ -40,6 +41,13 @@ local function primePlayerRestoreCache(event, saved_id)
 end
 
 local function moveRemovalBufferToInventory(state, buffer)
+	if Config.hideVirtualInventory() then
+		for i = 1, #buffer do
+			buffer[i].clear()
+		end
+		return
+	end
+
 	local force = state.entity.force
 	local pos   = state.entity.position
 	for i = 1, #buffer do
@@ -129,6 +137,10 @@ function MythosEvents.install(Mythos, connectionTypes)
 		if not (entity and entity.valid) then return end
 
 		if entity.name == VirtualChest.PROTOTYPE then
+			if Config.hideVirtualInventory() then
+				entity.destroy{ raise_destroy = false }
+				return
+			end
 			if util.parseDimensionUnitNumber(entity.surface) then
 				rejectVirtualChestInDimension(entity, event)
 				return

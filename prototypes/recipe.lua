@@ -11,6 +11,17 @@ local mythos = {
 	energy_required = 1,
 }
 
+local mythosFree = {
+	name = "mythos-free",
+	type = "recipe",
+	enabled = false,
+	ingredients = {},
+	results = {
+		{ type = "item", name = "mythos", amount = 1 },
+	},
+	energy_required = 1,
+}
+
 local virtualChest = {
 	name = "virtual-chest",
 	type = "recipe",
@@ -24,4 +35,20 @@ local virtualChest = {
 	energy_required = 2,
 }
 
-data:extend({ mythos, virtualChest })
+local virtualChestFree = {
+	name = "virtual-chest-free",
+	type = "recipe",
+	enabled = false,
+	ingredients = {},
+	results = {
+		{ type = "item", name = "virtual-chest", amount = 1 },
+	},
+	energy_required = 2,
+}
+
+data:extend({
+	mythos,
+	mythosFree,
+	virtualChest,
+	virtualChestFree,
+})

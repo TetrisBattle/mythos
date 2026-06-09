@@ -1,8 +1,10 @@
 -- ── Dimension Deletion System ─────────────────────────────────────────────────
--- Mines entities inside a pocket dimension into the nearest Virtual chest.
+-- Mines entities inside a pocket dimension into the nearest Virtual chest,
+-- or destroys them when virtual inventory is unavailable.
 
-local Registry        = require("script.registry")
+local Registry     = require("script.registry")
 local VirtualChest = require("script.virtualChest")
+local Config       = require("script.config")
 
 local DimensionDeletion = {}
 
@@ -14,19 +16,27 @@ function DimensionDeletion.install(Mythos, connectionTypes)
 		local isBelt    = connectionTypes[entity.type] == "belt"
 		local entityPos = isBelt and { x = entity.position.x, y = entity.position.y } or nil
 
-		local success = VirtualChest.tryMineEntity(
-			self.entity.force,
-			self.entity.position,
-			entity,
-			false
-		)
+		local deleted = false
+		if not Config.hideVirtualInventory() then
+			deleted = VirtualChest.tryMineEntity(
+				self.entity.force,
+				self.entity.position,
+				entity,
+				false
+			)
+		end
 
-		if success and isBelt and entityPos then
+		if not deleted and entity.valid then
+			entity.destroy{ raise_destroy = false }
+			deleted = true
+		end
+
+		if deleted and isBelt and entityPos then
 			local slotKey = self:findInnerSlotAt(entityPos)
 			if slotKey then self:disconnect(slotKey) end
 		end
 
-		return success
+		return deleted
 	end
 
 	function Mythos:flushPendingDeletions()
