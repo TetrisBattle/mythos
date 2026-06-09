@@ -92,6 +92,24 @@ function Connections.install(Mythos, connectionTypes)
 		return innerPosToSlot[positionKey(pos.x, pos.y)]
 	end
 
+	-- True when a connectable entity sits at this slot's outside mythos position.
+	function Mythos:hasExternalConnection(slotKey)
+		local slot = self.slots[slotKey]
+		if not slot or not (self.entity and self.entity.valid) then return false end
+
+		for _, entity in pairs(self.entity.surface.find_entities_filtered{
+			area = {
+				{ slot.external.x - 0.4, slot.external.y - 0.4 },
+				{ slot.external.x + 0.4, slot.external.y + 0.4 },
+			},
+		}) do
+			if entity.valid and connectionTypes[entity.type] then
+				return true
+			end
+		end
+		return false
+	end
+
 	-- Registers a connection between the given entity and the named slot.
 	-- Spawns the hidden proxy connector (pipe/heat-pipe) when required.
 	-- Returns true on success.
@@ -170,6 +188,7 @@ function Connections.install(Mythos, connectionTypes)
 			end
 		end
 
+		self:updateGateRender(slotKey)
 		return true
 	end
 
@@ -197,6 +216,7 @@ function Connections.install(Mythos, connectionTypes)
 				innerProxy.destroy{ raise_destroy = false }
 			end
 		end
+		self:updateGateRender(slotKey)
 	end
 
 	-- Called when a belt is placed at a gate position inside the pocket dimension.
@@ -252,6 +272,7 @@ function Connections.install(Mythos, connectionTypes)
 					break
 				end
 			end
+			self:updateGateRender(slotKey)
 		end
 	end
 

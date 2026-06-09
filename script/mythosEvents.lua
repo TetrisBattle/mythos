@@ -164,6 +164,8 @@ function MythosEvents.install(Mythos, connectionTypes)
 		if not state then return end
 		if state:connect(slotKey, entity) then
 			playConnectSound(entity.surface, entity.position)
+		else
+			state:updateGateRender(slotKey)
 		end
 	end
 
@@ -223,7 +225,10 @@ function MythosEvents.install(Mythos, connectionTypes)
 
 		if not connectionTypes[entity.type] then return end
 		local outsideState, slotKey = Mythos.findStateAndSlot(entity)
-		if outsideState then outsideState:disconnect(slotKey) end
+		if outsideState then
+			outsideState:disconnect(slotKey)
+			outsideState:updateGateRender(slotKey)
+		end
 	end
 
 	function Mythos.onCursorChanged(event)

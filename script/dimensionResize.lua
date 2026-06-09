@@ -3,6 +3,9 @@ local util            = require("script.util")
 
 local DimensionResize = {}
 
+local GATE_CONNECTED_COLOR     = { r = 1,   g = 1,   b = 1,   a = 1   }
+local GATE_DISCONNECTED_COLOR  = { r = 0.4, g = 0.4, b = 0.4, a = 0.85 }
+
 local function layoutForBounds(bounds)
 	return PocketDimension.computeSlotBeltLayoutForBounds(
 		bounds.x_min, bounds.x_max, bounds.y_min, bounds.y_max
@@ -13,23 +16,27 @@ local function gateTarget(pos)
 	return { x = pos[1], y = pos[2] }
 end
 
-local function drawGateSpritesForLayout(slots, layout, surface)
-	for slotKey, slot in pairs(slots) do
-		if slot.gateRender and slot.gateRender.valid then
-			slot.gateRender.destroy()
-		end
-		slot.gateRender = nil
+local function applyGateRender(mythos, slotKey, slot, beltLayout, surface)
+	if slot.gateRender and slot.gateRender.valid then
+		slot.gateRender.destroy()
+	end
+	slot.gateRender = nil
 
-		local beltLayout = layout[slotKey]
-		if beltLayout then
-			slot.gateRender = rendering.draw_sprite{
-				sprite      = "mythos-gate",
-				target      = gateTarget(beltLayout.pos),
-				surface     = surface,
-				orientation = beltLayout.gateOrientation,
-				y_scale     = 0.75,
-			}
-		end
+	if not beltLayout then return end
+
+	slot.gateRender = rendering.draw_sprite{
+		sprite      = "mythos-gate",
+		target      = gateTarget(beltLayout.pos),
+		surface     = surface,
+		orientation = beltLayout.gateOrientation,
+		y_scale     = 0.75,
+		tint        = mythos:hasExternalConnection(slotKey) and GATE_CONNECTED_COLOR or GATE_DISCONNECTED_COLOR,
+	}
+end
+
+local function drawGateSpritesForLayout(mythos, slots, layout, surface)
+	for slotKey, slot in pairs(slots) do
+		applyGateRender(mythos, slotKey, slot, layout[slotKey], surface)
 	end
 end
 
@@ -143,7 +150,14 @@ function DimensionResize.install(Mythos)
 		local layout = layoutForBounds(self.floor_bounds)
 		self.slotBeltLayoutInst = layout
 		self.innerPosToSlotInst = util.buildInnerPosToSlot(layout)
-		drawGateSpritesForLayout(self.slots, layout, self.inside_surface)
+		drawGateSpritesForLayout(self, self.slots, layout, self.inside_surface)
+	end
+
+	function Mythos:updateGateRender(slotKey)
+		if not (self.slots and self.inside_surface and self.inside_surface.valid) then return end
+		local slot = self.slots[slotKey]
+		if not slot then return end
+		applyGateRender(self, slotKey, slot, self:getSlotBeltLayout(slotKey), self.inside_surface)
 	end
 
 	function Mythos:expandEdge(edge, deferGateRefresh, steps)
