@@ -47,31 +47,12 @@ local function materializeGhost(ghost, inventories, requests)
 		}
 	end
 
-	local quality
-	if ghost.quality and ghost.quality.valid then
-		quality = ghost.quality.name
-	end
-	if not quality and requests[1] then
-		quality = requests[1].quality
-	end
-	local params  = {
-		name        = ghost.ghost_name,
-		position    = ghost.position,
-		direction   = ghost.direction,
-		force       = ghost.force,
-		raise_built = true,
-	}
-	if quality then
-		params.quality = quality
-	end
-
-	local created = ghost.surface.create_entity(params)
+	local _, created = ghost.silent_revive{ raise_revive = true }
 	if not (created and created.valid) then
 		refundRequests(inventories, consumed)
 		return false
 	end
 
-	ghost.destroy{ raise_destroy = false }
 	return true
 end
 
