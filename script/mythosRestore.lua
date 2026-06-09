@@ -178,6 +178,8 @@ function MythosRestore.refreshPowerLinks(state)
 			)
 		end
 	end
+
+	state:syncElectricity()
 end
 
 function MythosRestore.powerLinksNeedRefresh(state)
@@ -238,6 +240,7 @@ function MythosRestore.fromSaved(Mythos, entity, saved)
 	end
 
 	restoreCustomIcons(state, saved.custom_icons)
+	state:syncElectricity()
 
 	return state
 end
@@ -245,6 +248,7 @@ end
 function MythosRestore.finishFromSaved(state, entity, saved)
 	if not (state and state.entity and state.entity.valid) then return end
 	VirtualChest.insertItems(entity.force, entity.position, saved.items)
+	state:syncElectricity()
 	state:refreshGateRenders()
 	state:connectExistingNeighbours()
 end

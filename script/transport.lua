@@ -96,9 +96,7 @@ function Transport.install(Mythos)
 		Registry.forEach(function(state)
 			if state.entity.valid then
 				state:flushPendingDeletions()
-				state:syncOuterElectricNetwork()
-				state:syncInsideElectricNetwork()
-				state:transferElectricity()
+				state:syncElectricity()
 			end
 		end)
 

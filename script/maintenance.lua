@@ -34,6 +34,7 @@ function Maintenance.reconnectOrphanMythoi()
 				state = Mythos.new(entity)
 			end
 			Registry.set(entity.unit_number, state)
+			state:syncElectricity()
 			state:connectExistingNeighbours()
 
 			::continue::

@@ -284,6 +284,7 @@ local function finishDimensionApply(state, sourceState, destForce)
 		state.inside_x = PocketDimension.VIEW_X
 		state.inside_y = PocketDimension.VIEW_Y
 	end
+	state:syncElectricity()
 	state:refreshGateRenders()
 	restoreCustomIcons(state, sourceState.custom_icons)
 end
@@ -500,6 +501,7 @@ local function finishNormalPlacement(Mythos, entity)
 
 	local state = Mythos.new(entity)
 	Registry.set(entity.unit_number, state)
+	state:syncElectricity()
 	state:connectExistingNeighbours()
 end
 
@@ -535,6 +537,7 @@ local function cloneToEntity(Mythos, destEntity, sourceState, opts)
 
 	registerPlacementShell(state, sourceState, defer_remote_view_prep)
 	Registry.set(destEntity.unit_number, state)
+	state:syncElectricity()
 
 	return queueDeferredDimensionApply(Mythos, state, sourceState, destEntity.force, function()
 		state:connectExistingNeighbours()

@@ -106,6 +106,8 @@ function RemoteView.openForEntity(player_index, entity)
 	local state = Registry.get(entity.unit_number)
 	if not (state and state.inside_surface and state.inside_surface.valid) then return end
 
+	state:syncElectricity()
+
 	storage.viewing = storage.viewing or {}
 	storage.viewing[player_index] = entity.unit_number
 

@@ -15,8 +15,9 @@
 -- solar_power_multiplier, which is synced to the outer surface so the
 -- effective solar output matches the planet the mythos is placed on.
 
-local Registry = require("script.registry")
-local util     = require("script.util")
+local Registry      = require("script.registry")
+local MythosRestore = require("script.mythosRestore")
+local util          = require("script.util")
 
 local Electricity = {}
 
@@ -131,6 +132,18 @@ function Electricity.install(Mythos)
 		local flow_limit = inner.get_electric_output_flow_limit and inner.get_electric_output_flow_limit()
 			or (10 * 1000 * 1000 * 1000)
 		inner.power_production = math.min(buffer, flow_limit)
+	end
+
+	-- Wires networks, transfers energy, and updates inner output.  Called on
+	-- placement and dimension open so hidden power links never flash status
+	-- icons before the first slow tick.
+	function Mythos:syncElectricity()
+		if self.inside_surface and self.inside_surface.valid then
+			MythosRestore.destroyStrayOuterAccumulators(self.inside_surface)
+		end
+		self:syncOuterElectricNetwork()
+		self:syncInsideElectricNetwork()
+		self:transferElectricity()
 	end
 
 	-- Transfers available energy from the outer-surface accumulator into the
