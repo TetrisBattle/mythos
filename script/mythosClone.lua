@@ -65,6 +65,8 @@ local function resolveSourceState(sourceEntity)
 			inside_surface = surface,
 			floor_bounds   = boundsForSurface(surface, state and state.floor_bounds),
 			custom_icons   = state and state.custom_icons,
+			default_width  = state and state.default_width,
+			default_height = state and state.default_height,
 		}
 	end
 
@@ -79,6 +81,8 @@ local function resolveLazySourceState(saved)
 			inside_surface = saved.surface,
 			floor_bounds   = boundsForSurface(saved.surface, saved.floor_bounds),
 			custom_icons   = saved.custom_icons,
+			default_width  = saved.default_width,
+			default_height = saved.default_height,
 		}
 	end
 
@@ -92,6 +96,8 @@ local function resolveLazySourceState(saved)
 			floor_bounds   = saved.floor_bounds or live.floor_bounds
 				or PocketDimension.inferFloorBounds(live.inside_surface),
 			custom_icons   = saved.custom_icons or live.custom_icons,
+			default_width  = saved.default_width or live.default_width,
+			default_height = saved.default_height or live.default_height,
 		}
 	end
 
@@ -102,6 +108,8 @@ local function resolveLazySourceState(saved)
 			floor_bounds   = saved.floor_bounds
 				or boundsForSurface(mined.surface, mined.floor_bounds),
 			custom_icons   = saved.custom_icons or mined.custom_icons,
+			default_width  = saved.default_width or mined.default_width,
+			default_height = saved.default_height or mined.default_height,
 		}
 	end
 
@@ -111,6 +119,8 @@ local function resolveLazySourceState(saved)
 			inside_surface = surface,
 			floor_bounds   = saved.floor_bounds or PocketDimension.inferFloorBounds(surface),
 			custom_icons   = saved.custom_icons,
+			default_width  = saved.default_width,
+			default_height = saved.default_height,
 		}
 	end
 
@@ -287,6 +297,8 @@ local function finishDimensionApply(state, sourceState, destForce)
 	state:syncElectricity()
 	state:refreshGateRenders()
 	restoreCustomIcons(state, sourceState.custom_icons)
+	if sourceState.default_width then state.default_width = sourceState.default_width end
+	if sourceState.default_height then state.default_height = sourceState.default_height end
 end
 
 local function resolveSourceBounds(sourceState)
@@ -311,6 +323,8 @@ local function registerPlacementShell(state, sourceState, defer_remote_view_prep
 		)
 	end
 	restoreCustomIcons(state, sourceState.custom_icons)
+	if sourceState.default_width then state.default_width = sourceState.default_width end
+	if sourceState.default_height then state.default_height = sourceState.default_height end
 end
 
 local function queueDeferredFinish(fn)
@@ -783,6 +797,8 @@ function MythosClone.snapshotForBlueprint(Mythos, sourceEntity)
 		source_unit_number = sourceEntity.unit_number,
 		floor_bounds       = floor_bounds,
 		custom_icons       = sourceState.custom_icons,
+		default_width      = sourceState.default_width,
+		default_height     = sourceState.default_height,
 		items              = {},
 	}
 	return saved_id

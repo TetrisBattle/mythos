@@ -1,9 +1,9 @@
 local util = require("script.util")
 
-local DEFAULT_WIDTH  = 32
-local DEFAULT_HEIGHT = 16
-local DEFAULT_Y_MAX  = DEFAULT_WIDTH - 1
-local DEFAULT_Y_MIN  = DEFAULT_Y_MAX - DEFAULT_HEIGHT + 1
+local DEFAULT_WIDTH  = 20
+local DEFAULT_HEIGHT = 20
+local DEFAULT_Y_MIN  = 0
+local DEFAULT_Y_MAX  = DEFAULT_Y_MIN + DEFAULT_HEIGHT - 1
 local DEFAULT_FLOOR_BOUNDS = {
 	x_min = 0,
 	x_max = DEFAULT_WIDTH - 1,
@@ -15,6 +15,9 @@ local VIEW_Y = (DEFAULT_Y_MIN + DEFAULT_Y_MAX) / 2
 
 local GATES_PER_SIDE = 4
 
+-- Tile offsets along each 4x4 mythos face (1 = top / left).
+local GATE_OFFSETS = { -1.5, -0.5, 0.5, 1.5 }
+
 -- GATES_PER_SIDE consecutive floor-tile indices clustered in the wall centre.
 local function gateCoordsAlong(min_coord, max_coord)
 	local span = max_coord - min_coord + 1
@@ -24,13 +27,6 @@ local function gateCoordsAlong(min_coord, max_coord)
 		coords[i + 1] = start + i
 	end
 	return coords
-end
-
-local function allGateCoordsFit(min_coord, max_coord)
-	for _, c in ipairs(gateCoordsAlong(min_coord, max_coord)) do
-		if c < min_coord or c > max_coord then return false end
-	end
-	return true
 end
 
 local function floorCentre(bounds)
@@ -173,9 +169,9 @@ local function ensureRemoteViewReady(surface, bounds, _)
 end
 
 -- Arrow buttons resize in 8-tile steps; typed sizes snap to 2-tile (even) accuracy.
-local RESIZE_STEP   = 8
+local RESIZE_STEP   = 10
 local FLOOR_SNAP    = 2
-local MIN_DIMENSION = GATES_PER_SIDE
+local MIN_DIMENSION = 10
 
 -- Rounds a typed size up to the nearest even value (minimum MIN_DIMENSION).
 local function snapSizeUpEven(size)
@@ -186,18 +182,60 @@ local function snapSizeUpEven(size)
 	return size
 end
 
--- Maps each mythos slot key to the wall-gap position and the gate sprite orientation.
---   pos             : rendering.draw_sprite position (centre of the wall-gap tile).
---   gateOrientation : RealOrientation (0–1) passed to rendering.draw_sprite.
---     The image has its connection at the bottom, so:
---       top wall    → 0    (no rotation,  connection faces south into room)
---       right wall  → 0.25 (90° CW,       connection faces west  into room)
---       bottom wall → 0.5  (180°,         connection faces north into room)
---       left wall   → 0.75 (270° CW,      connection faces east  into room)
+-- Maps each mythos slot key to the external connector position and inward proxy
+-- position around the mythos entity.
+
+local function buildMythosSlotLayout()
+	local layout = {}
+	for i = 1, GATES_PER_SIDE do
+		local off = GATE_OFFSETS[i]
+		layout["left-" .. i]   = { externalX = -2.5, externalY = off,  innerX = -1.5, innerY = off,  outwardDir = defines.direction.west  }
+		layout["right-" .. i]  = { externalX =  2.5, externalY = off,  innerX =  1.5, innerY = off,  outwardDir = defines.direction.east  }
+		layout["top-" .. i]    = { externalX = off,  externalY = -2.5, innerX = off,  innerY = -1.5, outwardDir = defines.direction.north }
+		layout["bottom-" .. i] = { externalX = off,  externalY =  2.5, innerX = off,  innerY =  1.5, outwardDir = defines.direction.south }
+	end
+	return layout
+end
+
+-- Computes gate/belt positions for arbitrary floor bounds.
+-- Each wall gets GATES_PER_SIDE adjacent gates centred on that axis.
 -- innerBeltPos: the tile one step inside the floor where the player places their belt.
+local function computeDimensionSlotBeltLayout(bounds)
+	bounds = bounds or DEFAULT_FLOOR_BOUNDS
+	local layout = {}
+	for i, y in ipairs(gateCoordsAlong(bounds.y_min, bounds.y_max)) do
+		local yc = y + 0.5
+		layout["left-" .. i] = {
+			pos             = { bounds.x_min - 0.5, yc },
+			innerBeltPos    = { bounds.x_min + 0.5, yc },
+			gateOrientation = 0.75,
+		}
+		layout["right-" .. i] = {
+			pos             = { bounds.x_max + 1.5, yc },
+			innerBeltPos    = { bounds.x_max + 0.5, yc },
+			gateOrientation = 0.25,
+		}
+	end
+	for i, x in ipairs(gateCoordsAlong(bounds.x_min, bounds.x_max)) do
+		local xc = x + 0.5
+		layout["top-" .. i] = {
+			pos             = { xc, bounds.y_min - 0.5 },
+			innerBeltPos    = { xc, bounds.y_min + 0.5 },
+			gateOrientation = 0,
+		}
+		layout["bottom-" .. i] = {
+			pos             = { xc, bounds.y_max + 1.5 },
+			innerBeltPos    = { xc, bounds.y_max + 0.5 },
+			gateOrientation = 0.5,
+		}
+	end
+	return layout
+end
+
+local slotBeltLayout = computeDimensionSlotBeltLayout(DEFAULT_FLOOR_BOUNDS)
 
 -- Creates the pocket-dimension surface for one mythos entity.
--- Default floor: 32×16 tiles (full width, bottom-anchored).
+-- Default floor: 20×20 tiles (top-left anchored; grows down and right).
 -- outer_surface: the LuaSurface the mythos is placed on; used to copy the
 -- solar multiplier so solar panels inside match the planet the mythos is on.
 -- Returns: surface, inner_acc
@@ -310,45 +348,6 @@ local function inferFloorBounds(surface)
 	return { x_min = x_min, x_max = x_max, y_min = y_min, y_max = y_max }
 end
 
--- Computes gate/belt positions for arbitrary floor bounds.
--- Each wall gets GATES_PER_SIDE adjacent gates centred on that axis.
-local function computeSlotBeltLayoutForBounds(x_min, x_max, y_min, y_max)
-	local layout = {}
-	for i, y in ipairs(gateCoordsAlong(y_min, y_max)) do
-		local yc = y + 0.5  -- tile index → tile centre
-		layout["left-" .. i] = {
-			pos             = { x_min - 0.5, yc },
-			innerBeltPos    = { x_min + 0.5, yc },
-			gateOrientation = 0.75,
-		}
-		layout["right-" .. i] = {
-			pos             = { x_max + 1.5, yc },
-			innerBeltPos    = { x_max + 0.5, yc },
-			gateOrientation = 0.25,
-		}
-	end
-	for i, x in ipairs(gateCoordsAlong(x_min, x_max)) do
-		local xc = x + 0.5
-		layout["top-" .. i] = {
-			pos             = { xc, y_min - 0.5 },
-			innerBeltPos    = { xc, y_min + 0.5 },
-			gateOrientation = 0,
-		}
-		layout["bottom-" .. i] = {
-			pos             = { xc, y_max + 1.5 },
-			innerBeltPos    = { xc, y_max + 0.5 },
-			gateOrientation = 0.5,
-		}
-	end
-	return layout
-end
-
--- Default layout for new dimensions (derived from default floor bounds).
-local slotBeltLayout = computeSlotBeltLayoutForBounds(
-	DEFAULT_FLOOR_BOUNDS.x_min, DEFAULT_FLOOR_BOUNDS.x_max,
-	DEFAULT_FLOOR_BOUNDS.y_min, DEFAULT_FLOOR_BOUNDS.y_max
-)
-
 -- Removes legacy perimeter stone walls (no longer placed on new dimensions).
 local function removePerimeterWalls(surface)
 	for _, e in pairs(surface.find_entities_filtered{ name = "stone-wall" }) do
@@ -430,8 +429,8 @@ local function removeFloorTiles(surface, positions)
 end
 
 -- Shrinks the floor from the free edge by `steps` tiles (default 1).
--- "right" removes the rightmost column(s); "top" removes the topmost row(s).
--- Returns nil when the edge cannot shrink further (gate tiles or minimum size).
+-- "right" removes the rightmost column(s); "bottom" removes the bottommost row(s).
+-- Returns nil when the edge cannot shrink further (minimum size or blocked tiles).
 local function contractEdge(surface, bounds, edge, force, steps)
 	steps = steps or 1
 	if steps < 1 then return bounds end
@@ -443,27 +442,27 @@ local function contractEdge(surface, bounds, edge, force, steps)
 	local removeTiles = {}
 
 	if edge == "right" then
+		local max_steps = x_max - x_min + 1 - MIN_DIMENSION
+		if max_steps < 1 then return nil end
+		steps = math.min(steps, max_steps)
 		local new_x_max = x_max - steps
-		local new_width = new_x_max - x_min + 1
-		if new_width < MIN_DIMENSION then return nil end
-		if not allGateCoordsFit(x_min, new_x_max) then return nil end
 		for x = x_max, new_x_max + 1, -1 do
 			for y = y_min, y_max do
 				removeTiles[#removeTiles + 1] = { x, y }
 			end
 		end
 		x_max = new_x_max
-	elseif edge == "top" then
-		local new_y_min = y_min + steps
-		local new_height = y_max - new_y_min + 1
-		if new_height < MIN_DIMENSION then return nil end
-		if not allGateCoordsFit(new_y_min, y_max) then return nil end
-		for y = y_min, new_y_min - 1 do
+	elseif edge == "bottom" then
+		local max_steps = y_max - y_min + 1 - MIN_DIMENSION
+		if max_steps < 1 then return nil end
+		steps = math.min(steps, max_steps)
+		local new_y_max = y_max - steps
+		for y = new_y_max + 1, y_max do
 			for x = x_min, x_max do
 				removeTiles[#removeTiles + 1] = { x, y }
 			end
 		end
-		y_min = new_y_min
+		y_max = new_y_max
 	else
 		return nil
 	end
@@ -494,7 +493,8 @@ return {
 	MIN_DIMENSION                   = MIN_DIMENSION,
 	snapSizeUpEven                  = snapSizeUpEven,
 	slotBeltLayout                  = slotBeltLayout,
-	computeSlotBeltLayoutForBounds  = computeSlotBeltLayoutForBounds,
+	buildMythosSlotLayout           = buildMythosSlotLayout,
+	computeDimensionSlotBeltLayout  = computeDimensionSlotBeltLayout,
 	inferFloorBounds                = inferFloorBounds,
 	expandEdge                      = expandEdge,
 	contractEdge                    = contractEdge,

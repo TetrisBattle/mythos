@@ -6,14 +6,12 @@ local DimensionResize = {}
 local GATE_CONNECTED_COLOR     = { r = 1,   g = 1,   b = 1,   a = 1   }
 local GATE_DISCONNECTED_COLOR  = { r = 0.4, g = 0.4, b = 0.4, a = 0.85 }
 
-local function layoutForBounds(bounds)
-	return PocketDimension.computeSlotBeltLayoutForBounds(
-		bounds.x_min, bounds.x_max, bounds.y_min, bounds.y_max
-	)
-end
-
 local function gateTarget(pos)
 	return { x = pos[1], y = pos[2] }
+end
+
+local function floorBoundsKey(bounds)
+	return string.format("%d,%d,%d,%d", bounds.x_min, bounds.x_max, bounds.y_min, bounds.y_max)
 end
 
 local function applyGateRender(mythos, slotKey, slot, beltLayout, surface)
@@ -30,7 +28,8 @@ local function applyGateRender(mythos, slotKey, slot, beltLayout, surface)
 		surface     = surface,
 		orientation = beltLayout.gateOrientation,
 		y_scale     = 0.75,
-		tint        = mythos:hasExternalConnection(slotKey) and GATE_CONNECTED_COLOR or GATE_DISCONNECTED_COLOR,
+		tint        = (slot.conn or mythos:hasExternalConnection(slotKey))
+			and GATE_CONNECTED_COLOR or GATE_DISCONNECTED_COLOR,
 	}
 end
 
@@ -78,11 +77,12 @@ local function finalizeFloorBounds(self, refreshGates)
 		)
 	end
 	if refreshGates ~= false then
+		self:invalidateDimensionGateLayout()
 		self:refreshGateRenders()
 	end
 end
 
-local function applyFloorBounds(self, newBounds, refreshGates, deferFinalize)
+local function applyFloorBounds(self, newBounds, deferFinalize, refreshGates)
 	self.floor_bounds = newBounds
 	if deferFinalize then return end
 	finalizeFloorBounds(self, refreshGates)
@@ -114,15 +114,28 @@ end
 
 function DimensionResize.install(Mythos)
 
-	function Mythos:getSlotBeltLayout(slotKey)
+	function Mythos:invalidateDimensionGateLayout()
+		self.dimensionGateLayout = nil
+		self.dimensionGateLayoutBoundsKey = nil
+		self.innerPosToSlotInst = nil
+	end
+
+	function Mythos:getDimensionGateLayout()
 		if not self.floor_bounds then
 			self:syncFloorBoundsFromTiles()
 		end
-		local layout = self.slotBeltLayoutInst
-		if not layout and self.floor_bounds then
-			layout = layoutForBounds(self.floor_bounds)
-			self.slotBeltLayoutInst = layout
+		local bounds = self.floor_bounds or PocketDimension.DEFAULT_FLOOR_BOUNDS
+		local boundsKey = floorBoundsKey(bounds)
+		if not self.dimensionGateLayout or self.dimensionGateLayoutBoundsKey ~= boundsKey then
+			self.dimensionGateLayout = PocketDimension.computeDimensionSlotBeltLayout(bounds)
+			self.dimensionGateLayoutBoundsKey = boundsKey
+			self.innerPosToSlotInst = util.buildInnerPosToSlot(self.dimensionGateLayout)
 		end
+		return self.dimensionGateLayout
+	end
+
+	function Mythos:getSlotBeltLayout(slotKey)
+		local layout = self:getDimensionGateLayout()
 		return layout and layout[slotKey]
 	end
 
@@ -146,15 +159,13 @@ function DimensionResize.install(Mythos)
 
 	function Mythos:refreshGateRenders()
 		if not (self.slots and self.inside_surface and self.inside_surface.valid) then return end
-		self:syncFloorBoundsFromTiles()
-		local layout = layoutForBounds(self.floor_bounds)
-		self.slotBeltLayoutInst = layout
-		self.innerPosToSlotInst = util.buildInnerPosToSlot(layout)
-		drawGateSpritesForLayout(self, self.slots, layout, self.inside_surface)
+		self:syncSlotGeometry()
+		drawGateSpritesForLayout(self, self.slots, self:getDimensionGateLayout(), self.inside_surface)
 	end
 
 	function Mythos:updateGateRender(slotKey)
 		if not (self.slots and self.inside_surface and self.inside_surface.valid) then return end
+		self:syncSlotGeometry()
 		local slot = self.slots[slotKey]
 		if not slot then return end
 		applyGateRender(self, slotKey, slot, self:getSlotBeltLayout(slotKey), self.inside_surface)
@@ -172,12 +183,12 @@ function DimensionResize.install(Mythos)
 		local newBounds = PocketDimension.expandEdge(
 			self.inside_surface, self.floor_bounds, edge, self.entity.force, steps
 		)
-		applyFloorBounds(self, newBounds, not deferGateRefresh, deferGateRefresh)
+		applyFloorBounds(self, newBounds, deferGateRefresh, edge == "right" or edge == "bottom")
 		return true
 	end
 
 	function Mythos:contractEdge(edge, deferGateRefresh, steps)
-		if edge ~= "right" and edge ~= "top" then
+		if edge ~= "right" and edge ~= "bottom" then
 			return false, "mythos-gui.resize-invalid-edge"
 		end
 
@@ -197,7 +208,7 @@ function DimensionResize.install(Mythos)
 			return false, "mythos-gui.resize-min-size"
 		end
 
-		applyFloorBounds(self, newBounds, not deferGateRefresh, deferGateRefresh)
+		applyFloorBounds(self, newBounds, deferGateRefresh, edge == "right" or edge == "bottom")
 		return true
 	end
 
@@ -215,7 +226,7 @@ function DimensionResize.install(Mythos)
 		local ok, err = resizeAxis(self, "right", width, targetWidth, true)
 		if not ok then return false, err end
 
-		ok, err = resizeAxis(self, "top", height, targetHeight, true)
+		ok, err = resizeAxis(self, "bottom", height, targetHeight, true)
 		if not ok then return false, err end
 
 		finalizeFloorBounds(self, true)

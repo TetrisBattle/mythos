@@ -74,6 +74,8 @@ function Mythos.new(mythosEntity)
 		outer_acc           = outer_acc,
 		inner_acc           = inner_acc,
 		floor_bounds        = floor_bounds,
+		default_width       = PocketDimension.DEFAULT_WIDTH,
+		default_height      = PocketDimension.DEFAULT_HEIGHT,
 	}, Mythos)
 	state:refreshGateRenders()
 	return state
@@ -81,7 +83,14 @@ end
 
 -- Returns the external-slot key for a world position, or nil.
 function Mythos:findSlotAt(pos)
-	return self.byExternalPos[positionKey(pos.x, pos.y)]
+	local slotKey = self.byExternalPos and self.byExternalPos[positionKey(pos.x, pos.y)]
+	if slotKey then return slotKey end
+
+	for key, slot in pairs(self.slots or {}) do
+		if slot.external and util.nearPosition(pos, slot.external) then
+			return key
+		end
+	end
 end
 
 -- Returns true when at least one slot sharing the same inner tile still has an
@@ -150,8 +159,10 @@ function Mythos:save(buffer)
 	storage.saved_dimensions[saved_id] = {
 		surface      = self.inside_surface,
 		items        = items,
-		custom_icons = self.custom_icons,
-		floor_bounds = self.floor_bounds,
+		custom_icons   = self.custom_icons,
+		floor_bounds   = self.floor_bounds,
+		default_width  = self.default_width,
+		default_height = self.default_height,
 	}
 
 	-- Outer power bridge must be destroyed when the mythos is picked up.

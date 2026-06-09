@@ -147,8 +147,12 @@ function MythosEvents.install(Mythos, connectionTypes)
 			local state = Registry.get(unitNum)
 			if state and state.entity.valid and connectionTypes[entity.type] == "belt" then
 				local slotKey = state:findInnerSlotAt(entity.position)
-				if slotKey and state:connectFromInner(slotKey, entity) then
-					playConnectSound(entity.surface, entity.position)
+				if slotKey then
+					if state:connectFromInner(slotKey, entity) then
+						playConnectSound(entity.surface, entity.position)
+					else
+						state:refreshGateRenders()
+					end
 				end
 			end
 			return
@@ -161,11 +165,14 @@ function MythosEvents.install(Mythos, connectionTypes)
 
 		if not connectionTypes[entity.type] then return end
 		local state, slotKey = Mythos.findStateAndSlot(entity)
-		if not state then return end
-		if state:connect(slotKey, entity) then
-			playConnectSound(entity.surface, entity.position)
-		else
-			state:updateGateRender(slotKey)
+		if state then
+			if slotKey then
+				if state:connect(slotKey, entity) then
+					playConnectSound(entity.surface, entity.position)
+				end
+			end
+			state:refreshGateRenders()
+			return
 		end
 	end
 
@@ -214,7 +221,10 @@ function MythosEvents.install(Mythos, connectionTypes)
 		if state then
 			if connectionTypes[entity.type] == "belt" then
 				local slotKey = state:findInnerSlotAt(entity.position)
-				if slotKey then state:disconnect(slotKey) end
+				if slotKey then
+					state:disconnect(slotKey)
+				end
+				state:refreshGateRenders()
 			end
 
 			if event.buffer then
@@ -226,8 +236,13 @@ function MythosEvents.install(Mythos, connectionTypes)
 		if not connectionTypes[entity.type] then return end
 		local outsideState, slotKey = Mythos.findStateAndSlot(entity)
 		if outsideState then
-			outsideState:disconnect(slotKey)
-			outsideState:updateGateRender(slotKey)
+			if slotKey then
+				outsideState:disconnect(slotKey)
+			else
+				outsideState:disconnectExternalEntity(entity)
+			end
+			outsideState:refreshGateRenders()
+			return
 		end
 	end
 

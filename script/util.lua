@@ -6,6 +6,15 @@ function Util.positionKey(x, y)
 	return string.format("%g,%g", x, y)
 end
 
+-- Same half-width used by slot entity area scans (±0.4 → 0.8 tile box).
+Util.SLOT_POS_TOLERANCE = 0.4
+
+function Util.nearPosition(pos, target, tolerance)
+	tolerance = tolerance or Util.SLOT_POS_TOLERANCE
+	return math.abs(pos.x - target.x) <= tolerance
+		and math.abs(pos.y - target.y) <= tolerance
+end
+
 function Util.floorWidth(bounds)
 	return bounds.x_max - bounds.x_min + 1
 end

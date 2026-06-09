@@ -118,7 +118,9 @@ script.on_event(defines.events.on_gui_confirmed, function(event)
 	local element = event.element
 	if not (element and element.valid) then return end
 	if element.name == "mythos-resize-width-field"
-			or element.name == "mythos-resize-height-field" then
+			or element.name == "mythos-resize-height-field"
+			or element.name == "mythos-default-width-field"
+			or element.name == "mythos-default-height-field" then
 		ResizeGui.onTextConfirmed(event)
 	end
 end)

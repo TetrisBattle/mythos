@@ -10,19 +10,21 @@ local ResizeGui = {}
 
 local FRAME_NAME   = "mythos-config-panel"
 local BTN_PREFIX   = "mythos-resize-"
-local WIDTH_FIELD  = "mythos-resize-width-field"
-local HEIGHT_FIELD = "mythos-resize-height-field"
+local DEFAULT_WIDTH_FIELD  = "mythos-default-width-field"
+local DEFAULT_HEIGHT_FIELD = "mythos-default-height-field"
+local WIDTH_FIELD          = "mythos-resize-width-field"
+local HEIGHT_FIELD         = "mythos-resize-height-field"
 
 local buttonAction = {
-	[BTN_PREFIX .. "top"]    = { edge = "top",   expand = true  },
-	[BTN_PREFIX .. "bottom"] = { edge = "top",   expand = false },
-	[BTN_PREFIX .. "right"]  = { edge = "right", expand = true  },
-	[BTN_PREFIX .. "left"]   = { edge = "right", expand = false },
+	[BTN_PREFIX .. "top"]    = { edge = "bottom", expand = false },
+	[BTN_PREFIX .. "bottom"] = { edge = "bottom", expand = true  },
+	[BTN_PREFIX .. "right"]  = { edge = "right",  expand = true  },
+	[BTN_PREFIX .. "left"]   = { edge = "right",  expand = false },
 }
 
 local arrowAction = {
-	up    = { edge = "top",   expand = true  },
-	down  = { edge = "top",   expand = false },
+	up    = { edge = "bottom", expand = false },
+	down  = { edge = "bottom", expand = true  },
 	right = { edge = "right", expand = true  },
 	left  = { edge = "right", expand = false },
 }
@@ -55,6 +57,14 @@ local function heightOf(state)
 	return util.floorHeight(b)
 end
 
+local function defaultWidthOf(state)
+	return state.default_width or PocketDimension.DEFAULT_WIDTH
+end
+
+local function defaultHeightOf(state)
+	return state.default_height or PocketDimension.DEFAULT_HEIGHT
+end
+
 local function getFrame(player)
 	return player.gui.screen[FRAME_NAME]
 end
@@ -69,9 +79,11 @@ end
 
 local function panelDimensions(player)
 	local rowWidth = LABEL_WIDTH + ROW_SPACING + FIELD_WIDTH + ROW_SPACING + CELL_SIZE * 2
+	local defaultRowWidth = LABEL_WIDTH + ROW_SPACING + FIELD_WIDTH + ROW_SPACING + 16
+		+ ROW_SPACING + FIELD_WIDTH
 	local iconWidth = LABEL_WIDTH + ROW_SPACING + CELL_SIZE * 4 + 4 * 4
-	local contentWidth = math.max(rowWidth, iconWidth)
-	local rowsHeight = CELL_SIZE + ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE
+	local contentWidth = math.max(rowWidth, defaultRowWidth, iconWidth)
+	local rowsHeight = CELL_SIZE + ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE
 	return scaled(player, contentWidth + FRAME_CHROME_W),
 		scaled(player, rowsHeight + FRAME_CHROME_H)
 end
@@ -89,6 +101,15 @@ function ResizeGui.reposition(player)
 end
 
 local function refreshFields(frame, state)
+	local defaultWidthField = findByName(frame, DEFAULT_WIDTH_FIELD)
+	local defaultHeightField = findByName(frame, DEFAULT_HEIGHT_FIELD)
+	if defaultWidthField and defaultWidthField.valid then
+		defaultWidthField.text = tostring(defaultWidthOf(state))
+	end
+	if defaultHeightField and defaultHeightField.valid then
+		defaultHeightField.text = tostring(defaultHeightOf(state))
+	end
+
 	local widthField = findByName(frame, WIDTH_FIELD)
 	local heightField = findByName(frame, HEIGHT_FIELD)
 	if widthField and widthField.valid then
@@ -130,13 +151,37 @@ local function playerState(player_index)
 	local opened = player.opened
 	if opened and opened.valid then
 		local n = opened.name
-		if n == WIDTH_FIELD or n == HEIGHT_FIELD then return nil end
+		if n == WIDTH_FIELD or n == HEIGHT_FIELD
+				or n == DEFAULT_WIDTH_FIELD or n == DEFAULT_HEIGHT_FIELD then
+			return nil
+		end
 		if IconGui.isIconButton(n) then return nil end
 	end
 	local unit = storage.viewing and storage.viewing[player_index]
 	local state = unit and Registry.get(unit)
 	if not state then return nil end
 	return player, state
+end
+
+local function applyDefaultSize(player, state)
+	local frame = getFrame(player)
+	if not (frame and frame.valid) then return end
+
+	local widthField = findByName(frame, DEFAULT_WIDTH_FIELD)
+	local heightField = findByName(frame, DEFAULT_HEIGHT_FIELD)
+	if not (widthField and heightField) then return end
+
+	local width  = PocketDimension.snapSizeUpEven(tonumber(widthField.text))
+	local height = PocketDimension.snapSizeUpEven(tonumber(heightField.text))
+	if width < PocketDimension.MIN_DIMENSION or height < PocketDimension.MIN_DIMENSION then
+		reportError(player, "mythos-gui.resize-invalid-size")
+		refreshFields(frame, state)
+		return
+	end
+
+	state.default_width  = width
+	state.default_height = height
+	refreshFields(frame, state)
 end
 
 local function applyTypedSize(player, state)
@@ -185,6 +230,25 @@ local function addSizeField(parent, name, value, unit)
 	}
 end
 
+local function addDefaultSizeRow(parent, unit, state)
+	local row = parent.add{ type = "flow", direction = "horizontal" }
+	row.style.vertical_align = "center"
+	row.style.horizontal_spacing = 6
+
+	local label = row.add{ type = "label", caption = { "mythos-gui.default-size" } }
+	label.style.width = LABEL_WIDTH
+
+	local widthField = addSizeField(row, DEFAULT_WIDTH_FIELD, defaultWidthOf(state), unit)
+	widthField.style.width = FIELD_WIDTH
+	widthField.tooltip = { "mythos-gui.default-size-field-tooltip" }
+
+	row.add{ type = "label", caption = "x" }
+
+	local heightField = addSizeField(row, DEFAULT_HEIGHT_FIELD, defaultHeightOf(state), unit)
+	heightField.style.width = FIELD_WIDTH
+	heightField.tooltip = { "mythos-gui.default-size-field-tooltip" }
+end
+
 local function addHeightRow(parent, unit, state)
 	local row = parent.add{ type = "flow", direction = "horizontal" }
 	row.style.vertical_align = "center"
@@ -197,9 +261,9 @@ local function addHeightRow(parent, unit, state)
 	field.style.width = FIELD_WIDTH
 
 	local arrows = row.add{ type = "flow", direction = "horizontal" }
-	addArrowButton(arrows, BTN_PREFIX .. "top", "▲", { "mythos-gui.expand-top" },
+	addArrowButton(arrows, BTN_PREFIX .. "top", "▲", { "mythos-gui.contract-top" },
 		unit, CELL_SIZE, CELL_SIZE)
-	addArrowButton(arrows, BTN_PREFIX .. "bottom", "▼", { "mythos-gui.contract-top" },
+	addArrowButton(arrows, BTN_PREFIX .. "bottom", "▼", { "mythos-gui.expand-top" },
 		unit, CELL_SIZE, CELL_SIZE)
 end
 
@@ -263,6 +327,7 @@ local function buildPanel(player, state)
 	}
 	rows.style.vertical_spacing = 6
 
+	addDefaultSizeRow(rows, unit, state)
 	addWidthRow(rows, unit, state)
 	addHeightRow(rows, unit, state)
 	addIconRow(rows, unit, state)
@@ -316,7 +381,10 @@ end
 function ResizeGui.onTextConfirmed(event)
 	local element = event.element
 	if not (element and element.valid) then return end
-	if element.name ~= WIDTH_FIELD and element.name ~= HEIGHT_FIELD then return end
+	if element.name ~= WIDTH_FIELD and element.name ~= HEIGHT_FIELD
+			and element.name ~= DEFAULT_WIDTH_FIELD and element.name ~= DEFAULT_HEIGHT_FIELD then
+		return
+	end
 
 	local state = stateFromTags(element.tags)
 	if not state then return end
@@ -324,7 +392,11 @@ function ResizeGui.onTextConfirmed(event)
 	local player = game.get_player(event.player_index)
 	if not player then return end
 
-	applyTypedSize(player, state)
+	if element.name == DEFAULT_WIDTH_FIELD or element.name == DEFAULT_HEIGHT_FIELD then
+		applyDefaultSize(player, state)
+	else
+		applyTypedSize(player, state)
+	end
 end
 
 function ResizeGui.onArrowInput(player_index, direction)
