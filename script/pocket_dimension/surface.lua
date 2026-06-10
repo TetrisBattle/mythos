@@ -112,9 +112,26 @@ local function ensureChunksGenerated(surface, bounds)
 	end
 end
 
-local function syncInfrastructure(surface, bounds)
+local function findOrCreateHiddenLight(surface, position, force)
+	local lights = surface.find_entities_filtered{ name = "mythos-hidden-light" }
+	local light = lights[1]
+	if light and light.valid then return light end
+	if not force then return nil end
+
+	light = surface.create_entity{
+		name        = "mythos-hidden-light",
+		position    = position,
+		force       = force,
+		raise_built = false,
+	}
+	if light then light.destructible = false end
+	return light
+end
+
+local function syncInfrastructure(surface, bounds, force)
 	local cx, cy = floor.floorCentre(bounds)
 	local pos = { cx, cy }
+	findOrCreateHiddenLight(surface, pos, force)
 	for name in pairs(util.REMOTE_VIEW_ENTITY_NAMES) do
 		for _, entity in pairs(surface.find_entities_filtered{ name = name }) do
 			if entity.valid then entity.teleport(pos) end
@@ -124,11 +141,12 @@ local function syncInfrastructure(surface, bounds)
 end
 
 -- Keeps void shell, chunk status, and hidden radar/pole centred after resize.
-local function ensureRemoteViewReady(surface, bounds, _)
+local function ensureRemoteViewReady(surface, bounds, force)
 	suppressTerrainGeneration(surface)
+	surface.freeze_daytime = false
 	ensureHiddenVoid(surface, bounds)
 	ensureChunksGenerated(surface, bounds)
-	return syncInfrastructure(surface, bounds)
+	return syncInfrastructure(surface, bounds, force)
 end
 
 -- Creates the pocket-dimension surface for one mythos entity.
@@ -156,10 +174,6 @@ local function create(unit_number, force, outer_surface, opts)
 	end
 	suppressTerrainGeneration(surface)
 
-	-- Keep the pocket dimension permanently at full daylight brightness.
-	surface.daytime       = 0.5
-	surface.freeze_daytime = true
-
 	-- Floor
 	local tiles = {}
 	for x = constants.DEFAULT_FLOOR_BOUNDS.x_min, constants.DEFAULT_FLOOR_BOUNDS.x_max do
@@ -185,10 +199,6 @@ local function create(unit_number, force, outer_surface, opts)
 	if radar then radar.destructible = false end
 
 	-- Sync solar output to the planet the mythos is placed on.
-	-- Solar panels inside will produce power proportional to the outer
-	-- surface's solar_power_multiplier (e.g., Aquilo gets ~30% of Nauvis).
-	-- The dimension is kept at noon (daytime = 0.5) so solar panels always
-	-- run at their full fraction without a day/night cycle.
 	if outer_surface and outer_surface.valid then
 		surface.solar_power_multiplier = outer_surface.solar_power_multiplier
 	end

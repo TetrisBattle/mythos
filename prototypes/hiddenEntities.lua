@@ -63,6 +63,37 @@ local hiddenRadar = {
 	connects_to_other_radars          = false,
 }
 
+-- Hidden light: keeps pocket dimensions readable without changing the surface
+-- day/night cycle or solar behavior.
+---@type table
+local hiddenLight                      = table.deepcopy(data.raw["lamp"]["small-lamp"])
+hiddenLight.name                       = "mythos-hidden-light"
+hiddenLight.localised_name             = { "" }
+hiddenLight.hidden                     = true
+hiddenLight.flags                      = hiddenFlags
+hiddenLight.collision_mask             = { layers = {} }
+hiddenLight.collision_box              = { { 0, 0 }, { 0, 0 } }
+hiddenLight.selection_box              = { { 0, 0 }, { 0, 0 } }
+hiddenLight.minable                    = nil
+hiddenLight.max_health                 = 1
+hiddenLight.energy_source              = {
+	type = "void",
+	render_no_power_icon = false,
+	render_no_network_icon = false,
+}
+hiddenLight.energy_usage_per_tick      = "1W"
+hiddenLight.always_on                  = true
+hiddenLight.light                      = { intensity = 1.0, size = 128 }
+hiddenLight.light_when_colored         = hiddenLight.light
+hiddenLight.picture_on                 = makeInvisible(hiddenLight.picture_on)
+hiddenLight.picture_off                = makeInvisible(hiddenLight.picture_off)
+hiddenLight.circuit_wire_max_distance  = 0
+hiddenLight.circuit_connector          = nil
+hiddenLight.circuit_connector_sprites  = nil
+hiddenLight.circuit_wire_connection_points = nil
+hiddenLight.draw_circuit_wires         = false
+hiddenLight.draw_copper_wires          = false
+
 -- Hidden electric pole placed at the centre of the pocket dimension.
 -- supply_area_distance = 64 covers resized floors up to 128 tiles across from centre.
 -- maximum_wire_distance matches supply so player poles anywhere on the floor
@@ -191,6 +222,7 @@ data:extend({
 	hiddenPipe,
 	hiddenHeatPipe,
 	hiddenRadar,
+	hiddenLight,
 	mythosGateSprite,
 	hiddenOuterAcc,
 	hiddenInnerLink,

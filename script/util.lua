@@ -66,6 +66,7 @@ end
 
 Util.INFRASTRUCTURE_ENTITY_NAMES = {
 	["mythos-hidden-radar"]     = true,
+	["mythos-hidden-light"]     = true,
 	["mythos-power-hub-pole"]   = true,
 	["mythos-power-link-inner"] = true,
 	["mythos-hidden-pipe"]      = true,
@@ -74,6 +75,7 @@ Util.INFRASTRUCTURE_ENTITY_NAMES = {
 
 Util.REMOTE_VIEW_ENTITY_NAMES = {
 	["mythos-hidden-radar"]     = true,
+	["mythos-hidden-light"]     = true,
 	["mythos-power-hub-pole"]   = true,
 	["mythos-power-link-inner"] = true,
 }
