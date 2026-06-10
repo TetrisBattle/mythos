@@ -7,9 +7,9 @@
 --   Connections.buildSlots(cx, cy)   → slots, byExternalPos
 --   Connections.install(Mythos, connectionTypes)  → adds methods to the class
 
-local PocketDimension = require("script.PocketDimension")
+local PocketDimension = require("script.pocket_dimension.init")
 local util            = require("script.util")
-local Registry        = require("script.registry")
+local Registry        = require("script.mythos.registry")
 local positionKey     = util.positionKey
 
 -- ── Slot geometry ──────────────────────────────────────────────────────────────

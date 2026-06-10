@@ -1,5 +1,5 @@
 local Config       = require("script.config")
-local VirtualChest = require("script.virtualChest")
+local VirtualChest = require("script.virtual_chest.init")
 
 local SettingsSync = {}
 
@@ -15,15 +15,14 @@ local function syncRecipes()
 	local hide_inv = Config.hideVirtualInventory()
 
 	for _, force in pairs(game.forces) do
-		if not force.valid then goto continue end
+		if force.valid then
 
-		setRecipeEnabled(force, "mythos", not no_cost)
-		setRecipeEnabled(force, "mythos-free", no_cost)
+			setRecipeEnabled(force, "mythos", not no_cost)
+			setRecipeEnabled(force, "mythos-free", no_cost)
 
-		setRecipeEnabled(force, "virtual-chest", not hide_inv and not no_cost)
-		setRecipeEnabled(force, "virtual-chest-free", not hide_inv and no_cost)
-
-		::continue::
+			setRecipeEnabled(force, "virtual-chest", not hide_inv and not no_cost)
+			setRecipeEnabled(force, "virtual-chest-free", not hide_inv and no_cost)
+		end
 	end
 end
 

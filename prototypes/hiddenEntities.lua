@@ -134,8 +134,8 @@ hiddenOuterAcc.energy_source              = {
 	usage_priority           = "tertiary",
 	input_flow_limit         = "10GW",
 	output_flow_limit        = "10GW",
-	render_no_power_icon     = true,
-	render_no_network_icon   = true,
+	render_no_power_icon     = false,
+	render_no_network_icon   = false,
 }
 hiddenOuterAcc.picture                    = makeInvisible(hiddenOuterAcc.picture)
 hiddenOuterAcc.sprites                    = makeInvisible(hiddenOuterAcc.sprites)
@@ -171,8 +171,8 @@ local hiddenInnerLink = {
 		usage_priority           = "secondary-output",
 		input_flow_limit         = "10GW",
 		output_flow_limit        = "10GW",
-		render_no_power_icon     = true,
-		render_no_network_icon   = true,
+	render_no_power_icon     = false,
+	render_no_network_icon   = false,
 	},
 	energy_production         = "0W",
 	energy_usage              = "0W",

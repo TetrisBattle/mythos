@@ -1,4 +1,4 @@
-local PocketDimension = require("script.PocketDimension")
+local PocketDimension = require("script.pocket_dimension.init")
 local util            = require("script.util")
 
 local DimensionResize = {}

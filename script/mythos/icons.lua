@@ -1,4 +1,4 @@
-local IconGui = require("script.iconGui")
+local IconGui = require("script.ui.icon_gui")
 
 local Icons = {}
 

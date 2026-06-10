@@ -1,48 +1,18 @@
-local PocketDimension   = require("script.PocketDimension")
-local util              = require("script.util")
-local Connections       = require("script.connections")
-local Logistics         = require("script.logistics")
-local DimensionDeletion = require("script.dimensionDeletion")
-local Electricity       = require("script.electricity")
-local DimensionResize   = require("script.dimensionResize")
-local Transport         = require("script.transport")
-local Icons             = require("script.icons")
-local MythosRestore     = require("script.mythosRestore")
-local MythosEvents      = require("script.mythosEvents")
-local MythosClone       = require("script.mythosClone")
-local Registry          = require("script.registry")
+local PocketDimension  = require("script.pocket_dimension.init")
+local util             = require("script.util")
+local Connections      = require("script.mythos.connections")
+local Bridge           = require("script.power.bridge")
+local connectionTypes  = require("script.mythos.connection_types")
+local Registry         = require("script.mythos.registry")
 
-local positionKey       = util.positionKey
+local positionKey      = util.positionKey
 
--- ── Entity → connection-type mapping ──────────────────────────────────────────
--- Used to decide how a slot should be wired when an entity is placed next to
--- (or inside) a mythos.  Belts move items, pipes move fluid, heat-pipes move heat.
-local connectionTypes   = {
-	["loader"]           = "loader",
-	["loader-1x1"]       = "loader",
-	["transport-belt"]   = "belt",
-	["underground-belt"] = "belt",
-	["splitter"]         = "belt",
-	["lane-splitter"]    = "belt",
-	["pipe"]             = "pipe",
-	["pipe-to-ground"]   = "pipe",
-	["storage-tank"]     = "pipe",
-	["pump"]             = "pipe",
-	["offshore-pump"]    = "pipe",
-	["generator"]        = "pipe",
-	["heat-pipe"]        = "heat-pipe",
-	["reactor"]          = "heat-pipe",
-	["boiler"]           = "heat-pipe",
-}
-
--- ── Mythos class ───────────────────────────────────────────────────────────────
 -- One instance per placed mythos entity.
 -- Stores the pocket-dimension surface, slot geometry, and all active connections.
 -- Persisted in storage.mythoi[unit_number]; metatables are restored on game load.
-
-local Mythos            = {}
-Mythos.__index          = Mythos
-Mythos.connectionTypes  = connectionTypes -- exposed for callers that need the map
+local Mythos           = {}
+Mythos.__index         = Mythos
+Mythos.connectionTypes = connectionTypes -- exposed for callers that need the map
 
 -- Creates a new Mythos instance for a freshly placed entity.
 function Mythos.new(mythosEntity)
@@ -55,7 +25,7 @@ function Mythos.new(mythosEntity)
 
 	-- Hidden accumulator on the placement surface (skipped when nested inside
 	-- another mythos; nested mythoi draw from the parent inner accumulator).
-	local outer_acc = MythosRestore.createOuterAccumulatorForEntity(mythosEntity)
+	local outer_acc = Bridge.createOuterAccumulatorForEntity(mythosEntity)
 
 	local floor_bounds = {
 		x_min = PocketDimension.DEFAULT_FLOOR_BOUNDS.x_min,
@@ -94,7 +64,7 @@ function Mythos:findSlotAt(pos)
 end
 
 -- Returns true when at least one slot sharing the same inner tile still has an
--- active connection.  Corner slots can share a tile, so this prevents removing
+-- active connection. Corner slots can share a tile, so this prevents removing
 -- a shared hidden proxy connector before both slots are disconnected.
 function Mythos:innerPositionStillNeeded(innerPos)
 	local key = positionKey(innerPos.x, innerPos.y)
@@ -157,8 +127,8 @@ function Mythos:save(buffer)
 
 	storage.saved_dimensions = storage.saved_dimensions or {}
 	storage.saved_dimensions[saved_id] = {
-		surface      = self.inside_surface,
-		items        = items,
+		surface        = self.inside_surface,
+		items          = items,
 		custom_icons   = self.custom_icons,
 		floor_bounds   = self.floor_bounds,
 		default_width  = self.default_width,
@@ -168,7 +138,7 @@ function Mythos:save(buffer)
 	-- Outer power bridge must be destroyed when the mythos is picked up.
 	-- The inner accumulator stays with the saved surface and is restored later.
 	if self.entity and self.entity.valid then
-		MythosRestore.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
+		Bridge.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
 	end
 	self.outer_acc = nil
 
@@ -189,7 +159,7 @@ function Mythos:destroy()
 	end
 	self.icon_renders = nil
 	if self.entity and self.entity.valid then
-		MythosRestore.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
+		Bridge.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
 	end
 	self.outer_acc = nil
 	for slotKey in pairs(self.slots) do
@@ -200,17 +170,5 @@ function Mythos:destroy()
 	end
 	Registry.remove(self.entity.unit_number)
 end
-
--- ── Sub-system installation ────────────────────────────────────────────────────
--- Each module adds its methods directly onto the Mythos prototype.
-Connections.install(Mythos, connectionTypes)
-Logistics.install(Mythos)
-DimensionDeletion.install(Mythos, connectionTypes)
-Electricity.install(Mythos)
-DimensionResize.install(Mythos)
-Transport.install(Mythos)
-Icons.install(Mythos)
-MythosEvents.install(Mythos, connectionTypes)
-MythosClone.install(Mythos)
 
 return Mythos

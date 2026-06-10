@@ -1,7 +1,6 @@
-local MythosRestore   = require("script.mythosRestore")
-local MythosClone     = require("script.mythosClone")
-local Registry        = require("script.registry")
-local VirtualChest    = require("script.virtualChest")
+local MythosClone     = require("script.clone.init")
+local Registry        = require("script.mythos.registry")
+local VirtualChest    = require("script.virtual_chest.init")
 local Config          = require("script.config")
 local util            = require("script.util")
 

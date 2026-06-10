@@ -1,5 +1,5 @@
-local Registry        = require("script.registry")
-local VirtualChest = require("script.virtualChest")
+local Registry     = require("script.mythos.registry")
+local VirtualChest = require("script.virtual_chest.init")
 
 local Transport = {}
 
@@ -34,20 +34,25 @@ local function transferBeltLines(from, to)
 	for lane = 1, 2 do
 		local fromLine = from.get_transport_line(lane)
 		local toLine   = to.get_transport_line(lane)
+		local laneOpen = true
 		for _, stack in pairs(fromLine.get_contents()) do
+			if not laneOpen then break end
 			local single = { name = stack.name, quality = stack.quality, count = 1 }
 			for _ = 1, stack.count do
-				if not toLine.can_insert_at_back() then goto nextLane end
+				if not toLine.can_insert_at_back() then
+					laneOpen = false
+					break
+				end
 				local taken = fromLine.remove_item(single)
 				if taken > 0 then
 					if not toLine.insert_at_back(single) then
 						fromLine.insert_at_back(single)
-						goto nextLane
+						laneOpen = false
+						break
 					end
 				end
 			end
 		end
-		::nextLane::
 	end
 end
 

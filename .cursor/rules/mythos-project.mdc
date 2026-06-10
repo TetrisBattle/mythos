@@ -1,0 +1,49 @@
+---
+description: Project guidance for AI agents working on the Mythos Factorio mod
+alwaysApply: true
+---
+
+# Mythos Project Guidance
+
+Mythos is a Factorio 2.0 Lua mod for pocket dimensions. Before changing runtime
+code, read `ARCHITECTURE.md`; it is the maintainer map for entry points,
+packages, compatibility wrappers, persisted names, and manual smoke tests.
+
+## Runtime Map
+
+- `control.lua` should stay thin: lifecycle hooks plus event registration.
+- Runtime packages live under `script/bootstrap`, `script/events`,
+  `script/mythos`, `script/pocket_dimension`, `script/clone`,
+  `script/virtual_chest`, `script/power`, `script/migrations`, and `script/ui`.
+- Top-level files such as `script/Mythos.lua`, `script/PocketDimension.lua`,
+  `script/virtualChest.lua`, `script/maintenance.lua`, `script/electricity.lua`,
+  and old UI/module names are compatibility wrappers. New implementation code
+  should require the package paths directly.
+
+## Save Compatibility
+
+Do not rename storage keys, surface names, prototype names, setting names, custom
+input names, or blueprint tag names without adding a migration. Important keys
+include `storage.mythoi`, `storage.saved_dimensions`, `storage.virtualChests`,
+`storage.mythos_next_snapshot_id`, and `storage.mythos_pending_paste`.
+
+Preserve legacy migration paths for `mythos-inventory`, `lab-dark-2`,
+`storage.mythos_storage_anchors`, `storage.mythos_inventories`, and
+`storage.virtual_chests`.
+
+## Refactor Rules
+
+- Prefer focused modules and facades over re-growing monolithic files.
+- Keep compatibility wrappers until there is a deliberate cleanup/migration.
+- Avoid `goto` patterns; use structured conditionals to stay Lua-load safe.
+- Keep Factorio API behavior stable unless the user explicitly asks for gameplay
+  changes.
+- When changing clone, blueprint, power, migrations, or virtual chest code, treat
+  it as high-risk and review storage and save/load behavior carefully.
+
+## Verification
+
+There is no automated test suite in this repo. At minimum run static checks such
+as `git diff --check`, stale require searches, and IDE diagnostics. If Lua tools
+or Factorio are available, also run syntax/load checks. Use the smoke-test matrix
+in `ARCHITECTURE.md` before considering gameplay-sensitive changes release-ready.

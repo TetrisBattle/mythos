@@ -2,8 +2,8 @@
 -- Mines entities inside a pocket dimension into the nearest Virtual chest,
 -- or destroys them when virtual inventory is unavailable.
 
-local Registry     = require("script.registry")
-local VirtualChest = require("script.virtualChest")
+local Registry     = require("script.mythos.registry")
+local VirtualChest = require("script.virtual_chest.init")
 local Config       = require("script.config")
 
 local DimensionDeletion = {}

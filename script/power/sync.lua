@@ -15,11 +15,11 @@
 -- solar_power_multiplier, which is synced to the outer surface so the
 -- effective solar output matches the planet the mythos is placed on.
 
-local Registry      = require("script.registry")
-local MythosRestore = require("script.mythosRestore")
-local util          = require("script.util")
+local Registry = require("script.mythos.registry")
+local Bridge   = require("script.power.bridge")
+local util     = require("script.util")
 
-local Electricity = {}
+local Sync = {}
 
 -- 10 MJ – matches the buffer_capacity defined in hiddenEntities.lua.
 local LINK_CAPACITY = 10 * 1000 * 1000
@@ -53,7 +53,7 @@ local function findBridgePole(surface, name, position)
 	return poles[1]
 end
 
-function Electricity.install(Mythos)
+function Sync.install(Mythos)
 
 	-- World mythoi draw from their hidden outer accumulator on the placement
 	-- surface.  Nested mythoi (entity sitting inside another pocket dimension)
@@ -139,7 +139,7 @@ function Electricity.install(Mythos)
 	-- icons before the first slow tick.
 	function Mythos:syncElectricity()
 		if self.inside_surface and self.inside_surface.valid then
-			MythosRestore.destroyStrayOuterAccumulators(self.inside_surface)
+			Bridge.destroyStrayOuterAccumulators(self.inside_surface)
 		end
 		self:syncOuterElectricNetwork()
 		self:syncInsideElectricNetwork()
@@ -181,4 +181,4 @@ function Electricity.install(Mythos)
 
 end
 
-return Electricity
+return Sync

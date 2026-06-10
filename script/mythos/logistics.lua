@@ -1,7 +1,7 @@
 -- ── Logistics System ──────────────────────────────────────────────────────────
 -- Manages auto-building of ghost entities using items from Virtual chests.
 
-local VirtualChest = require("script.virtualChest")
+local VirtualChest = require("script.virtual_chest.init")
 local Config       = require("script.config")
 
 local Logistics = {}
@@ -72,18 +72,18 @@ function Logistics.install(Mythos)
 		local no_cost = Config.noCost()
 
 		for _, ghost in pairs(ghosts) do
-			if not ghost.valid then goto continue end
+			if ghost.valid then
 
-			local requests = VirtualChest.ghostRequests(ghost)
-			if not (requests and #requests > 0) then goto continue end
+				local requests = VirtualChest.ghostRequests(ghost)
+				if requests and #requests > 0 then
 
-			if no_cost then
-				materializeGhostFree(ghost)
-			elseif #inventories > 0 then
-				materializeGhost(ghost, inventories, requests)
+					if no_cost then
+						materializeGhostFree(ghost)
+					elseif #inventories > 0 then
+						materializeGhost(ghost, inventories, requests)
+					end
+				end
 			end
-
-			::continue::
 		end
 	end
 

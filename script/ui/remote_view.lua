@@ -1,5 +1,5 @@
-local Registry  = require("script.registry")
-local ResizeGui = require("script.resizeGui")
+local Registry  = require("script.mythos.registry")
+local ResizeGui = require("script.ui.resize_gui")
 
 local RemoteView = {}
 

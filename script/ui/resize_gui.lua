@@ -1,10 +1,10 @@
--- ── Mythos Config GUI (resize + custom icons) ─────────────────────────────────
--- Shown while remote-viewing a pocket dimension.  Anchored bottom-right.
+-- Mythos Config GUI (resize + custom icons)
+-- Shown while remote-viewing a pocket dimension. Anchored bottom-right.
 
-local PocketDimension = require("script.PocketDimension")
-local Registry        = require("script.registry")
+local PocketDimension = require("script.pocket_dimension.init")
+local Registry        = require("script.mythos.registry")
 local util            = require("script.util")
-local IconGui         = require("script.iconGui")
+local IconGui         = require("script.ui.icon_gui")
 
 local ResizeGui = {}
 
