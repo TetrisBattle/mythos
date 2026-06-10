@@ -18,16 +18,19 @@ local GATES_PER_SIDE = 4
 -- Tile offsets along each 4x4 mythos face (1 = top / left).
 local GATE_OFFSETS = { -1.5, -0.5, 0.5, 1.5 }
 
--- GATES_PER_SIDE consecutive floor-tile indices clustered in the wall centre.
-local function gateCoordsAlong(min_coord, max_coord)
-	local span = max_coord - min_coord + 1
-	local start = min_coord + math.floor((span - GATES_PER_SIDE) / 2)
-	local coords = {}
-	for i = 0, GATES_PER_SIDE - 1 do
-		coords[i + 1] = start + i
-	end
-	return coords
-end
+local LEFT_DIMENSION_SLOTS = {
+	"top-2", "top-1",
+	"left-1", "left-2", "left-3", "left-4",
+	"bottom-1", "bottom-2",
+}
+local RIGHT_DIMENSION_SLOTS = {
+	"top-3", "top-4",
+	"right-1", "right-2", "right-3", "right-4",
+	"bottom-4", "bottom-3",
+}
+-- Side-wall rows from the floor's northern edge, with one tile gap after the
+-- top pair and after the side group.
+local DIM_GATE_FROM_TOP = { 0.5, 1.5, 3.5, 4.5, 5.5, 6.5, 8.5, 9.5 }
 
 local function floorCentre(bounds)
 	return (bounds.x_min + bounds.x_max + 1) / 2,
@@ -198,35 +201,25 @@ local function buildMythosSlotLayout()
 end
 
 -- Computes gate/belt positions for arbitrary floor bounds.
--- Each wall gets GATES_PER_SIDE adjacent gates centred on that axis.
+-- The pocket dimension exposes all Mythos ports on left/right side walls only.
 -- innerBeltPos: the tile one step inside the floor where the player places their belt.
 local function computeDimensionSlotBeltLayout(bounds)
 	bounds = bounds or DEFAULT_FLOOR_BOUNDS
 	local layout = {}
-	for i, y in ipairs(gateCoordsAlong(bounds.y_min, bounds.y_max)) do
-		local yc = y + 0.5
-		layout["left-" .. i] = {
+	for i, slotKey in ipairs(LEFT_DIMENSION_SLOTS) do
+		local yc = bounds.y_min + DIM_GATE_FROM_TOP[i]
+		layout[slotKey] = {
 			pos             = { bounds.x_min - 0.5, yc },
 			innerBeltPos    = { bounds.x_min + 0.5, yc },
 			gateOrientation = 0.75,
 		}
-		layout["right-" .. i] = {
+	end
+	for i, slotKey in ipairs(RIGHT_DIMENSION_SLOTS) do
+		local yc = bounds.y_min + DIM_GATE_FROM_TOP[i]
+		layout[slotKey] = {
 			pos             = { bounds.x_max + 1.5, yc },
 			innerBeltPos    = { bounds.x_max + 0.5, yc },
 			gateOrientation = 0.25,
-		}
-	end
-	for i, x in ipairs(gateCoordsAlong(bounds.x_min, bounds.x_max)) do
-		local xc = x + 0.5
-		layout["top-" .. i] = {
-			pos             = { xc, bounds.y_min - 0.5 },
-			innerBeltPos    = { xc, bounds.y_min + 0.5 },
-			gateOrientation = 0,
-		}
-		layout["bottom-" .. i] = {
-			pos             = { xc, bounds.y_max + 1.5 },
-			innerBeltPos    = { xc, bounds.y_max + 0.5 },
-			gateOrientation = 0.5,
 		}
 	end
 	return layout
