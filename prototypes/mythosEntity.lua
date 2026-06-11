@@ -37,7 +37,7 @@ local mythosItem = {
 	subgroup     = "mythos-logistics",
 	order        = "a[mythos]",
 	place_result = "mythos",
-	stack_size   = 10,
+	stack_size   = 100,
 }
 
 local savedIconLayers = {
@@ -57,7 +57,7 @@ local mythosItemSaved = {
 	subgroup     = "mythos-logistics",
 	order        = "b[mythos-with-contents]",
 	place_result = "mythos",
-	stack_size   = 1,
+	stack_size   = 100,
 }
 
 data:extend({
