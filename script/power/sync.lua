@@ -76,30 +76,14 @@ function Sync.install(Mythos)
 		return nil
 	end
 
-	-- Wires the hidden outer bridge pole to nearby player poles so the outer
-	-- accumulator can charge from the placement-surface grid.
+	-- Outer accumulators join the placement grid through normal electric
+	-- coverage.  Hidden outer poles from older versions must not remain, because
+	-- they extend the grid and can supply nearby machines.
 	function Mythos:syncOuterElectricNetwork()
 		if not (self.entity and self.entity.valid) then return end
 		if util.parseDimensionUnitNumber(self.entity.surface) then return end
 
-		local bridge = findBridgePole(
-			self.entity.surface, "mythos-power-outer-pole", self.entity.position
-		)
-		if not (bridge and bridge.valid) then return end
-
-		local pos = self.entity.position
-		local margin = 64
-		for _, pole in ipairs(self.entity.surface.find_entities_filtered{
-			type = "electric-pole",
-			area = {
-				{ pos.x - margin, pos.y - margin },
-				{ pos.x + margin, pos.y + margin },
-			},
-		}) do
-			if isPlayerPole(pole) then
-				connectPoleCopper(bridge, pole)
-			end
-		end
+		Bridge.destroyOuterPoles(self.entity.surface, self.entity.position)
 	end
 
 	-- Wires the hidden hub pole to every player pole in the pocket dimension.

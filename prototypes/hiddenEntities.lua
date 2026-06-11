@@ -124,10 +124,12 @@ hiddenHubPole.active_picture             = nil
 hiddenHubPole.connection_sprites         = nil
 hiddenHubPole.radius_visualisation_picture = nil
 
--- Hidden pole on the placement surface at the mythos position.  Bridges the outer
--- accumulator into the surrounding electric grid so it can charge from nearby poles.
+-- Hidden pole on the placement surface at the mythos position.  It can join a
+-- player grid by wire, but must not supply machines around the mythos.
 local hiddenOuterPole                      = table.deepcopy(hiddenHubPole)
 hiddenOuterPole.name                       = "mythos-power-outer-pole"
+hiddenOuterPole.supply_area_distance       = 0
+hiddenOuterPole.maximum_wire_distance      = 64
 
 -- Gate sprite rendered inside the pocket dimension at each active belt connection.
 -- Uses rendering.draw_sprite at runtime so it is always visible, with orientation

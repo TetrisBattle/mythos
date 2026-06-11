@@ -7,27 +7,19 @@ local Bridge = {}
 local OUTER_POWER_LINK_TYPE = "accumulator"
 local INNER_POWER_LINK_TYPE = "electric-energy-interface"
 
-local function findOrCreateOuterPole(surface, position, force)
-	local poles = surface.find_entities_filtered{
+function Bridge.destroyOuterPoles(surface, position)
+	if not (surface and surface.valid) then return end
+	for _, pole in ipairs(surface.find_entities_filtered{
 		name     = "mythos-power-outer-pole",
 		position = position,
-	}
-	local pole = poles[1]
-	if pole and pole.valid then return pole end
-
-	pole = surface.create_entity{
-		name        = "mythos-power-outer-pole",
-		position    = position,
-		force       = force,
-		raise_built = false,
-	}
-	if pole then pole.destructible = false end
-	return pole
+	}) do
+		if pole.valid then pole.destroy() end
+	end
 end
 
 function Bridge.createOuterAccumulator(entity)
 	local position = entity.position
-	findOrCreateOuterPole(entity.surface, position, entity.force)
+	Bridge.destroyOuterPoles(entity.surface, position)
 
 	local outer_acc = entity.surface.create_entity{
 		name        = "mythos-power-link-outer",
@@ -120,7 +112,7 @@ end
 function Bridge.ensureOuterPowerBridge(entity)
 	if not (entity and entity.valid) then return end
 	if util.parseDimensionUnitNumber(entity.surface) then return end
-	findOrCreateOuterPole(entity.surface, entity.position, entity.force)
+	Bridge.destroyOuterPoles(entity.surface, entity.position)
 end
 
 function Bridge.destroyStrayInnerAccumulators(surface)
