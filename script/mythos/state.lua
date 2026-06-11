@@ -7,6 +7,15 @@ local Registry         = require("script.mythos.registry")
 
 local positionKey      = util.positionKey
 
+local function destroyGateLabelRenders(state)
+	if state.gateLabelRenders then
+		for _, r in pairs(state.gateLabelRenders) do
+			if r and r.valid then r.destroy() end
+		end
+	end
+	state.gateLabelRenders = nil
+end
+
 -- One instance per placed mythos entity.
 -- Stores the pocket-dimension surface, slot geometry, and all active connections.
 -- Persisted in storage.mythoi[unit_number]; metatables are restored on game load.
@@ -125,6 +134,8 @@ function Mythos:save(buffer)
 		end
 	end
 
+	destroyGateLabelRenders(self)
+
 	storage.saved_dimensions = storage.saved_dimensions or {}
 	storage.saved_dimensions[saved_id] = {
 		surface        = self.inside_surface,
@@ -145,6 +156,7 @@ function Mythos:save(buffer)
 	for slotKey in pairs(self.slots) do
 		self:disconnect(slotKey)
 	end
+	destroyGateLabelRenders(self)
 	Registry.remove(self.entity.unit_number)
 	return saved_id
 end
@@ -158,6 +170,7 @@ function Mythos:destroy()
 		end
 	end
 	self.icon_renders = nil
+	destroyGateLabelRenders(self)
 	if self.entity and self.entity.valid then
 		Bridge.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
 	end
@@ -165,6 +178,7 @@ function Mythos:destroy()
 	for slotKey in pairs(self.slots) do
 		self:disconnect(slotKey)
 	end
+	destroyGateLabelRenders(self)
 	if self.inside_surface and self.inside_surface.valid then
 		game.delete_surface(self.inside_surface)
 	end

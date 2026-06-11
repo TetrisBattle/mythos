@@ -6,10 +6,11 @@ local function floorCentre(bounds)
 		(bounds.y_min + bounds.y_max + 1) / 2
 end
 
--- Rounds a typed size up to the nearest even value (minimum MIN_DIMENSION).
-local function snapSizeUpEven(size)
+-- Rounds a typed size up to the nearest even value.
+local function snapSizeUpEven(size, minSize)
 	size = math.floor(tonumber(size) or 0)
-	if size < constants.MIN_DIMENSION then return constants.MIN_DIMENSION end
+	minSize = minSize or constants.MIN_DIMENSION
+	if size < minSize then return minSize end
 	local rem = size % constants.FLOOR_SNAP
 	if rem ~= 0 then size = size + (constants.FLOOR_SNAP - rem) end
 	return size
@@ -125,7 +126,7 @@ local function contractEdge(surface, bounds, edge, force, steps)
 	local removeTiles = {}
 
 	if edge == "right" then
-		local max_steps = x_max - x_min + 1 - constants.MIN_DIMENSION
+		local max_steps = x_max - x_min + 1 - constants.MIN_DIMENSION_WIDTH
 		if max_steps < 1 then return nil end
 		steps = math.min(steps, max_steps)
 		local new_x_max = x_max - steps
@@ -136,7 +137,7 @@ local function contractEdge(surface, bounds, edge, force, steps)
 		end
 		x_max = new_x_max
 	elseif edge == "bottom" then
-		local max_steps = y_max - y_min + 1 - constants.MIN_DIMENSION
+		local max_steps = y_max - y_min + 1 - constants.MIN_DIMENSION_HEIGHT
 		if max_steps < 1 then return nil end
 		steps = math.min(steps, max_steps)
 		local new_y_max = y_max - steps

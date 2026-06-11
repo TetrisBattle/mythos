@@ -15,32 +15,45 @@ local function buildMythosSlotLayout()
 end
 
 -- Computes gate/belt positions for arbitrary floor bounds.
--- The pocket dimension exposes all Mythos ports on left/right side walls only.
+-- The pocket dimension exposes all Mythos ports on the left side wall.
 -- innerBeltPos: the tile one step inside the floor where the player places their belt.
 local function computeDimensionSlotBeltLayout(bounds)
 	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
 	local layout = {}
-	for i, slotKey in ipairs(constants.LEFT_DIMENSION_SLOTS) do
-		local yc = bounds.y_min + constants.DIM_GATE_FROM_TOP[i]
-		layout[slotKey] = {
-			pos             = { bounds.x_min - 0.5, yc },
-			innerBeltPos    = { bounds.x_min + 0.5, yc },
-			gateOrientation = 0.75,
-		}
-	end
-	for i, slotKey in ipairs(constants.RIGHT_DIMENSION_SLOTS) do
-		local yc = bounds.y_min + constants.DIM_GATE_FROM_TOP[i]
-		layout[slotKey] = {
-			pos             = { bounds.x_max + 1.5, yc },
-			innerBeltPos    = { bounds.x_max + 0.5, yc },
-			gateOrientation = 0.25,
-		}
+	local row = 1
+	for _, group in ipairs(constants.DIMENSION_GATE_GROUPS) do
+		for _, slotKey in ipairs(group.slots) do
+			local yc = bounds.y_min + constants.DIM_GATE_FROM_TOP[row]
+			layout[slotKey] = {
+				pos             = { bounds.x_min - 0.5, yc },
+				innerBeltPos    = { bounds.x_min + 0.5, yc },
+				gateOrientation = 0.75,
+			}
+			row = row + 1
+		end
 	end
 	return layout
+end
+
+local function computeDimensionGateLabels(bounds)
+	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
+	local labels = {}
+	local row = 1
+	for _, group in ipairs(constants.DIMENSION_GATE_GROUPS) do
+		local firstOffset = constants.DIM_GATE_FROM_TOP[row]
+		local lastOffset = constants.DIM_GATE_FROM_TOP[row + #group.slots - 1]
+		labels[#labels + 1] = {
+			text = group.label,
+			pos  = { bounds.x_min - 1.25, bounds.y_min + ((firstOffset + lastOffset) / 2) },
+		}
+		row = row + #group.slots
+	end
+	return labels
 end
 
 return {
 	slotBeltLayout                 = computeDimensionSlotBeltLayout(constants.DEFAULT_FLOOR_BOUNDS),
 	buildMythosSlotLayout          = buildMythosSlotLayout,
 	computeDimensionSlotBeltLayout = computeDimensionSlotBeltLayout,
+	computeDimensionGateLabels     = computeDimensionGateLabels,
 }

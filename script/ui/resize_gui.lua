@@ -171,9 +171,10 @@ local function applyDefaultSize(player, state)
 	local heightField = findByName(frame, DEFAULT_HEIGHT_FIELD)
 	if not (widthField and heightField) then return end
 
-	local width  = PocketDimension.snapSizeUpEven(tonumber(widthField.text))
-	local height = PocketDimension.snapSizeUpEven(tonumber(heightField.text))
-	if width < PocketDimension.MIN_DIMENSION or height < PocketDimension.MIN_DIMENSION then
+	local width  = PocketDimension.snapSizeUpEven(tonumber(widthField.text), PocketDimension.MIN_DIMENSION_WIDTH)
+	local height = PocketDimension.snapSizeUpEven(tonumber(heightField.text), PocketDimension.MIN_DIMENSION_HEIGHT)
+	if width < PocketDimension.MIN_DIMENSION_WIDTH
+			or height < PocketDimension.MIN_DIMENSION_HEIGHT then
 		reportError(player, "mythos-gui.resize-invalid-size")
 		refreshFields(frame, state)
 		return

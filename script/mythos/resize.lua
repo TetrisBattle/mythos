@@ -5,6 +5,7 @@ local DimensionResize = {}
 
 local GATE_CONNECTED_COLOR     = { r = 1,   g = 1,   b = 1,   a = 1   }
 local GATE_DISCONNECTED_COLOR  = { r = 0.4, g = 0.4, b = 0.4, a = 0.85 }
+local GATE_LABEL_COLOR         = { r = 1,   g = 1,   b = 1,   a = 0.9  }
 
 local function gateTarget(pos)
 	return { x = pos[1], y = pos[2] }
@@ -36,6 +37,30 @@ end
 local function drawGateSpritesForLayout(mythos, slots, layout, surface)
 	for slotKey, slot in pairs(slots) do
 		applyGateRender(mythos, slotKey, slot, layout[slotKey], surface)
+	end
+end
+
+local function clearGateLabelRenders(mythos)
+	if mythos.gateLabelRenders then
+		for _, render in pairs(mythos.gateLabelRenders) do
+			if render and render.valid then render.destroy() end
+		end
+	end
+	mythos.gateLabelRenders = {}
+end
+
+local function drawGateLabelsForBounds(mythos, bounds, surface)
+	clearGateLabelRenders(mythos)
+	for i, label in ipairs(PocketDimension.computeDimensionGateLabels(bounds)) do
+		mythos.gateLabelRenders[i] = rendering.draw_text{
+			text               = label.text,
+			target             = gateTarget(label.pos),
+			surface            = surface,
+			color              = GATE_LABEL_COLOR,
+			scale              = 0.75,
+			alignment          = "right",
+			vertical_alignment = "middle",
+		}
 	end
 end
 
@@ -160,7 +185,9 @@ function DimensionResize.install(Mythos)
 	function Mythos:refreshGateRenders()
 		if not (self.slots and self.inside_surface and self.inside_surface.valid) then return end
 		self:syncSlotGeometry()
-		drawGateSpritesForLayout(self, self.slots, self:getDimensionGateLayout(), self.inside_surface)
+		local layout = self:getDimensionGateLayout()
+		drawGateSpritesForLayout(self, self.slots, layout, self.inside_surface)
+		drawGateLabelsForBounds(self, self.floor_bounds or PocketDimension.DEFAULT_FLOOR_BOUNDS, self.inside_surface)
 	end
 
 	function Mythos:updateGateRender(slotKey)
@@ -213,9 +240,10 @@ function DimensionResize.install(Mythos)
 	end
 
 	function Mythos:resizeTo(targetWidth, targetHeight)
-		targetWidth  = PocketDimension.snapSizeUpEven(targetWidth)
-		targetHeight = PocketDimension.snapSizeUpEven(targetHeight)
-		if targetWidth < PocketDimension.MIN_DIMENSION or targetHeight < PocketDimension.MIN_DIMENSION then
+		targetWidth  = PocketDimension.snapSizeUpEven(targetWidth, PocketDimension.MIN_DIMENSION_WIDTH)
+		targetHeight = PocketDimension.snapSizeUpEven(targetHeight, PocketDimension.MIN_DIMENSION_HEIGHT)
+		if targetWidth < PocketDimension.MIN_DIMENSION_WIDTH
+				or targetHeight < PocketDimension.MIN_DIMENSION_HEIGHT then
 			return false, "mythos-gui.resize-invalid-size"
 		end
 
