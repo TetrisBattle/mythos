@@ -77,7 +77,7 @@ function Mythos:innerPositionStillNeeded(innerPos)
 end
 
 -- Returns true when the pocket dimension has non-default content.
--- Pass the mining `buffer` when called from a mine event for legacy item checks.
+-- Pass the mining `buffer` when called from a mine event to inspect saved items.
 function Mythos:hasContents(buffer)
 	if buffer then
 		for i = 1, #buffer do

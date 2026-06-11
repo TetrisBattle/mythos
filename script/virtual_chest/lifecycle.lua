@@ -46,9 +46,12 @@ function Lifecycle.tickSlow()
 	local forcesSeen = {}
 	for unit_number in pairs(storage.virtualChests) do
 		local entity = game.get_entity_by_unit_number(unit_number)
-		if Common.isVirtualChestEntity(entity) then
+		if entity and entity.valid and Common.isVirtualChestEntity(entity) then
 			Lifecycle.ensureLinkId(entity)
-			forcesSeen[entity.force.index] = entity.force
+			local force = entity.force
+			if force then
+				forcesSeen[force.index] = force
+			end
 		else
 			storage.virtualChests[unit_number] = nil
 		end
@@ -62,9 +65,6 @@ end
 
 function Lifecycle.bootstrapExisting()
 	if Config.hideVirtualInventory() then return end
-
-	local Migration = require("script.virtual_chest.migration")
-	Migration.migrateLegacy()
 
 	storage.virtualChests = storage.virtualChests or {}
 
@@ -82,7 +82,10 @@ function Lifecycle.bootstrapExisting()
 	for unit_number in pairs(storage.virtualChests) do
 		local entity = game.get_entity_by_unit_number(unit_number)
 		if entity and entity.valid then
-			forcesSeen[entity.force.index] = entity.force
+			local force = entity.force
+			if force then
+				forcesSeen[force.index] = force
+			end
 		end
 	end
 	for _, force in pairs(forcesSeen) do

@@ -35,7 +35,6 @@ VirtualChest.ghostRequests = Logistics.ghostRequests
 VirtualChest.sortedInventoriesForMythos = Logistics.sortedInventoriesForMythos
 VirtualChest.tryMineEntity = Logistics.tryMineEntity
 
-VirtualChest.migrateLegacy = Migration.migrateLegacy
 VirtualChest.purgeAll = Migration.purgeAll
 
 return VirtualChest

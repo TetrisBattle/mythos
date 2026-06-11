@@ -51,7 +51,7 @@ function Bridge.createOuterAccumulatorForEntity(entity)
 	local parentUnit = util.parseDimensionUnitNumber(entity.surface)
 	if parentUnit and Registry.get(parentUnit) then
 		-- Nested mythoi must not keep a placement-surface outer link; remove
-		-- orphans from older saves that overlap the mythos footprint.
+		-- any overlapping outer bridge that should not exist in a dimension.
 		Bridge.destroyStrayOuterAccumulators(entity.surface, entity.position)
 		return nil
 	end

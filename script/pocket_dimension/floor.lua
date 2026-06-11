@@ -19,9 +19,6 @@ end
 local function inferFloorBounds(surface)
 	local x_min, x_max, y_min, y_max
 	local floorTiles = surface.find_tiles_filtered{ name = constants.FLOOR_TILE }
-	if #floorTiles == 0 then
-		floorTiles = surface.find_tiles_filtered{ name = constants.LEGACY_FLOOR_TILE }
-	end
 	for _, tile in pairs(floorTiles) do
 		-- tile.position is the tile centre (n.5); floor yields the tile index.
 		local tx = math.floor(tile.position.x)
@@ -40,13 +37,6 @@ local function inferFloorBounds(surface)
 		}
 	end
 	return { x_min = x_min, x_max = x_max, y_min = y_min, y_max = y_max }
-end
-
--- Removes legacy perimeter stone walls (no longer placed on new dimensions).
-local function removePerimeterWalls(surface)
-	for _, e in pairs(surface.find_entities_filtered{ name = "stone-wall" }) do
-		if e.valid then e.destroy{ raise_destroy = false } end
-	end
 end
 
 -- Expands the floor toward `edge` by `steps` tiles (default 1).
@@ -95,7 +85,6 @@ local function expandEdge(surface, bounds, edge, force, steps)
 	end
 
 	surface.set_tiles(newTiles)
-	removePerimeterWalls(surface)
 
 	return { x_min = x_min, x_max = x_max, y_min = y_min, y_max = y_max }
 end
@@ -168,7 +157,6 @@ local function contractEdge(surface, bounds, edge, force, steps)
 	end
 
 	removeFloorTiles(surface, removeTiles)
-	removePerimeterWalls(surface)
 
 	return { x_min = x_min, x_max = x_max, y_min = y_min, y_max = y_max }
 end
@@ -177,7 +165,6 @@ return {
 	floorCentre          = floorCentre,
 	snapSizeUpEven      = snapSizeUpEven,
 	inferFloorBounds    = inferFloorBounds,
-	removePerimeterWalls = removePerimeterWalls,
 	expandEdge          = expandEdge,
 	contractEdge        = contractEdge,
 }

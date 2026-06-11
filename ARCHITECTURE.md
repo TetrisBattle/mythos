@@ -1,8 +1,8 @@
 # Mythos Architecture
 
-This is a maintainer map for the runtime refactor. It names the main entry points,
-module packages, compatibility shims, and persisted names that need migrations if
-they change.
+This is a maintainer map for the runtime refactor. It names the main entry
+points, module packages, and persisted names. The mod targets clean new saves;
+old-save migration support has been intentionally removed.
 
 ## Entry Points
 
@@ -11,7 +11,7 @@ they change.
 - `settings.lua` defines runtime-global settings:
   `mythos-no-cost` and `mythos-no-virtual-inventory`.
 - `control.lua` wires the runtime: initializes `storage`, applies settings,
-  restores metatables on load, delegates configuration changes to migrations,
+  restores metatables on load, delegates configuration changes to repair steps,
   and registers all event handlers.
 
 ## Runtime Package Map
@@ -26,7 +26,7 @@ they change.
   bounds, surface creation, and remote-view preparation.
 - `script/clone` owns blueprint snapshotting, paste queueing, and clone apply.
 - `script/virtual_chest` owns virtual chest lifecycle, inventory anchors,
-  logistics behavior, and legacy migration.
+  logistics behavior, and purge behavior when virtual inventory is disabled.
 - `script/power` owns hidden power bridge entities and periodic power/solar sync.
 - `script/migrations` owns configuration-change and post-load repair steps.
 - `script/ui` owns resize, icon, and remote-view GUI code.
@@ -44,18 +44,13 @@ wrappers were removed, so new code should continue using paths such as
 
 ## Persisted Names
 
-Do not rename these without a migration for existing saves:
+These names define current save data and runtime contracts:
 
 - Runtime storage keys: `storage.mythoi`, `storage.saved_dimensions`,
   `storage.pending_player_restore`, `storage.viewing`,
   `storage.pending_resize_gui`, `storage.virtualChests`,
   `storage.mythos_next_snapshot_id`, and `storage.mythos_pending_paste`.
-- Virtual chest storage and migration keys:
-  `storage.virtual_chest_storage_anchors`,
-  `storage.virtual_chest_legacy_migrated`, and
-  `storage.virtual_chest_legacy_linked_snapshot`.
-- Legacy keys consumed by migration: `storage.mythos_storage_anchors`,
-  `storage.mythos_inventories`, and `storage.virtual_chests`.
+- Virtual chest storage key: `storage.virtual_chest_storage_anchors`.
 - Surface naming: `mythos-dimension-<unit_number>`, parsed by
   `script/util.lua`.
 - Prototype and item names: `mythos`, `mythos-with-contents`, `virtual-chest`,
@@ -63,8 +58,6 @@ Do not rename these without a migration for existing saves:
   `mythos-hidden-heat-pipe`, `mythos-hidden-radar`,
   `mythos-power-hub-pole`, `mythos-power-outer-pole`,
   `mythos-power-link-outer`, `mythos-power-link-inner`, and `mythos-gate`.
-- Legacy prototype names used by migrations: `mythos-inventory` and
-  `lab-dark-2`.
 - Runtime setting names and controls: `mythos-no-cost`,
   `mythos-no-virtual-inventory`, `mythos-open-dimension`,
   `mythos-resize-up`, `mythos-resize-down`, `mythos-resize-left`, and
@@ -72,8 +65,7 @@ Do not rename these without a migration for existing saves:
 
 ## Manual Smoke-Test Matrix
 
-Run these in Factorio after static checks, especially before releasing a save
-migration:
+Run these in Factorio after static checks:
 
 | Scenario | What to check |
 | --- | --- |
@@ -86,4 +78,4 @@ migration:
 | Virtual chest | Virtual chest placement, force-linked inventory storage, logistics, and setting toggles behave correctly. |
 | Settings | Runtime setting changes apply immediately and preserve existing storage expectations. |
 | Save/load | Save after active dimensions, reload, and confirm dimensions, views, power, and icons still work. |
-| Configuration changed/migrations | Updating from an older save runs migrations, prunes invalid state, restores power links/icons, migrates floor tiles, and migrates legacy virtual chest data. |
+| Configuration changed/repairs | Updating a save runs repair steps, prunes invalid state, and restores power links/icons. |

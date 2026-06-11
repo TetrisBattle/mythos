@@ -7,7 +7,7 @@ alwaysApply: true
 
 Mythos is a Factorio 2.0 Lua mod for pocket dimensions. Before changing runtime
 code, read `ARCHITECTURE.md`; it is the maintainer map for entry points,
-packages, compatibility wrappers, persisted names, and manual smoke tests.
+packages, persisted names, and manual smoke tests.
 
 ## Runtime Map
 
@@ -15,26 +15,24 @@ packages, compatibility wrappers, persisted names, and manual smoke tests.
 - Runtime packages live under `script/bootstrap`, `script/events`,
   `script/mythos`, `script/pocket_dimension`, `script/clone`,
   `script/virtual_chest`, `script/power`, `script/migrations`, and `script/ui`.
-- Top-level files such as `script/Mythos.lua`, `script/PocketDimension.lua`,
-  `script/virtualChest.lua`, `script/maintenance.lua`, `script/electricity.lua`,
-  and old UI/module names are compatibility wrappers. New implementation code
-  should require the package paths directly.
+- Runtime code should require package paths directly, such as
+  `script.mythos.init`, `script.pocket_dimension.init`, and
+  `script.ui.remote_view`.
 
 ## Save Compatibility
 
-Do not rename storage keys, surface names, prototype names, setting names, custom
-input names, or blueprint tag names without adding a migration. Important keys
-include `storage.mythoi`, `storage.saved_dimensions`, `storage.virtualChests`,
-`storage.mythos_next_snapshot_id`, and `storage.mythos_pending_paste`.
+This project targets clean new saves. Do not add old-save compatibility unless
+the user explicitly asks for it. Keep current storage keys, surface names,
+prototype names, setting names, custom input names, and blueprint tag names
+stable during normal feature work.
 
-Preserve legacy migration paths for `mythos-inventory`, `lab-dark-2`,
-`storage.mythos_storage_anchors`, `storage.mythos_inventories`, and
-`storage.virtual_chests`.
+Virtual chest legacy migration support was intentionally removed. Do not
+reintroduce `mythos-inventory`, old virtual chest storage-key migrations, or old
+floor-tile migrations unless the user explicitly asks for old-save support.
 
 ## Refactor Rules
 
 - Prefer focused modules and facades over re-growing monolithic files.
-- Keep compatibility wrappers until there is a deliberate cleanup/migration.
 - Avoid `goto` patterns; use structured conditionals to stay Lua-load safe.
 - Keep Factorio API behavior stable unless the user explicitly asks for gameplay
   changes.

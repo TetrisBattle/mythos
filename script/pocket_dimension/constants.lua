@@ -34,8 +34,7 @@ local DIM_GATE_FROM_TOP = { 0.5, 1.5, 3.5, 4.5, 5.5, 6.5, 8.5, 9.5 }
 local CHUNK_SIZE   = 32
 local CHUNK_MARGIN = 2
 
-local FLOOR_TILE        = "mythos-dimension-floor"
-local LEGACY_FLOOR_TILE = "lab-dark-2"
+local FLOOR_TILE = "mythos-dimension-floor"
 
 -- Arrow buttons resize in 8-tile steps; typed sizes snap to 2-tile (even) accuracy.
 local RESIZE_STEP   = 10
@@ -58,7 +57,6 @@ return {
 	CHUNK_SIZE            = CHUNK_SIZE,
 	CHUNK_MARGIN          = CHUNK_MARGIN,
 	FLOOR_TILE            = FLOOR_TILE,
-	LEGACY_FLOOR_TILE     = LEGACY_FLOOR_TILE,
 	RESIZE_STEP           = RESIZE_STEP,
 	FLOOR_SNAP            = FLOOR_SNAP,
 	MIN_DIMENSION         = MIN_DIMENSION,

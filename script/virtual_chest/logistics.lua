@@ -56,16 +56,6 @@ function Logistics.sortedInventoriesForMythos(state)
 			}) do
 			add(entity)
 		end
-		if not storage.virtual_chest_legacy_migrated then
-			local ok, legacy = pcall(function()
-				return inside.find_entities_filtered{ name = Common.LEGACY_PROTOTYPE }
-			end)
-			if ok then
-				for _, entity in ipairs(legacy) do
-					add(entity)
-				end
-			end
-		end
 	end
 
 	local outer = state.entity.surface
@@ -74,16 +64,6 @@ function Logistics.sortedInventoriesForMythos(state)
 				name = Common.VIRTUAL_CHEST_PROTOTYPE,
 			}) do
 			add(entity)
-		end
-		if not storage.virtual_chest_legacy_migrated then
-			local ok, legacy = pcall(function()
-				return outer.find_entities_filtered{ name = Common.LEGACY_PROTOTYPE }
-			end)
-			if ok then
-				for _, entity in ipairs(legacy) do
-					add(entity)
-				end
-			end
 		end
 	end
 

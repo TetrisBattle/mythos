@@ -104,8 +104,9 @@ function Inventory.findInventories(force)
 	local list = {}
 	for unit_number in pairs(storage.virtualChests) do
 		local entity = game.get_entity_by_unit_number(unit_number)
-		if Common.isVirtualChestEntity(entity) then
-			if entity.force == force then
+		if entity and entity.valid and entity.name == Common.VIRTUAL_CHEST_PROTOTYPE then
+			local entityForce = entity.force
+			if entityForce and entityForce == force then
 				list[#list + 1] = entity
 			end
 		else
@@ -251,29 +252,6 @@ function Inventory.enforceStorageCap(force)
 			stack.count = stack.count - removed
 			excess = excess - removed
 		end
-	end
-end
-
-function Inventory.snapshotLinkedInventory(inv)
-	local items = {}
-	if not (inv and inv.valid) then return items end
-	for i = 1, #inv do
-		local stack = inv[i]
-		if stack.valid_for_read then
-			items[#items + 1] = {
-				name    = stack.name,
-				count   = stack.count,
-				quality = stack.quality,
-			}
-		end
-	end
-	return items
-end
-
-function Inventory.restoreLinkedInventory(inv, items)
-	if not (inv and inv.valid) then return end
-	for _, item in ipairs(items) do
-		inv.insert(item)
 	end
 end
 

@@ -34,6 +34,8 @@ local mythosItem = {
 	type         = "item",
 	icon         = modName .. "/graphics/mythos144.png",
 	icon_size    = 144,
+	subgroup     = "mythos-logistics",
+	order        = "a[mythos]",
 	place_result = "mythos",
 	stack_size   = 10,
 }
@@ -52,6 +54,8 @@ local mythosItemSaved = {
 	name         = "mythos-with-contents",
 	type         = "item-with-tags",
 	icons        = savedIconLayers,
+	subgroup     = "mythos-logistics",
+	order        = "b[mythos-with-contents]",
 	place_result = "mythos",
 	stack_size   = 1,
 }

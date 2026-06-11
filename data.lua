@@ -1,6 +1,7 @@
 require "prototypes.hiddenEntities"
 require "prototypes.collisionLayers"
 require "prototypes.mythosTile"
+require "prototypes.itemSubgroups"
 require "prototypes.mythosEntity"
 require "prototypes.virtualChest"
 require "prototypes.recipe"

@@ -58,6 +58,8 @@ local virtualChestItem = {
 	stack_size   = 10,
 	icon         = modName .. "/graphics/virtual_chest.png",
 	icon_size    = 256,
+	subgroup     = "mythos-logistics",
+	order        = "c[virtual-chest]",
 }
 
 data:extend({
