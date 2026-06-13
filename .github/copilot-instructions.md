@@ -9,8 +9,9 @@ module boundaries, persisted names, and the manual smoke-test matrix.
 - There is no automated test suite or test scaffolding in this repo.
 - Do not create or request automated tests, test frameworks, migration tests,
   CI, or new test infrastructure unless the user explicitly asks for them.
-- Keep verification lightweight and local to the change: `git diff --check`,
-  focused searches, and IDE diagnostics.
+- Keep verification lightweight and local to the change: focused searches, IDE
+  diagnostics, and targeted checks only when they are specifically useful or
+  requested.
 - Do not require `lua`, `luac`, Lua lint tools, or Factorio load checks for
   normal work; if those tools are unavailable, do not treat that as a
   verification gap. Run manual Factorio smoke checks only when Factorio is

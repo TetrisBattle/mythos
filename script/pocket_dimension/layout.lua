@@ -83,7 +83,7 @@ local function computePhysicalDimensionSlotLayout(bounds)
 			layout[slotKey] = {
 				pos             = { bounds.x_min - 0.5, yc },
 				innerBeltPos    = { bounds.x_min + 0.5, yc },
-				labelPos        = { bounds.x_min - 1.25, yc },
+				labelPos        = { bounds.x_min - 0.45, yc + 0.25 },
 				gateOrientation = 0.75,
 				physicalSlotKey = slotKey,
 			}

@@ -60,8 +60,8 @@ local function drawGateLabelsForBounds(mythos, bounds, surface)
 			surface            = surface,
 			color              = GATE_LABEL_COLOR,
 			scale              = 0.75,
-			alignment          = "right",
-			vertical_alignment = "middle",
+			alignment          = "center",
+			vertical_alignment = "bottom",
 		}
 	end
 end
