@@ -21,10 +21,12 @@ packages, persisted names, and manual smoke tests.
 
 ## Save Compatibility
 
-This project targets clean new saves. Do not add old-save compatibility unless
-the user explicitly asks for it. Keep current storage keys, surface names,
-prototype names, setting names, custom input names, and blueprint tag names
-stable during normal feature work.
+This is a first prototype and targets clean new saves. Do not add migrations or
+old-save compatibility for normal changes unless the user explicitly asks for
+that work. If a change may break existing saves, tell the user they may need to
+start a new save with no placed Mythoses to avoid migration or load errors.
+Keep current storage keys, surface names, prototype names, setting names, custom
+input names, and blueprint tag names stable during normal feature work.
 
 Virtual chest legacy migration support was intentionally removed. Do not
 reintroduce `mythos-inventory`, old virtual chest storage-key migrations, or old
@@ -41,7 +43,13 @@ floor-tile migrations unless the user explicitly asks for old-save support.
 
 ## Verification
 
-There is no automated test suite in this repo. At minimum run static checks such
-as `git diff --check`, stale require searches, and IDE diagnostics. If Lua tools
-or Factorio are available, also run syntax/load checks. Use the smoke-test matrix
-in `ARCHITECTURE.md` before considering gameplay-sensitive changes release-ready.
+There is no automated test suite or test scaffolding in this repo. Do not create
+or request automated tests, test frameworks, migration tests, CI, or new test
+infrastructure unless the user explicitly asks for them. Keep verification to
+lightweight checks that fit the current prototype, such as `git diff --check`,
+focused searches, and IDE diagnostics. Do not require `lua`, `luac`, Lua lint
+tools, or Factorio load checks for normal work; if those tools are unavailable,
+do not treat that as a verification gap. Use manual Factorio smoke checks only
+when Factorio is already available or the user explicitly asks for in-game
+verification. Use the smoke-test matrix in `ARCHITECTURE.md` only as a manual
+checklist for gameplay-sensitive changes.

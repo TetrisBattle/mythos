@@ -46,10 +46,18 @@ function Util.buildInnerPosToSlot(layout)
 	return byPosition
 end
 
+local EDGE_SLOT_PREFIXES = {
+	left   = "L",
+	right  = "R",
+	top    = "T",
+	bottom = "B",
+}
+
 function Util.edgeSlotKeys(edge, count)
+	local prefix = EDGE_SLOT_PREFIXES[edge] or edge
 	local keys = {}
 	for i = 1, count do
-		keys[i] = edge .. "-" .. i
+		keys[i] = prefix .. i
 	end
 	return keys
 end

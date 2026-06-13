@@ -16,10 +16,10 @@ local GATES_PER_SIDE = 4
 local GATE_OFFSETS = { -1.5, -0.5, 0.5, 1.5 }
 
 local DIMENSION_GATE_GROUPS = {
-	{ label = "TOP",    slots = { "top-1",    "top-2",    "top-3",    "top-4"    } },
-	{ label = "LEFT",   slots = { "left-1",   "left-2",   "left-3",   "left-4"   } },
-	{ label = "RIGHT",  slots = { "right-1",  "right-2",  "right-3",  "right-4"  } },
-	{ label = "BOTTOM", slots = { "bottom-1", "bottom-2", "bottom-3", "bottom-4" } },
+	{ slots = { "T1", "T2", "T3", "T4" } },
+	{ slots = { "L1", "L2", "L3", "L4" } },
+	{ slots = { "R1", "R2", "R3", "R4" } },
+	{ slots = { "B1", "B2", "B3", "B4" } },
 }
 
 -- Left-wall rows from the floor's northern edge, with one tile gap between

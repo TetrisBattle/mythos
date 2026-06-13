@@ -17,8 +17,7 @@ local positionKey     = util.positionKey
 --   externalX/Y : tile where the player-placed connector must sit (outside mythos)
 --   innerX/Y    : tile inside the mythos footprint where the hidden proxy goes
 --   outwardDir  : direction FROM the mythos centre TOWARD the external connector
--- Pocket wall order (north → south): top-1..4, left-1..4,
--- right-1..4, bottom-1..4.
+-- Pocket wall order (north → south): T1..T4, L1..L4, R1..R4, B1..B4.
 
 local slotLayout = PocketDimension.buildMythosSlotLayout()
 

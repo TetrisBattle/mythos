@@ -6,10 +6,10 @@ local function buildMythosSlotLayout()
 	local layout = {}
 	for i = 1, constants.GATES_PER_SIDE do
 		local off = constants.GATE_OFFSETS[i]
-		layout["left-" .. i]   = { externalX = -2.5, externalY = off,  innerX = -1.5, innerY = off,  outwardDir = defines.direction.west  }
-		layout["right-" .. i]  = { externalX =  2.5, externalY = off,  innerX =  1.5, innerY = off,  outwardDir = defines.direction.east  }
-		layout["top-" .. i]    = { externalX = off,  externalY = -2.5, innerX = off,  innerY = -1.5, outwardDir = defines.direction.north }
-		layout["bottom-" .. i] = { externalX = off,  externalY =  2.5, innerX = off,  innerY =  1.5, outwardDir = defines.direction.south }
+		layout["L" .. i] = { externalX = -2.5, externalY = off,  innerX = -1.5, innerY = off,  outwardDir = defines.direction.west  }
+		layout["R" .. i] = { externalX =  2.5, externalY = off,  innerX =  1.5, innerY = off,  outwardDir = defines.direction.east  }
+		layout["T" .. i] = { externalX = off,  externalY = -2.5, innerX = off,  innerY = -1.5, outwardDir = defines.direction.north }
+		layout["B" .. i] = { externalX = off,  externalY =  2.5, innerX = off,  innerY =  1.5, outwardDir = defines.direction.south }
 	end
 	return layout
 end
@@ -40,13 +40,13 @@ local function computeDimensionGateLabels(bounds)
 	local labels = {}
 	local row = 1
 	for _, group in ipairs(constants.DIMENSION_GATE_GROUPS) do
-		local firstOffset = constants.DIM_GATE_FROM_TOP[row]
-		local lastOffset = constants.DIM_GATE_FROM_TOP[row + #group.slots - 1]
-		labels[#labels + 1] = {
-			text = group.label,
-			pos  = { bounds.x_min - 1.25, bounds.y_min + ((firstOffset + lastOffset) / 2) },
-		}
-		row = row + #group.slots
+		for _, slotKey in ipairs(group.slots) do
+			labels[#labels + 1] = {
+				text = slotKey,
+				pos  = { bounds.x_min - 1.25, bounds.y_min + constants.DIM_GATE_FROM_TOP[row] },
+			}
+			row = row + 1
+		end
 	end
 	return labels
 end
