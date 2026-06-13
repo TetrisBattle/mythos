@@ -96,6 +96,90 @@ local function syncSlotGeometry(state)
 	state.innerPosToSlotInst = nil
 end
 
+local function slotArea(slot)
+	return {
+		{ slot.external.x - util.SLOT_POS_TOLERANCE, slot.external.y - util.SLOT_POS_TOLERANCE },
+		{ slot.external.x + util.SLOT_POS_TOLERANCE, slot.external.y + util.SLOT_POS_TOLERANCE },
+	}
+end
+
+local function slotKeysInOrder(slots)
+	local keys = {}
+	for _, slotKey in ipairs(PocketDimension.SLOT_KEYS) do
+		if slots and slots[slotKey] then keys[#keys + 1] = slotKey end
+	end
+	return keys
+end
+
+local function appendSlotKeyOnce(slotKeys, seen, slotKey)
+	if slotKey and not seen[slotKey] then
+		seen[slotKey] = true
+		slotKeys[#slotKeys + 1] = slotKey
+	end
+end
+
+local function entityOverlapsArea(entity, area)
+	if not (entity and entity.valid) then return false end
+	local box = entity.bounding_box
+	if not box then
+		return util.nearPosition(entity.position, {
+			x = (area[1][1] + area[2][1]) * 0.5,
+			y = (area[1][2] + area[2][2]) * 0.5,
+		})
+	end
+
+	local leftTop = box.left_top or box[1]
+	local rightBottom = box.right_bottom or box[2]
+	if not (leftTop and rightBottom) then return false end
+
+	return leftTop.x <= area[2][1]
+		and rightBottom.x >= area[1][1]
+		and leftTop.y <= area[2][2]
+		and rightBottom.y >= area[1][2]
+end
+
+local function entityOverlapsSlot(entity, slot)
+	return entityOverlapsArea(entity, slotArea(slot))
+end
+
+local function connectionPositionMatches(pos, target)
+	return pos and target and util.nearPosition(pos, target, 0.1)
+end
+
+local function entityFluidConnectionFacesSlot(slot, entity)
+	local fluidbox = entity.fluidbox
+	if not fluidbox then return nil end
+
+	for index = 1, #fluidbox do
+		local ok, connections = pcall(function()
+			return fluidbox.get_pipe_connections(index)
+		end)
+		if ok and connections then
+			for _, connection in pairs(connections) do
+				if connection.connection_type ~= "underground"
+						and connectionPositionMatches(connection.target_position, slot.inner) then
+					return true
+				end
+			end
+		elseif not ok then
+			return nil
+		end
+	end
+
+	return false
+end
+
+local function pipeEntityConnectsToSlot(slot, entity)
+	local fluidSideMatch = entityFluidConnectionFacesSlot(slot, entity)
+	if fluidSideMatch ~= nil then return fluidSideMatch end
+
+	if entity.type == "pipe" then return true end
+	if entity.type == "pipe-to-ground" then
+		return entity.direction == slot.outwardDir
+	end
+	return true
+end
+
 local function externalEntityConnType(slot, entity, connectionTypes)
 	if not (entity and entity.valid) then return nil end
 	local connType = connectionTypes[entity.type]
@@ -105,8 +189,237 @@ local function externalEntityConnType(slot, entity, connectionTypes)
 		if entity.direction ~= slot.outwardDir and entity.direction ~= inwardDir then
 			return nil
 		end
+	elseif connType == "pipe" then
+		if not pipeEntityConnectsToSlot(slot, entity) then
+			return nil
+		end
 	end
 	return connType
+end
+
+local function findExternalConnectionEntity(state, slot, connectionTypes, requiredConnType)
+	if not (state.entity and state.entity.valid) then return nil end
+
+	for _, entity in pairs(state.entity.surface.find_entities_filtered{ area = slotArea(slot) }) do
+		local connType = externalEntityConnType(slot, entity, connectionTypes)
+		if connType and (not requiredConnType or connType == requiredConnType) then
+			return entity, connType
+		end
+	end
+end
+
+local function maxTransportLineIndex(entity)
+	local okMax, maxIndex = pcall(function()
+		return entity.get_max_transport_line_index()
+	end)
+	if okMax and maxIndex then return maxIndex end
+	return nil
+end
+
+local function transportLinePair(leftName, rightName)
+	local transportLines = defines.transport_line or {}
+	return { transportLines[leftName], transportLines[rightName] }
+end
+
+local function validLinePair(pair, maxIndex)
+	return pair
+		and pair[1]
+		and pair[2]
+		and pair[1] >= 1
+		and pair[2] >= 1
+		and pair[1] <= maxIndex
+		and pair[2] <= maxIndex
+end
+
+local function splitterLinePairs(maxIndex)
+	local candidatePairs = {
+		transportLinePair("left_line", "right_line"),
+		transportLinePair("secondary_left_line", "secondary_right_line"),
+		transportLinePair("left_split_line", "right_split_line"),
+		transportLinePair("secondary_left_split_line", "secondary_right_split_line"),
+	}
+	local validPairs = {}
+	for _, pair in ipairs(candidatePairs) do
+		if validLinePair(pair, maxIndex) then
+			validPairs[#validPairs + 1] = pair
+		end
+	end
+	return validPairs
+end
+
+local function distanceSquared(a, b)
+	if not (a and b) then return math.huge end
+	local dx = (a.x or a[1]) - (b.x or b[1])
+	local dy = (a.y or a[2]) - (b.y or b[2])
+	return dx * dx + dy * dy
+end
+
+local function lineEndpointDistanceSquared(entity, lineIndex, position)
+	local okLine, line = pcall(function()
+		return entity.get_transport_line(lineIndex)
+	end)
+	if not okLine or not line then return math.huge end
+
+	local best = math.huge
+	for _, linePosition in ipairs({ 0, line.line_length or 0 }) do
+		local okPos, mapPosition = pcall(function()
+			return entity.get_line_item_position(lineIndex, linePosition)
+		end)
+		if okPos and mapPosition then
+			best = math.min(best, distanceSquared(mapPosition, position))
+		end
+	end
+	return best
+end
+
+local function linePairDistanceSquared(entity, pair, position)
+	return math.min(
+		lineEndpointDistanceSquared(entity, pair[1], position),
+		lineEndpointDistanceSquared(entity, pair[2], position)
+	)
+end
+
+local function nearestUnusedLinePair(entity, candidatePairs, used, position)
+	local bestIndex = nil
+	local bestDistance = math.huge
+	for index, pair in ipairs(candidatePairs) do
+		if not used[index] then
+			local distance = linePairDistanceSquared(entity, pair, position)
+			if not bestIndex or distance < bestDistance then
+				bestIndex = index
+				bestDistance = distance
+			end
+		end
+	end
+	if not bestIndex then return nil end
+	used[bestIndex] = true
+	return candidatePairs[bestIndex]
+end
+
+local function adjacentLinePairForIndex(pairIndex, maxIndex)
+	local first = (pairIndex - 1) * 2 + 1
+	if first >= 3 then first = first + 2 end
+	local second = first + 1
+	if first < 1 or second > maxIndex then return { 1, 2 } end
+	return { first, second }
+end
+
+local function linePairForIndex(entity, pairIndex, maxIndex)
+	if entity.type == "splitter" or entity.type == "lane-splitter" then
+		local candidatePairs = splitterLinePairs(maxIndex)
+		return candidatePairs[pairIndex] or candidatePairs[1] or { 1, 2 }
+	end
+	return adjacentLinePairForIndex(pairIndex, maxIndex)
+end
+
+local function splitterLineIndexesForSlot(state, slotKey, entity, connectionTypes, maxIndex)
+	local candidatePairs = splitterLinePairs(maxIndex)
+	if #candidatePairs == 0 then return { 1, 2 } end
+
+	local used = {}
+	for _, candidateSlotKey in ipairs(slotKeysInOrder(state.slots)) do
+		local candidateSlot = state.slots[candidateSlotKey]
+		if entityOverlapsSlot(entity, candidateSlot)
+				and externalEntityConnType(candidateSlot, entity, connectionTypes) then
+			local selectedPair = nearestUnusedLinePair(
+				entity, candidatePairs, used, candidateSlot.external
+			) or candidatePairs[1]
+			if candidateSlotKey == slotKey then return selectedPair end
+		end
+	end
+
+	return candidatePairs[1]
+end
+
+local function beltLineIndexesForPosition(entity, position)
+	if not (entity and entity.valid and position) then return { 1, 2 } end
+
+	local maxIndex = maxTransportLineIndex(entity)
+	if not maxIndex or maxIndex <= 2 then return { 1, 2 } end
+
+	local okLine, lineIndex = pcall(function()
+		local index = entity.get_item_insert_specification(position)
+		return index
+	end)
+	if not okLine or not lineIndex then return { 1, 2 } end
+
+	local first = lineIndex
+	if first % 2 == 0 then first = first - 1 end
+	local second = first + 1
+	if first < 1 or second > maxIndex then return { 1, 2 } end
+
+	return { first, second }
+end
+
+local function beltLineIndexesForSlot(state, slotKey, entity, connectionTypes)
+	local maxIndex = maxTransportLineIndex(entity)
+	if not maxIndex or maxIndex <= 2 then return { 1, 2 } end
+	if entity.type == "splitter" or entity.type == "lane-splitter" then
+		return splitterLineIndexesForSlot(state, slotKey, entity, connectionTypes, maxIndex)
+	end
+
+	local pairCount = math.floor(maxIndex / 2)
+	local pairIndex = 0
+	for _, candidateSlotKey in ipairs(slotKeysInOrder(state.slots)) do
+		local candidateSlot = state.slots[candidateSlotKey]
+		if entityOverlapsSlot(entity, candidateSlot)
+				and externalEntityConnType(candidateSlot, entity, connectionTypes) then
+			pairIndex = pairIndex + 1
+			if candidateSlotKey == slotKey then
+				return linePairForIndex(entity, math.min(pairIndex, pairCount), maxIndex)
+			end
+		end
+	end
+
+	local slot = state.slots and state.slots[slotKey]
+	return beltLineIndexesForPosition(entity, slot and slot.external)
+end
+
+local function refreshBeltConnectionLineIndexes(state, slotKey, connectionTypes)
+	local slot = state.slots and state.slots[slotKey]
+	local conn = slot and slot.conn
+	if not (conn and conn.connType == "belt" and conn.entity and conn.entity.valid) then return end
+
+	conn.entityLineIndexes = beltLineIndexesForSlot(state, slotKey, conn.entity, connectionTypes)
+	if conn.innerBelt and conn.innerBelt.valid then
+		local beltLayout = state:getSlotBeltLayout(slotKey)
+		local innerBeltPos = beltLayout and beltLayout.innerBeltPos
+		local position = innerBeltPos and { x = innerBeltPos[1], y = innerBeltPos[2] }
+			or conn.innerBelt.position
+		conn.innerBeltLineIndexes = beltLineIndexesForPosition(conn.innerBelt, position)
+	end
+end
+
+local function collectExternalSlotKeysForEntity(state, entity, connectionTypes)
+	local slotKeys = {}
+	local seen = {}
+	if not (state and state.entity and state.entity.valid) then return slotKeys end
+
+	local exactSlotKey = state:findSlotAt(entity.position)
+	if exactSlotKey then
+		local slot = state.slots and state.slots[exactSlotKey]
+		if slot and (externalEntityConnType(slot, entity, connectionTypes)
+				or (slot.conn and slot.conn.entity == entity)) then
+			appendSlotKeyOnce(slotKeys, seen, exactSlotKey)
+		end
+	end
+
+	for _, candidateSlotKey in ipairs(slotKeysInOrder(state.slots)) do
+		local slot = state.slots[candidateSlotKey]
+		if entityOverlapsSlot(entity, slot)
+				and externalEntityConnType(slot, entity, connectionTypes) then
+			appendSlotKeyOnce(slotKeys, seen, candidateSlotKey)
+		end
+	end
+
+	for _, candidateSlotKey in ipairs(slotKeysInOrder(state.slots)) do
+		local slot = state.slots[candidateSlotKey]
+		if slot.conn and slot.conn.entity == entity then
+			appendSlotKeyOnce(slotKeys, seen, candidateSlotKey)
+		end
+	end
+
+	return slotKeys
 end
 
 -- Adds all connection-management methods to the Mythos class.
@@ -144,17 +457,7 @@ function Connections.install(Mythos, connectionTypes)
 		local slot = self.slots[slotKey]
 		if not slot or not (self.entity and self.entity.valid) then return false end
 
-		for _, entity in pairs(self.entity.surface.find_entities_filtered{
-			area = {
-				{ slot.external.x - 0.4, slot.external.y - 0.4 },
-				{ slot.external.x + 0.4, slot.external.y + 0.4 },
-			},
-		}) do
-			if externalEntityConnType(slot, entity, connectionTypes) then
-				return true
-			end
-		end
-		return false
+		return findExternalConnectionEntity(self, slot, connectionTypes) ~= nil
 	end
 
 	-- Registers a connection between the given entity and the named slot.
@@ -164,6 +467,9 @@ function Connections.install(Mythos, connectionTypes)
 		local slot = self.slots[slotKey]
 		if not slot then return end
 		if slot.conn then
+			if slot.conn.entity == entity then
+				refreshBeltConnectionLineIndexes(self, slotKey, connectionTypes)
+			end
 			self:refreshGateRenders()
 			return
 		end
@@ -209,6 +515,8 @@ function Connections.install(Mythos, connectionTypes)
 			end
 			if not innerBelt then slot.conn = nil; self:refreshGateRenders(); return end
 			slot.conn.innerBelt = innerBelt
+			slot.conn.entityLineIndexes = beltLineIndexesForSlot(self, slotKey, entity, connectionTypes)
+			slot.conn.innerBeltLineIndexes = beltLineIndexesForPosition(innerBelt, { x = ip[1], y = ip[2] })
 		end
 
 		-- Spawn the hidden proxy for fluid / heat connections.
@@ -283,21 +591,16 @@ function Connections.install(Mythos, connectionTypes)
 	-- Returns true on success.
 	function Mythos:connectFromInner(slotKey, innerEntity)
 		local slot = self.slots[slotKey]
-		if not slot or slot.conn then return end
-
-		-- Find the external belt sitting at this slot's outside position.
-		local externalBelt
-		for _, e in pairs(self.entity.surface.find_entities_filtered{
-			area = {
-				{ slot.external.x - 0.4, slot.external.y - 0.4 },
-				{ slot.external.x + 0.4, slot.external.y + 0.4 },
-			},
-		}) do
-			if e.valid and connectionTypes[e.type] == "belt" then
-				externalBelt = e
-				break
+		if not slot then return end
+		if slot.conn then
+			if slot.conn.innerBelt == innerEntity then
+				refreshBeltConnectionLineIndexes(self, slotKey, connectionTypes)
 			end
+			return
 		end
+
+		-- Find the external belt-like entity overlapping this slot.
+		local externalBelt = findExternalConnectionEntity(self, slot, connectionTypes, "belt")
 		if not externalBelt then return end
 
 		-- Both belts must face the same direction (toward or away from mythos).
@@ -311,6 +614,8 @@ function Connections.install(Mythos, connectionTypes)
 			connType    = "belt",
 			ioDirection = ioDirection,
 			innerBelt   = innerEntity,
+			entityLineIndexes = beltLineIndexesForSlot(self, slotKey, externalBelt, connectionTypes),
+			innerBeltLineIndexes = beltLineIndexesForPosition(innerEntity, innerEntity.position),
 		}
 		self:refreshGateRenders()
 		return true
@@ -321,15 +626,9 @@ function Connections.install(Mythos, connectionTypes)
 		if not (slot and self.entity and self.entity.valid) then return false end
 		if slot.conn then return true end
 
-		for _, candidate in pairs(self.entity.surface.find_entities_filtered{
-			area = {
-				{ slot.external.x - 0.4, slot.external.y - 0.4 },
-				{ slot.external.x + 0.4, slot.external.y + 0.4 },
-			},
-		}) do
-			if candidate.valid and connectionTypes[candidate.type] then
-				return self:connect(slotKey, candidate) == true
-			end
+		local candidate = findExternalConnectionEntity(self, slot, connectionTypes)
+		if candidate then
+			return self:connect(slotKey, candidate) == true
 		end
 
 		self:updateGateRender(slotKey)
@@ -345,15 +644,48 @@ function Connections.install(Mythos, connectionTypes)
 		self:refreshGateRenders()
 	end
 
+	function Mythos:recheckExternalEntity(entity)
+		if not (entity and entity.valid and self.entity and self.entity.valid) then return false end
+		local changed = false
+
+		for _, slotKey in ipairs(slotKeysInOrder(self.slots)) do
+			local slot = self.slots[slotKey]
+			local connectedToEntity = slot.conn and slot.conn.entity == entity
+			local validForSlot = entityOverlapsSlot(entity, slot)
+				and externalEntityConnType(slot, entity, connectionTypes) ~= nil
+
+			if connectedToEntity and not validForSlot then
+				self:disconnect(slotKey)
+				if self.clearDimensionGateSlotForSlot then
+					self:clearDimensionGateSlotForSlot(slotKey)
+				end
+				changed = true
+			elseif connectedToEntity then
+				refreshBeltConnectionLineIndexes(self, slotKey, connectionTypes)
+				changed = true
+			elseif validForSlot and not slot.conn then
+				self:connect(slotKey, entity)
+				changed = true
+			end
+		end
+
+		if changed then self:refreshGateRenders() end
+		return changed
+	end
+
 	-- Searches all live Mythos instances for one whose external slot matches the
 	-- given entity's world position.  Returns (state, slotKey) or nil.
 	function Mythos.findStateAndSlot(entity)
+		local state, slotKeys = Mythos.findStateAndSlots(entity)
+		return state, slotKeys and slotKeys[1]
+	end
+
+	function Mythos.findStateAndSlots(entity)
 		if not (entity and entity.valid) then return end
-		local pos = entity.position
 		for _, state in pairs(Registry.all()) do
 			if state.entity.valid then
-				local slotKey = state:findSlotAt(pos)
-				if slotKey then return state, slotKey end
+				local slotKeys = collectExternalSlotKeysForEntity(state, entity, connectionTypes)
+				if #slotKeys > 0 then return state, slotKeys end
 			end
 		end
 	end

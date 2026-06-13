@@ -30,10 +30,12 @@ local function transferFluid(a, b)
 	end
 end
 
-local function transferBeltLines(from, to)
+local function transferBeltLines(from, to, fromLineIndexes, toLineIndexes)
+	fromLineIndexes = fromLineIndexes or { 1, 2 }
+	toLineIndexes = toLineIndexes or { 1, 2 }
 	for lane = 1, 2 do
-		local fromLine = from.get_transport_line(lane)
-		local toLine   = to.get_transport_line(lane)
+		local fromLine = from.get_transport_line(fromLineIndexes[lane] or lane)
+		local toLine   = to.get_transport_line(toLineIndexes[lane] or lane)
 		local laneOpen = true
 		for _, stack in pairs(fromLine.get_contents()) do
 			if not laneOpen then break end
@@ -62,9 +64,11 @@ local function transferConnection(conn)
 			and conn.innerBelt
 			and conn.innerBelt.valid then
 		if conn.ioDirection == "input" then
-			transferBeltLines(conn.entity, conn.innerBelt)
+			transferBeltLines(conn.entity, conn.innerBelt,
+				conn.entityLineIndexes, conn.innerBeltLineIndexes)
 		else
-			transferBeltLines(conn.innerBelt, conn.entity)
+			transferBeltLines(conn.innerBelt, conn.entity,
+				conn.innerBeltLineIndexes, conn.entityLineIndexes)
 		end
 	elseif conn.connType == "pipe"
 			and conn.outerProxy

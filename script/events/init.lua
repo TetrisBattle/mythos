@@ -29,6 +29,8 @@ function RuntimeEvents.register()
 
 	script.on_event(defines.events.on_pre_player_mined_item, Mythos.onPrePlayerMinedItem)
 
+	script.on_event(defines.events.on_player_rotated_entity, Mythos.onEntityRotated)
+
 	script.on_nth_tick(6,   Ticks.onFastTick)
 	script.on_nth_tick(60,  Ticks.onSlowTick)
 	script.on_nth_tick(300, Ticks.onSolarSync)

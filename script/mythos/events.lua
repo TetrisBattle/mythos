@@ -175,13 +175,15 @@ function MythosEvents.install(Mythos, connectionTypes)
 		end
 
 		if not connectionTypes[entity.type] then return end
-		local state, slotKey = Mythos.findStateAndSlot(entity)
+		local state, slotKeys = Mythos.findStateAndSlots(entity)
 		if state then
-			if slotKey then
+			local connected = false
+			for _, slotKey in ipairs(slotKeys or {}) do
 				if state:connect(slotKey, entity) then
-					playConnectSound(entity.surface, entity.position)
+					connected = true
 				end
 			end
+			if connected then playConnectSound(entity.surface, entity.position) end
 			state:refreshGateRenders()
 			return
 		end
@@ -245,18 +247,46 @@ function MythosEvents.install(Mythos, connectionTypes)
 		end
 
 		if not connectionTypes[entity.type] then return end
-		local outsideState, slotKey = Mythos.findStateAndSlot(entity)
+		local outsideState, slotKeys = Mythos.findStateAndSlots(entity)
 		if outsideState then
-			if slotKey then
-				outsideState:disconnect(slotKey)
-				if outsideState.clearDimensionGateSlotForSlot then
-					outsideState:clearDimensionGateSlotForSlot(slotKey)
+			if slotKeys and #slotKeys > 0 then
+				for _, slotKey in ipairs(slotKeys) do
+					outsideState:disconnect(slotKey)
+					if outsideState.clearDimensionGateSlotForSlot then
+						outsideState:clearDimensionGateSlotForSlot(slotKey)
+					end
 				end
 			else
 				outsideState:disconnectExternalEntity(entity)
 			end
 			outsideState:refreshGateRenders()
 			return
+		end
+	end
+
+	function Mythos.onEntityRotated(event)
+		local entity = event.entity
+		if not (entity and entity.valid and connectionTypes[entity.type]) then return end
+
+		local state = Registry.findByInsideSurfaceIndex(entity.surface_index)
+		if state then
+			if connectionTypes[entity.type] == "belt" then
+				local slotKey = state:findInnerSlotAt(entity.position)
+				if slotKey then
+					local slot = state.slots and state.slots[slotKey]
+					if slot and slot.conn and slot.conn.innerBelt == entity then
+						state:disconnect(slotKey)
+					end
+					state:connectFromInner(slotKey, entity)
+					state:refreshGateRenders()
+				end
+			end
+			return
+		end
+
+		local outsideState = Mythos.findStateAndSlots(entity)
+		if outsideState then
+			outsideState:recheckExternalEntity(entity)
 		end
 	end
 
