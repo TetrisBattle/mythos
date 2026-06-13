@@ -54,6 +54,7 @@ local mythosItemSaved = {
 	name         = "mythos-with-contents",
 	type         = "item-with-tags",
 	icons        = savedIconLayers,
+	hidden       = true,
 	subgroup     = "mythos-logistics",
 	order        = "b[mythos-with-contents]",
 	place_result = "mythos",
