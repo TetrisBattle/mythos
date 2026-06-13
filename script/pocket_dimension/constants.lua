@@ -22,15 +22,6 @@ local DIMENSION_GATE_GROUPS = {
 	{ slots = { "B1", "B2", "B3", "B4" } },
 }
 
--- Left-wall rows from the floor's northern edge, with one tile gap between
--- Mythos-side groups.
-local DIM_GATE_FROM_TOP = {
-	0.5, 1.5, 2.5, 3.5,
-	5.5, 6.5, 7.5, 8.5,
-	10.5, 11.5, 12.5, 13.5,
-	15.5, 16.5, 17.5, 18.5,
-}
-
 local CHUNK_SIZE   = 32
 local CHUNK_MARGIN = 2
 
@@ -53,7 +44,6 @@ return {
 	GATES_PER_SIDE        = GATES_PER_SIDE,
 	GATE_OFFSETS          = GATE_OFFSETS,
 	DIMENSION_GATE_GROUPS = DIMENSION_GATE_GROUPS,
-	DIM_GATE_FROM_TOP     = DIM_GATE_FROM_TOP,
 	CHUNK_SIZE            = CHUNK_SIZE,
 	CHUNK_MARGIN          = CHUNK_MARGIN,
 	FLOOR_TILE            = FLOOR_TILE,

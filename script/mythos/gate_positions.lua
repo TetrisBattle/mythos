@@ -6,7 +6,78 @@ local function slotExists(state, slotKey)
 	return slotKey and state.slots and state.slots[slotKey] ~= nil
 end
 
+local function positionUsed(positions, physicalGateKey)
+	for _, candidatePhysicalGateKey in pairs(positions) do
+		if candidatePhysicalGateKey == physicalGateKey then return true end
+	end
+	return false
+end
+
 function GatePositions.install(Mythos)
+
+	function Mythos:assignDimensionGateSlotToNextAvailable(slotKey)
+		if not slotExists(self, slotKey) then
+			return false, "mythos-gui.gate-position-invalid"
+		end
+
+		local positions = self:normalizeDimensionGatePositions()
+		if positions[slotKey] then return true end
+
+		local physicalLayout = self.getDimensionPhysicalGateLayout
+			and self:getDimensionPhysicalGateLayout()
+			or PocketDimension.computeDimensionPhysicalGateLayout(self.floor_bounds)
+		for index = 1, 999 do
+			local physicalGateKey = "PL" .. index
+			if not physicalLayout[physicalGateKey] then break end
+			if not positionUsed(positions, physicalGateKey) then
+				positions[slotKey] = physicalGateKey
+				self.dimension_gate_positions = positions
+				self:invalidateDimensionGateLayout()
+				return true
+			end
+		end
+		return false, "mythos-gui.gate-position-failed"
+	end
+
+	function Mythos:clearDimensionGateSlotForSlot(slotKey)
+		if not slotExists(self, slotKey) then
+			return false, "mythos-gui.gate-position-invalid"
+		end
+		local positions = self:normalizeDimensionGatePositions()
+		if not positions[slotKey] then return true end
+
+		positions[slotKey] = nil
+		self.dimension_gate_positions = positions
+		self:invalidateDimensionGateLayout()
+		self:refreshGateRenders()
+		return true
+	end
+
+	function Mythos:clearDimensionGateSlot(physicalGateKey)
+		local physicalLayout = self.getDimensionPhysicalGateLayout
+			and self:getDimensionPhysicalGateLayout()
+			or PocketDimension.computeDimensionPhysicalGateLayout(self.floor_bounds)
+		if not (physicalLayout and physicalLayout[physicalGateKey]) then
+			return false, "mythos-gui.gate-position-invalid"
+		end
+
+		local positions = self:normalizeDimensionGatePositions()
+		local previousSlotKey = nil
+		for candidateSlotKey, candidatePhysicalGateKey in pairs(positions) do
+			if candidatePhysicalGateKey == physicalGateKey then
+				previousSlotKey = candidateSlotKey
+				break
+			end
+		end
+		if not previousSlotKey then return true end
+
+		self:disconnect(previousSlotKey)
+		positions[previousSlotKey] = nil
+		self.dimension_gate_positions = positions
+		self:invalidateDimensionGateLayout()
+		self:refreshGateRenders()
+		return true
+	end
 
 	function Mythos:assignDimensionGateSlot(physicalGateKey, slotKey)
 		if not slotExists(self, slotKey) then

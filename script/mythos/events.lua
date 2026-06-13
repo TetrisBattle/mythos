@@ -249,6 +249,9 @@ function MythosEvents.install(Mythos, connectionTypes)
 		if outsideState then
 			if slotKey then
 				outsideState:disconnect(slotKey)
+				if outsideState.clearDimensionGateSlotForSlot then
+					outsideState:clearDimensionGateSlotForSlot(slotKey)
+				end
 			else
 				outsideState:disconnectExternalEntity(entity)
 			end

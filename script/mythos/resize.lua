@@ -43,29 +43,18 @@ local function clearGateSpriteRenders(mythos, slots)
 	mythos.physicalGateRenders = {}
 end
 
-local function drawGateSpritesForLayout(mythos, slots, layout, physicalLayout, surface)
+local function drawGateSpritesForLayout(mythos, slots, layout, surface)
 	clearGateSpriteRenders(mythos, slots)
-	local positions = mythos:normalizeDimensionGatePositions()
-	local slotByPhysicalGate = {}
-	for slotKey, physicalGateKey in pairs(positions) do
-		slotByPhysicalGate[physicalGateKey] = slotKey
-	end
-
-	for physicalGateKey, gateLayout in pairs(physicalLayout or {}) do
-		local slotKey = slotByPhysicalGate[physicalGateKey]
-		local slot = slotKey and slots[slotKey]
+	for slotKey, gateLayout in pairs(layout or {}) do
+		local slot = slots[slotKey]
 		local connected = slot and (slot.conn or mythos:hasExternalConnection(slotKey))
 		local render = drawGateSprite(
 			gateLayout,
 			surface,
 			connected and GATE_CONNECTED_COLOR or GATE_DISCONNECTED_COLOR
 		)
-		if render then
-			if slot then
-				slot.gateRender = render
-			else
-				mythos.physicalGateRenders[physicalGateKey] = render
-			end
+		if render and slot then
+			slot.gateRender = render
 		end
 	end
 end
@@ -85,7 +74,7 @@ local function drawGateLabelsForLayout(mythos, layout, surface)
 	for slotKey, gateLayout in pairs(layout or {}) do
 		labels[#labels + 1] = {
 			text = slotKey,
-			pos  = { gateLayout.pos[1] + 0.05, gateLayout.pos[2] + 0.25 },
+			pos  = gateLayout.labelPos or { gateLayout.pos[1] + 0.05, gateLayout.pos[2] + 0.25 },
 		}
 	end
 	table.sort(labels, function(a, b)
@@ -240,7 +229,7 @@ function DimensionResize.install(Mythos)
 		self:syncSlotGeometry()
 		local layout = self:getDimensionGateLayout()
 		local physicalLayout = self:getDimensionPhysicalGateLayout()
-		drawGateSpritesForLayout(self, self.slots, layout, physicalLayout, self.inside_surface)
+		drawGateSpritesForLayout(self, self.slots, layout, self.inside_surface)
 		drawGateLabelsForLayout(self, layout, self.inside_surface)
 		if self.refreshGateSelectors then
 			self:refreshGateSelectors(physicalLayout)

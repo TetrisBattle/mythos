@@ -55,6 +55,17 @@ styles["mythos_gate_position_source_button"] = {
 	right_padding  = 0,
 }
 
+styles["mythos_gate_position_trash_button"] = {
+	type           = "button_style",
+	parent         = "frame_action_button",
+	width          = 24,
+	height         = 24,
+	top_padding    = 2,
+	bottom_padding = 2,
+	left_padding   = 2,
+	right_padding  = 2,
+}
+
 styles["mythos_gate_position_label"] = {
 	type             = "label_style",
 	parent           = "label",

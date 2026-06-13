@@ -174,6 +174,14 @@ function Connections.install(Mythos, connectionTypes)
 			return
 		end
 
+		if self.assignDimensionGateSlotToNextAvailable then
+			local ok = self:assignDimensionGateSlotToNextAvailable(slotKey)
+			if not ok then
+				self:refreshGateRenders()
+				return
+			end
+		end
+
 		-- Belts and loaders must face toward or away from mythos — not parallel.
 		local ioDirection = nil
 		if connType == "belt" or connType == "loader" then
@@ -356,11 +364,17 @@ function Connections.install(Mythos, connectionTypes)
 		local slotKey = self:findSlotAt(entity.position)
 		if slotKey then
 			self:disconnect(slotKey)
+			if self.clearDimensionGateSlotForSlot then
+				self:clearDimensionGateSlotForSlot(slotKey)
+			end
 			return
 		end
 		for key, slot in pairs(self.slots or {}) do
 			if slot.conn and slot.conn.entity == entity then
 				self:disconnect(key)
+				if self.clearDimensionGateSlotForSlot then
+					self:clearDimensionGateSlotForSlot(key)
+				end
 				return
 			end
 		end

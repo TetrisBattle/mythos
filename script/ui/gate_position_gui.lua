@@ -5,6 +5,8 @@ local GatePositionGui = {}
 
 local FRAME_NAME = "mythos-gate-position-panel"
 local BTN_PREFIX = "mythos-gate-position-button-"
+local CLOSE_BUTTON_NAME = "mythos-gate-position-close"
+local CLEAR_BUTTON_NAME = "mythos-gate-position-clear"
 local CELL_SIZE  = 40
 local MYTHOS_IMAGE_SIZE     = 120
 local MYTHOS_IMAGE_X_OFFSET = 10
@@ -34,6 +36,10 @@ end
 
 local function isButton(name)
 	return name and name:sub(1, #BTN_PREFIX) == BTN_PREFIX
+end
+
+local function isActionButton(name)
+	return name == CLOSE_BUTTON_NAME or name == CLEAR_BUTTON_NAME
 end
 
 local function gateSprite(targetSlotKey)
@@ -135,6 +141,39 @@ local function addVerticalSide(parent, slots, state, physicalGateKey, gateBuilde
 	end
 end
 
+local function addTitlebar(frame, state, physicalGateKey)
+	local titlebar = frame.add{ type = "flow", direction = "horizontal" }
+	titlebar.drag_target = frame
+	titlebar.style.horizontally_stretchable = true
+	titlebar.style.horizontal_spacing = 4
+	titlebar.style.vertical_align = "center"
+
+	titlebar.add{ type = "label", caption = { "mythos-gui.gate-position-title" }, style = "frame_title" }
+	local dragHandle = titlebar.add{ type = "empty-widget", style = "draggable_space_header" }
+	dragHandle.style.horizontally_stretchable = true
+	dragHandle.style.height = 24
+	dragHandle.drag_target = frame
+
+	titlebar.add{
+		type    = "sprite-button",
+		name    = CLEAR_BUTTON_NAME,
+		sprite  = "utility/trash_white",
+		tooltip = { "mythos-gui.gate-position-clear-tooltip" },
+		style   = "mythos_gate_position_trash_button",
+		tags    = {
+			mythos_unit       = state.entity.unit_number,
+			physical_gate_key = physicalGateKey,
+		},
+	}
+	titlebar.add{
+		type    = "sprite-button",
+		name    = CLOSE_BUTTON_NAME,
+		sprite  = "utility/close",
+		tooltip = { "mythos-gui.gate-position-close-tooltip" },
+		style   = "frame_action_button",
+	}
+end
+
 function GatePositionGui.close(player)
 	close(player)
 	if player then clearHoverBorder(player.index) end
@@ -147,12 +186,12 @@ function GatePositionGui.open(player, state, physicalGateKey)
 	local frame = player.gui.screen.add{
 		type      = "frame",
 		name      = FRAME_NAME,
-		caption   = { "mythos-gui.gate-position-title" },
 		direction = "vertical",
 		style     = "mythos_gate_position_frame",
 	}
 	frame.auto_center = true
 	player.opened = frame
+	addTitlebar(frame, state, physicalGateKey)
 
 	local grid = frame.add{ type = "table", column_count = 3 }
 	grid.style.horizontal_spacing = 12
@@ -198,7 +237,29 @@ end
 
 function GatePositionGui.onButtonClick(event)
 	local element = event.element
-	if not (element and element.valid and isButton(element.name)) then return false end
+	if not (element and element.valid) then return false end
+
+	if isActionButton(element.name) then
+		local player = game.get_player(event.player_index)
+		if not player then return true end
+		if element.name == CLOSE_BUTTON_NAME then
+			GatePositionGui.close(player)
+			return true
+		end
+
+		local tags = element.tags
+		local state = tags and tags.mythos_unit and Registry.get(tags.mythos_unit)
+		if not (state and tags.physical_gate_key and state.clearDimensionGateSlot) then return true end
+		local ok, errKey = state:clearDimensionGateSlot(tags.physical_gate_key)
+		if not ok then
+			player.print({ errKey or "mythos-gui.gate-position-failed" })
+			return true
+		end
+		GatePositionGui.close(player)
+		return true
+	end
+
+	if not isButton(element.name) then return false end
 
 	local tags = element.tags
 	if not (tags and tags.mythos_unit and tags.target_slot) then return true end

@@ -12,14 +12,28 @@ end
 
 local SLOT_KEYS = orderedSlotKeys()
 
-local function physicalGateKey(row)
-	return "G" .. row
+local PHYSICAL_GATE_SIDES = {
+	{ edge = "top",    prefix = "PT", orientation = 0,    axis = "x" },
+	{ edge = "right",  prefix = "PR", orientation = 0.25, axis = "y" },
+	{ edge = "bottom", prefix = "PB", orientation = 0.5,  axis = "x" },
+	{ edge = "left",   prefix = "PL", orientation = 0.75, axis = "y" },
+}
+
+local PHYSICAL_GATE_SIDE_BY_PREFIX = {}
+for _, side in ipairs(PHYSICAL_GATE_SIDES) do
+	PHYSICAL_GATE_SIDE_BY_PREFIX[side.prefix] = side
 end
 
-local function physicalGateRow(key)
+local function physicalGateKey(side, index)
+	return side.prefix .. index
+end
+
+local function physicalGateParts(key)
 	if type(key) ~= "string" then return nil end
-	local row = tonumber(key:match("^G(%d+)$"))
-	if row and row >= 1 and row % 1 == 0 then return row end
+	local prefix, index = key:match("^(P[TRBL])(%d+)$")
+	index = tonumber(index)
+	local side = PHYSICAL_GATE_SIDE_BY_PREFIX[prefix]
+	if side and index and index >= 1 and index % 1 == 0 then return side, index end
 end
 
 local function floorHeight(bounds)
@@ -27,21 +41,21 @@ local function floorHeight(bounds)
 	return bounds.y_max - bounds.y_min + 1
 end
 
-local function legacyPhysicalGateKey(slotKey)
-	for i, key in ipairs(SLOT_KEYS) do
-		if key == slotKey then return physicalGateKey(i) end
-	end
+local function floorWidth(bounds)
+	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
+	return bounds.x_max - bounds.x_min + 1
+end
+
+local function physicalGateCount(side, bounds)
+	local size = side.axis == "x" and floorWidth(bounds) or floorHeight(bounds)
+	return math.max(size, 0)
 end
 
 local function validPhysicalGateKey(key, bounds)
-	local row = physicalGateRow(key)
-	if not row then
-		key = legacyPhysicalGateKey(key)
-		row = physicalGateRow(key)
-	end
-	if not row then return nil end
-	if bounds and row > floorHeight(bounds) then return nil end
-	return physicalGateKey(row)
+	local side, index = physicalGateParts(key)
+	if not side then return nil end
+	if index > physicalGateCount(side, bounds) then return nil end
+	return physicalGateKey(side, index)
 end
 
 local function defaultDimensionGatePositions()
@@ -81,22 +95,46 @@ end
 local function computeDimensionPhysicalGateLayout(bounds)
 	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
 	local layout = {}
-	for row = 1, floorHeight(bounds) do
-		local key = physicalGateKey(row)
-		local yc = bounds.y_min + row - 0.5
-		layout[key] = {
-			pos             = { bounds.x_min - 0.5, yc },
-			innerBeltPos    = { bounds.x_min + 0.5, yc },
-			gateOrientation = 0.75,
-			physicalGateKey = key,
-		}
+	for _, side in ipairs(PHYSICAL_GATE_SIDES) do
+		for index = 1, physicalGateCount(side, bounds) do
+			local key = physicalGateKey(side, index)
+			local pos, innerBeltPos, labelXOffset
+			if side.edge == "top" then
+				local x = bounds.x_min + index - 0.5
+				pos = { x, bounds.y_min - 0.5 }
+				innerBeltPos = { x, bounds.y_min + 0.5 }
+				labelXOffset = 0
+			elseif side.edge == "right" then
+				local y = bounds.y_min + index - 0.5
+				pos = { bounds.x_max + 1.5, y }
+				innerBeltPos = { bounds.x_max + 0.5, y }
+				labelXOffset = 0
+			elseif side.edge == "bottom" then
+				local x = bounds.x_min + index - 0.5
+				pos = { x, bounds.y_max + 1.5 }
+				innerBeltPos = { x, bounds.y_max + 0.5 }
+				labelXOffset = 0
+			else
+				local y = bounds.y_min + index - 0.5
+				pos = { bounds.x_min - 0.5, y }
+				innerBeltPos = { bounds.x_min + 0.5, y }
+				labelXOffset = 0.05
+			end
+			layout[key] = {
+				pos             = pos,
+				innerBeltPos    = innerBeltPos,
+				labelPos        = { pos[1] + labelXOffset, pos[2] + 0.25 },
+				gateOrientation = side.orientation,
+				physicalGateKey = key,
+				edge            = side.edge,
+			}
+		end
 	end
 	return layout
 end
 
--- Computes gate/belt positions for arbitrary floor bounds.
--- The pocket dimension exposes all Mythos ports on the left side wall.
--- innerBeltPos: the tile one step inside the floor where the player places their belt.
+-- Computes logical-slot gate/belt positions for arbitrary floor bounds.
+-- innerBeltPos is the tile one step inside the selected physical gate.
 local function computeDimensionSlotBeltLayout(bounds, gatePositions)
 	local physicalLayout = computeDimensionPhysicalGateLayout(bounds)
 	local positions = normalizeDimensionGatePositions(gatePositions, bounds)
@@ -109,8 +147,10 @@ local function computeDimensionSlotBeltLayout(bounds, gatePositions)
 			layout[slotKey] = {
 				pos             = { physical.pos[1], physical.pos[2] },
 				innerBeltPos    = { physical.innerBeltPos[1], physical.innerBeltPos[2] },
+				labelPos        = { physical.labelPos[1], physical.labelPos[2] },
 				gateOrientation = physical.gateOrientation,
 				physicalGateKey = physicalGate,
+				edge            = physical.edge,
 			}
 		end
 	end
