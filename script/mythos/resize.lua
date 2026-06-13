@@ -15,29 +15,58 @@ local function floorBoundsKey(bounds)
 	return string.format("%d,%d,%d,%d", bounds.x_min, bounds.x_max, bounds.y_min, bounds.y_max)
 end
 
-local function applyGateRender(mythos, slotKey, slot, beltLayout, surface)
-	if slot.gateRender and slot.gateRender.valid then
-		slot.gateRender.destroy()
-	end
-	slot.gateRender = nil
-
-	if not beltLayout then return end
-
-	slot.gateRender = rendering.draw_sprite{
+local function drawGateSprite(gateLayout, surface, tint)
+	if not gateLayout then return nil end
+	return rendering.draw_sprite{
 		sprite      = "mythos-gate",
-		target      = gateTarget(beltLayout.pos),
+		target      = gateTarget(gateLayout.pos),
 		surface     = surface,
 		render_layer = "lower-object",
-		orientation = beltLayout.gateOrientation,
+		orientation = gateLayout.gateOrientation,
 		y_scale     = 0.75,
-		tint        = (slot.conn or mythos:hasExternalConnection(slotKey))
-			and GATE_CONNECTED_COLOR or GATE_DISCONNECTED_COLOR,
+		tint        = tint,
 	}
 end
 
-local function drawGateSpritesForLayout(mythos, slots, layout, surface)
-	for slotKey, slot in pairs(slots) do
-		applyGateRender(mythos, slotKey, slot, layout[slotKey], surface)
+local function clearGateSpriteRenders(mythos, slots)
+	for _, slot in pairs(slots or {}) do
+		if slot.gateRender and slot.gateRender.valid then
+			slot.gateRender.destroy()
+		end
+		slot.gateRender = nil
+	end
+	if mythos.physicalGateRenders then
+		for _, render in pairs(mythos.physicalGateRenders) do
+			if render and render.valid then render.destroy() end
+		end
+	end
+	mythos.physicalGateRenders = {}
+end
+
+local function drawGateSpritesForLayout(mythos, slots, layout, physicalLayout, surface)
+	clearGateSpriteRenders(mythos, slots)
+	local positions = mythos:normalizeDimensionGatePositions()
+	local slotByPhysicalGate = {}
+	for slotKey, physicalGateKey in pairs(positions) do
+		slotByPhysicalGate[physicalGateKey] = slotKey
+	end
+
+	for physicalGateKey, gateLayout in pairs(physicalLayout or {}) do
+		local slotKey = slotByPhysicalGate[physicalGateKey]
+		local slot = slotKey and slots[slotKey]
+		local connected = slot and (slot.conn or mythos:hasExternalConnection(slotKey))
+		local render = drawGateSprite(
+			gateLayout,
+			surface,
+			connected and GATE_CONNECTED_COLOR or GATE_DISCONNECTED_COLOR
+		)
+		if render then
+			if slot then
+				slot.gateRender = render
+			else
+				mythos.physicalGateRenders[physicalGateKey] = render
+			end
+		end
 	end
 end
 
@@ -50,10 +79,20 @@ local function clearGateLabelRenders(mythos)
 	mythos.gateLabelRenders = {}
 end
 
-local function drawGateLabelsForBounds(mythos, bounds, surface)
+local function drawGateLabelsForLayout(mythos, layout, surface)
 	clearGateLabelRenders(mythos)
-	local gatePositions = mythos:normalizeDimensionGatePositions()
-	for i, label in ipairs(PocketDimension.computeDimensionGateLabels(bounds, gatePositions)) do
+	local labels = {}
+	for slotKey, gateLayout in pairs(layout or {}) do
+		labels[#labels + 1] = {
+			text = slotKey,
+			pos  = { gateLayout.pos[1] + 0.05, gateLayout.pos[2] + 0.25 },
+		}
+	end
+	table.sort(labels, function(a, b)
+		if a.pos[2] == b.pos[2] then return a.text < b.text end
+		return a.pos[2] < b.pos[2]
+	end)
+	for i, label in ipairs(labels) do
 		mythos.gateLabelRenders[i] = rendering.draw_text{
 			text               = label.text,
 			target             = gateTarget(label.pos),
@@ -169,6 +208,15 @@ function DimensionResize.install(Mythos)
 		return layout and layout[slotKey]
 	end
 
+	function Mythos:getDimensionPhysicalGateLayout()
+		if not self.floor_bounds then
+			self:syncFloorBoundsFromTiles()
+		end
+		return PocketDimension.computeDimensionPhysicalGateLayout(
+			self.floor_bounds or PocketDimension.DEFAULT_FLOOR_BOUNDS
+		)
+	end
+
 	function Mythos:isEdgeConnected(edge)
 		for _, slotKey in ipairs(edgeSlots[edge]) do
 			if self.slots[slotKey] and self.slots[slotKey].conn then
@@ -191,10 +239,11 @@ function DimensionResize.install(Mythos)
 		if not (self.slots and self.inside_surface and self.inside_surface.valid) then return end
 		self:syncSlotGeometry()
 		local layout = self:getDimensionGateLayout()
-		drawGateSpritesForLayout(self, self.slots, layout, self.inside_surface)
-		drawGateLabelsForBounds(self, self.floor_bounds or PocketDimension.DEFAULT_FLOOR_BOUNDS, self.inside_surface)
+		local physicalLayout = self:getDimensionPhysicalGateLayout()
+		drawGateSpritesForLayout(self, self.slots, layout, physicalLayout, self.inside_surface)
+		drawGateLabelsForLayout(self, layout, self.inside_surface)
 		if self.refreshGateSelectors then
-			self:refreshGateSelectors(layout)
+			self:refreshGateSelectors(physicalLayout)
 		end
 	end
 
@@ -203,7 +252,15 @@ function DimensionResize.install(Mythos)
 		self:syncSlotGeometry()
 		local slot = self.slots[slotKey]
 		if not slot then return end
-		applyGateRender(self, slotKey, slot, self:getSlotBeltLayout(slotKey), self.inside_surface)
+		if slot.gateRender and slot.gateRender.valid then
+			slot.gateRender.destroy()
+		end
+		slot.gateRender = drawGateSprite(
+			self:getSlotBeltLayout(slotKey),
+			self.inside_surface,
+			(slot.conn or self:hasExternalConnection(slotKey))
+				and GATE_CONNECTED_COLOR or GATE_DISCONNECTED_COLOR
+		)
 	end
 
 	function Mythos:expandEdge(edge, deferGateRefresh, steps)

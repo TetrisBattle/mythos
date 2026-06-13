@@ -12,44 +12,52 @@ end
 
 local SLOT_KEYS = orderedSlotKeys()
 
-local function defaultDimensionGatePositions()
-	local positions = {}
-	for _, slotKey in ipairs(SLOT_KEYS) do
-		positions[slotKey] = slotKey
-	end
-	return positions
+local function physicalGateKey(row)
+	return "G" .. row
 end
 
-local function normalizeDimensionGatePositions(gatePositions)
-	local valid = {}
-	for _, slotKey in ipairs(SLOT_KEYS) do
-		valid[slotKey] = true
-	end
+local function physicalGateRow(key)
+	if type(key) ~= "string" then return nil end
+	local row = tonumber(key:match("^G(%d+)$"))
+	if row and row >= 1 and row % 1 == 0 then return row end
+end
 
+local function floorHeight(bounds)
+	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
+	return bounds.y_max - bounds.y_min + 1
+end
+
+local function legacyPhysicalGateKey(slotKey)
+	for i, key in ipairs(SLOT_KEYS) do
+		if key == slotKey then return physicalGateKey(i) end
+	end
+end
+
+local function validPhysicalGateKey(key, bounds)
+	local row = physicalGateRow(key)
+	if not row then
+		key = legacyPhysicalGateKey(key)
+		row = physicalGateRow(key)
+	end
+	if not row then return nil end
+	if bounds and row > floorHeight(bounds) then return nil end
+	return physicalGateKey(row)
+end
+
+local function defaultDimensionGatePositions()
+	return {}
+end
+
+local function normalizeDimensionGatePositions(gatePositions, bounds)
 	local normalized = {}
 	local used = {}
 	if gatePositions then
 		for _, slotKey in ipairs(SLOT_KEYS) do
-			local physicalSlotKey = gatePositions[slotKey]
-			if valid[physicalSlotKey] and not used[physicalSlotKey] then
-				normalized[slotKey] = physicalSlotKey
-				used[physicalSlotKey] = true
+			local physicalGate = validPhysicalGateKey(gatePositions[slotKey], bounds)
+			if physicalGate and not used[physicalGate] then
+				normalized[slotKey] = physicalGate
+				used[physicalGate] = true
 			end
-		end
-	end
-
-	local unused = {}
-	for _, slotKey in ipairs(SLOT_KEYS) do
-		if not used[slotKey] then
-			unused[#unused + 1] = slotKey
-		end
-	end
-
-	local unusedIndex = 1
-	for _, slotKey in ipairs(SLOT_KEYS) do
-		if not normalized[slotKey] then
-			normalized[slotKey] = unused[unusedIndex] or slotKey
-			unusedIndex = unusedIndex + 1
 		end
 	end
 
@@ -70,25 +78,18 @@ local function buildMythosSlotLayout()
 	return layout
 end
 
--- Computes gate/belt positions for arbitrary floor bounds.
--- The pocket dimension exposes all Mythos ports on the left side wall.
--- innerBeltPos: the tile one step inside the floor where the player places their belt.
-local function computePhysicalDimensionSlotLayout(bounds)
+local function computeDimensionPhysicalGateLayout(bounds)
 	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
 	local layout = {}
-	local row = 1
-	for _, group in ipairs(constants.DIMENSION_GATE_GROUPS) do
-		for _, slotKey in ipairs(group.slots) do
-			local yc = bounds.y_min + constants.DIM_GATE_FROM_TOP[row]
-			layout[slotKey] = {
-				pos             = { bounds.x_min - 0.5, yc },
-				innerBeltPos    = { bounds.x_min + 0.5, yc },
-				labelPos        = { bounds.x_min - 0.45, yc + 0.25 },
-				gateOrientation = 0.75,
-				physicalSlotKey = slotKey,
-			}
-			row = row + 1
-		end
+	for row = 1, floorHeight(bounds) do
+		local key = physicalGateKey(row)
+		local yc = bounds.y_min + row - 0.5
+		layout[key] = {
+			pos             = { bounds.x_min - 0.5, yc },
+			innerBeltPos    = { bounds.x_min + 0.5, yc },
+			gateOrientation = 0.75,
+			physicalGateKey = key,
+		}
 	end
 	return layout
 end
@@ -97,40 +98,23 @@ end
 -- The pocket dimension exposes all Mythos ports on the left side wall.
 -- innerBeltPos: the tile one step inside the floor where the player places their belt.
 local function computeDimensionSlotBeltLayout(bounds, gatePositions)
-	local physicalLayout = computePhysicalDimensionSlotLayout(bounds)
-	local positions = normalizeDimensionGatePositions(gatePositions)
+	local physicalLayout = computeDimensionPhysicalGateLayout(bounds)
+	local positions = normalizeDimensionGatePositions(gatePositions, bounds)
 	local layout = {}
 
 	for _, slotKey in ipairs(SLOT_KEYS) do
-		local physicalSlotKey = positions[slotKey]
-		local physical = physicalLayout[physicalSlotKey]
+		local physicalGate = positions[slotKey]
+		local physical = physicalLayout[physicalGate]
 		if physical then
 			layout[slotKey] = {
 				pos             = { physical.pos[1], physical.pos[2] },
 				innerBeltPos    = { physical.innerBeltPos[1], physical.innerBeltPos[2] },
-				labelPos        = { physical.labelPos[1], physical.labelPos[2] },
 				gateOrientation = physical.gateOrientation,
-				physicalSlotKey = physicalSlotKey,
+				physicalGateKey = physicalGate,
 			}
 		end
 	end
 	return layout
-end
-
-local function computeDimensionGateLabels(bounds, gatePositions)
-	local labels = {}
-	local layout = computeDimensionSlotBeltLayout(bounds, gatePositions)
-	for slotKey, gateLayout in pairs(layout) do
-		labels[#labels + 1] = {
-			text = slotKey,
-			pos  = { gateLayout.labelPos[1], gateLayout.labelPos[2] },
-		}
-	end
-	table.sort(labels, function(a, b)
-		if a.pos[2] == b.pos[2] then return a.text < b.text end
-		return a.pos[2] < b.pos[2]
-	end)
-	return labels
 end
 
 return {
@@ -139,6 +123,6 @@ return {
 	buildMythosSlotLayout          = buildMythosSlotLayout,
 	defaultDimensionGatePositions  = defaultDimensionGatePositions,
 	normalizeDimensionGatePositions = normalizeDimensionGatePositions,
+	computeDimensionPhysicalGateLayout = computeDimensionPhysicalGateLayout,
 	computeDimensionSlotBeltLayout = computeDimensionSlotBeltLayout,
-	computeDimensionGateLabels     = computeDimensionGateLabels,
 }

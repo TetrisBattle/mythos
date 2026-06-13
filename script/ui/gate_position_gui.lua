@@ -40,6 +40,13 @@ local function gateSprite(targetSlotKey)
 	return GATE_SPRITES[targetSlotKey:sub(1, 1)] or "mythos-gate-ui-top"
 end
 
+local function slotAtPhysicalGate(state, physicalGateKey)
+	local positions = state:normalizeDimensionGatePositions()
+	for slotKey, candidatePhysicalGateKey in pairs(positions) do
+		if candidatePhysicalGateKey == physicalGateKey then return slotKey end
+	end
+end
+
 local function close(player)
 	local frame = getFrame(player)
 	if frame and frame.valid then frame.destroy() end
@@ -56,18 +63,19 @@ local function clearHoverBorder(player_index)
 	storage.gate_hover_borders[player_index] = nil
 end
 
-local function addGateButton(parent, state, sourceSlotKey, targetSlotKey)
+local function addGateButton(parent, state, physicalGateKey, targetSlotKey)
+	local currentSlotKey = slotAtPhysicalGate(state, physicalGateKey)
 	local button = parent.add{
 		type    = "sprite-button",
 		name    = buttonName(targetSlotKey),
 		sprite  = gateSprite(targetSlotKey),
 		tooltip = { "mythos-gui.gate-position-button-tooltip", targetSlotKey },
 		tags    = {
-			mythos_unit = state.entity.unit_number,
-			source_slot = sourceSlotKey,
-			target_slot = targetSlotKey,
+			mythos_unit       = state.entity.unit_number,
+			physical_gate_key = physicalGateKey,
+			target_slot       = targetSlotKey,
 		},
-		style = targetSlotKey == sourceSlotKey
+		style = targetSlotKey == currentSlotKey
 			and "mythos_gate_position_source_button"
 			or "mythos_gate_position_button",
 	}
@@ -76,54 +84,54 @@ local function addGateButton(parent, state, sourceSlotKey, targetSlotKey)
 	return button
 end
 
-local function addTopGate(parent, state, sourceSlotKey, targetSlotKey)
+local function addTopGate(parent, state, physicalGateKey, targetSlotKey)
 	local column = parent.add{ type = "flow", direction = "vertical" }
 	column.style.horizontal_align = "center"
 	column.style.vertical_spacing = 2
 	column.add{ type = "label", caption = targetSlotKey, style = "mythos_gate_position_label" }
-	addGateButton(column, state, sourceSlotKey, targetSlotKey)
+	addGateButton(column, state, physicalGateKey, targetSlotKey)
 end
 
-local function addBottomGate(parent, state, sourceSlotKey, targetSlotKey)
+local function addBottomGate(parent, state, physicalGateKey, targetSlotKey)
 	local column = parent.add{ type = "flow", direction = "vertical" }
 	column.style.horizontal_align = "center"
 	column.style.vertical_spacing = 2
-	addGateButton(column, state, sourceSlotKey, targetSlotKey)
+	addGateButton(column, state, physicalGateKey, targetSlotKey)
 	column.add{ type = "label", caption = targetSlotKey, style = "mythos_gate_position_label" }
 end
 
-local function addLeftGate(parent, state, sourceSlotKey, targetSlotKey)
+local function addLeftGate(parent, state, physicalGateKey, targetSlotKey)
 	local row = parent.add{ type = "flow", direction = "horizontal" }
 	row.style.vertical_align = "center"
 	row.style.horizontal_spacing = 4
 	local label = row.add{ type = "label", caption = targetSlotKey, style = "mythos_gate_position_label" }
 	label.style.width = 24
-	addGateButton(row, state, sourceSlotKey, targetSlotKey)
+	addGateButton(row, state, physicalGateKey, targetSlotKey)
 end
 
-local function addRightGate(parent, state, sourceSlotKey, targetSlotKey)
+local function addRightGate(parent, state, physicalGateKey, targetSlotKey)
 	local row = parent.add{ type = "flow", direction = "horizontal" }
 	row.style.vertical_align = "center"
 	row.style.horizontal_spacing = 4
-	addGateButton(row, state, sourceSlotKey, targetSlotKey)
+	addGateButton(row, state, physicalGateKey, targetSlotKey)
 	row.add{ type = "label", caption = targetSlotKey, style = "mythos_gate_position_label" }
 end
 
-local function addHorizontalSide(parent, slots, state, sourceSlotKey, gateBuilder)
+local function addHorizontalSide(parent, slots, state, physicalGateKey, gateBuilder)
 	local flow = parent.add{ type = "flow", direction = "horizontal" }
 	flow.style.horizontal_align = "center"
 	flow.style.horizontal_spacing = 8
 	for _, slotKey in ipairs(slots) do
-		gateBuilder(flow, state, sourceSlotKey, slotKey)
+		gateBuilder(flow, state, physicalGateKey, slotKey)
 	end
 end
 
-local function addVerticalSide(parent, slots, state, sourceSlotKey, gateBuilder)
+local function addVerticalSide(parent, slots, state, physicalGateKey, gateBuilder)
 	local flow = parent.add{ type = "flow", direction = "vertical" }
 	flow.style.vertical_align = "center"
 	flow.style.vertical_spacing = 6
 	for _, slotKey in ipairs(slots) do
-		gateBuilder(flow, state, sourceSlotKey, slotKey)
+		gateBuilder(flow, state, physicalGateKey, slotKey)
 	end
 end
 
@@ -132,14 +140,14 @@ function GatePositionGui.close(player)
 	if player then clearHoverBorder(player.index) end
 end
 
-function GatePositionGui.open(player, state, sourceSlotKey)
-	if not (player and state and state.entity and state.entity.valid and sourceSlotKey) then return end
+function GatePositionGui.open(player, state, physicalGateKey)
+	if not (player and state and state.entity and state.entity.valid and physicalGateKey) then return end
 	close(player)
 
 	local frame = player.gui.screen.add{
 		type      = "frame",
 		name      = FRAME_NAME,
-		caption   = { "mythos-gui.gate-position-title", sourceSlotKey },
+		caption   = { "mythos-gui.gate-position-title" },
 		direction = "vertical",
 		style     = "mythos_gate_position_frame",
 	}
@@ -151,10 +159,10 @@ function GatePositionGui.open(player, state, sourceSlotKey)
 	grid.style.vertical_spacing = 8
 
 	grid.add{ type = "empty-widget" }
-	addHorizontalSide(grid, SIDE_SLOTS.top, state, sourceSlotKey, addTopGate)
+	addHorizontalSide(grid, SIDE_SLOTS.top, state, physicalGateKey, addTopGate)
 	grid.add{ type = "empty-widget" }
 
-	addVerticalSide(grid, SIDE_SLOTS.left, state, sourceSlotKey, addLeftGate)
+	addVerticalSide(grid, SIDE_SLOTS.left, state, physicalGateKey, addLeftGate)
 	local center = grid.add{ type = "sprite", sprite = "mythos-gui-image" }
 	center.style.width = MYTHOS_IMAGE_SIZE
 	center.style.height = MYTHOS_IMAGE_SIZE
@@ -162,10 +170,10 @@ function GatePositionGui.open(player, state, sourceSlotKey)
 	center.style.top_margin = -MYTHOS_IMAGE_Y_OFFSET
 	center.style.right_margin = MYTHOS_IMAGE_X_OFFSET
 	center.style.bottom_margin = MYTHOS_IMAGE_Y_OFFSET
-	addVerticalSide(grid, SIDE_SLOTS.right, state, sourceSlotKey, addRightGate)
+	addVerticalSide(grid, SIDE_SLOTS.right, state, physicalGateKey, addRightGate)
 
 	grid.add{ type = "empty-widget" }
-	addHorizontalSide(grid, SIDE_SLOTS.bottom, state, sourceSlotKey, addBottomGate)
+	addHorizontalSide(grid, SIDE_SLOTS.bottom, state, physicalGateKey, addBottomGate)
 	grid.add{ type = "empty-widget" }
 end
 
@@ -176,15 +184,15 @@ function GatePositionGui.tryOpenFromInput(event)
 	local player = game.get_player(event.player_index)
 	if not player then return false end
 	local selected = player.selected
-	local state, slotKey = GateSelectors.findStateAndSlot(selected)
-	if not (state and slotKey) then return false end
+	local state, physicalGateKey = GateSelectors.findStateAndGatePosition(selected)
+	if not (state and physicalGateKey) then return false end
 
 	storage.viewing = storage.viewing or {}
 	if storage.viewing[event.player_index] ~= state.entity.unit_number then return false end
 	if player.controller_type ~= defines.controllers.remote then return false end
 	if player.surface ~= state.inside_surface then return false end
 
-	GatePositionGui.open(player, state, slotKey)
+	GatePositionGui.open(player, state, physicalGateKey)
 	return true
 end
 
@@ -193,12 +201,17 @@ function GatePositionGui.onButtonClick(event)
 	if not (element and element.valid and isButton(element.name)) then return false end
 
 	local tags = element.tags
-	if not (tags and tags.mythos_unit and tags.source_slot and tags.target_slot) then return true end
+	if not (tags and tags.mythos_unit and tags.target_slot) then return true end
 	local state = Registry.get(tags.mythos_unit)
 	local player = game.get_player(event.player_index)
 	if not (state and player) then return true end
 
-	local ok, errKey = state:swapDimensionGateSlots(tags.source_slot, tags.target_slot)
+	local ok, errKey
+	if tags.physical_gate_key and state.assignDimensionGateSlot then
+		ok, errKey = state:assignDimensionGateSlot(tags.physical_gate_key, tags.target_slot)
+	else
+		ok, errKey = state:swapDimensionGateSlots(tags.source_slot, tags.target_slot)
+	end
 	if not ok then
 		player.print({ errKey or "mythos-gui.gate-position-failed" })
 		return true

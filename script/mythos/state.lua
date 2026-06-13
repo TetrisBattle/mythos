@@ -16,6 +16,15 @@ local function destroyGateLabelRenders(state)
 	state.gateLabelRenders = nil
 end
 
+local function destroyPhysicalGateRenders(state)
+	if state.physicalGateRenders then
+		for _, render in pairs(state.physicalGateRenders) do
+			if render and render.valid then render.destroy() end
+		end
+	end
+	state.physicalGateRenders = nil
+end
+
 local function destroyGateSelectors(state)
 	if state.destroyGateSelectors then
 		state:destroyGateSelectors()
@@ -74,7 +83,8 @@ end
 
 function Mythos:normalizeDimensionGatePositions()
 	self.dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
-		self.dimension_gate_positions
+		self.dimension_gate_positions,
+		self.floor_bounds
 	)
 	return self.dimension_gate_positions
 end
@@ -154,6 +164,7 @@ function Mythos:save(buffer)
 	end
 
 	destroyGateLabelRenders(self)
+	destroyPhysicalGateRenders(self)
 	destroyGateSelectors(self)
 
 	storage.saved_dimensions = storage.saved_dimensions or {}
@@ -179,6 +190,7 @@ function Mythos:save(buffer)
 		self:disconnect(slotKey)
 	end
 	destroyGateLabelRenders(self)
+	destroyPhysicalGateRenders(self)
 	destroyGateSelectors(self)
 	Registry.remove(self.entity.unit_number)
 	return saved_id
@@ -194,6 +206,7 @@ function Mythos:destroy()
 	end
 	self.icon_renders = nil
 	destroyGateLabelRenders(self)
+	destroyPhysicalGateRenders(self)
 	destroyGateSelectors(self)
 	if self.entity and self.entity.valid then
 		Bridge.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
@@ -203,6 +216,7 @@ function Mythos:destroy()
 		self:disconnect(slotKey)
 	end
 	destroyGateLabelRenders(self)
+	destroyPhysicalGateRenders(self)
 	if self.inside_surface and self.inside_surface.valid then
 		game.delete_surface(self.inside_surface)
 	end
