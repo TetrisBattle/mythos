@@ -137,10 +137,79 @@ hiddenOuterPole.maximum_wire_distance      = 64
 local mythosGateSprite = {
 	type     = "sprite",
 	name     = "mythos-gate",
-	filename = "__mythos__/graphics/gate171x256.png",
+	filename = "__mythos__/graphics/gate_top.png",
 	width    = 171,
 	height   = 256,
 	scale    = 0.375,
+}
+
+local mythosGateUiTopSprite = {
+	type     = "sprite",
+	name     = "mythos-gate-ui-top",
+	filename = "__mythos__/graphics/gate_top.png",
+	width    = 171,
+	height   = 256,
+	scale    = 0.375,
+}
+
+local mythosGateUiLeftSprite = {
+	type     = "sprite",
+	name     = "mythos-gate-ui-left",
+	filename = "__mythos__/graphics/gate_left.png",
+	width    = 256,
+	height   = 171,
+	scale    = 0.375,
+}
+
+local mythosGateUiRightSprite = {
+	type     = "sprite",
+	name     = "mythos-gate-ui-right",
+	filename = "__mythos__/graphics/gate_right.png",
+	width    = 256,
+	height   = 171,
+	scale    = 0.375,
+}
+
+local mythosGateUiBottomSprite = {
+	type     = "sprite",
+	name     = "mythos-gate-ui-bottom",
+	filename = "__mythos__/graphics/gate_bottom.png",
+	width    = 171,
+	height   = 256,
+	scale    = 0.375,
+}
+
+local mythosGuiSprite = {
+	type     = "sprite",
+	name     = "mythos-gui-image",
+	filename = "__mythos__/graphics/mythos256.png",
+	width    = 256,
+	height   = 256,
+}
+
+local mythosGateSelector = {
+	type                 = "simple-entity-with-owner",
+	name                 = "mythos-gate-selector",
+	localised_name       = { "entity-name.mythos-gate-selector" },
+	hidden               = true,
+	flags                = {
+		"not-blueprintable",
+		"not-deconstructable",
+		"not-upgradable",
+		"hide-alt-info",
+	},
+	collision_mask       = { layers = {} },
+	collision_box        = { { 0, 0 }, { 0, 0 } },
+	selection_box        = { { -1, -1 }, { 0, 0 } },
+	selection_priority   = 255,
+	minable              = nil,
+	max_health           = 1,
+	picture              = {
+		filename = "__core__/graphics/empty.png",
+		priority = "extra-high",
+		width    = 1,
+		height   = 1,
+	},
 }
 
 -- Hidden accumulator placed on the outer surface at the mythos position.
@@ -226,6 +295,12 @@ data:extend({
 	hiddenRadar,
 	hiddenLight,
 	mythosGateSprite,
+	mythosGateUiTopSprite,
+	mythosGateUiLeftSprite,
+	mythosGateUiRightSprite,
+	mythosGateUiBottomSprite,
+	mythosGuiSprite,
+	mythosGateSelector,
 	hiddenOuterAcc,
 	hiddenInnerLink,
 	hiddenHubPole,

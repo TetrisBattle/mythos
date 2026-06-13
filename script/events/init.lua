@@ -5,6 +5,7 @@ local RemoteView      = require("script.ui.remote_view")
 local SettingsSync    = require("script.settingsSync")
 local Chunks          = require("script.events.chunks")
 local Gui             = require("script.events.gui")
+local GatePositionGui = require("script.ui.gate_position_gui")
 local Ticks           = require("script.events.ticks")
 
 local RuntimeEvents = {}
@@ -35,6 +36,8 @@ function RuntimeEvents.register()
 	script.on_event(defines.events.on_marked_for_deconstruction,  Mythos.onMarkedForDeconstruction)
 	script.on_event(defines.events.on_cancelled_deconstruction,   Mythos.onCancelledDeconstruction)
 	script.on_event(defines.events.on_player_cursor_stack_changed, Mythos.onCursorChanged)
+
+	script.on_event(defines.events.on_selected_entity_changed, GatePositionGui.onSelectedEntityChanged)
 
 	script.on_event(defines.events.on_gui_opened, Gui.onGuiOpened)
 

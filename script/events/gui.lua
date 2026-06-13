@@ -1,4 +1,5 @@
 local IconGui    = require("script.ui.icon_gui")
+local GatePositionGui = require("script.ui.gate_position_gui")
 local ResizeGui  = require("script.ui.resize_gui")
 local RemoteView = require("script.ui.remote_view")
 
@@ -17,6 +18,8 @@ function Gui.onGuiOpened(event)
 end
 
 function Gui.onGuiClosed(event)
+	if GatePositionGui.onGuiClosed(event) then return end
+
 	if event.gui_type ~= defines.gui_type.entity then return end
 	local entity = event.entity
 	if not (entity and entity.valid and entity.name == "mythos") then return end
@@ -30,6 +33,7 @@ function Gui.onGuiElemChanged(event)
 end
 
 function Gui.onGuiClick(event)
+	if GatePositionGui.onButtonClick(event) then return end
 	ResizeGui.onButtonClick(event)
 end
 

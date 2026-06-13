@@ -26,3 +26,38 @@ styles["mythos_resize_button"] = {
 	horizontal_align = "center",
 	vertical_align   = "center",
 }
+
+styles["mythos_gate_position_frame"] = {
+	type                     = "frame_style",
+	parent                   = "frame",
+	horizontally_stretchable = "off",
+}
+
+styles["mythos_gate_position_button"] = {
+	type           = "button_style",
+	parent         = "slot_button",
+	width          = 40,
+	height         = 40,
+	top_padding    = 0,
+	bottom_padding = 0,
+	left_padding   = 0,
+	right_padding  = 0,
+}
+
+styles["mythos_gate_position_source_button"] = {
+	type           = "button_style",
+	parent         = "slot_button",
+	width          = 40,
+	height         = 40,
+	top_padding    = 0,
+	bottom_padding = 0,
+	left_padding   = 0,
+	right_padding  = 0,
+}
+
+styles["mythos_gate_position_label"] = {
+	type             = "label_style",
+	parent           = "label",
+	font             = "default-bold",
+	horizontal_align = "center",
+}

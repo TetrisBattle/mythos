@@ -1,5 +1,6 @@
 local Registry  = require("script.mythos.registry")
 local ResizeGui = require("script.ui.resize_gui")
+local GatePositionGui = require("script.ui.gate_position_gui")
 
 local RemoteView = {}
 
@@ -11,7 +12,9 @@ end
 local function clearRemoteView(player_index, player)
 	if player then
 		ResizeGui.close(player)
+		GatePositionGui.close(player)
 	end
+	GatePositionGui.clearHover(player_index)
 	storage.viewing = storage.viewing or {}
 	storage.viewing[player_index] = nil
 end
@@ -134,6 +137,8 @@ function RemoteView.openSelectedDimension(event)
 	local e = event --[[@as EventData.CustomInputEvent]]
 	local player = game.get_player(e.player_index)
 	if not player then return end
+
+	if GatePositionGui.tryOpenFromInput(e) then return end
 
 	local entity = RemoteView.resolveMythosEntity(player, e.cursor_position, e)
 	if entity then

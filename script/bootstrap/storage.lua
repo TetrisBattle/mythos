@@ -5,6 +5,7 @@ function StorageBootstrap.init()
 	storage.saved_dimensions       = {}
 	storage.pending_player_restore = {}
 	storage.viewing                = {}
+	storage.gate_hover_borders     = {}
 	storage.pending_resize_gui     = {}
 	storage.virtualChests          = {}
 	storage.mythos_next_snapshot_id = 0

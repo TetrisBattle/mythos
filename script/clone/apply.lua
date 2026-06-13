@@ -88,13 +88,14 @@ local function buildState(Mythos, entity, inside_surface, inner_acc)
 	end
 
 	return setmetatable({
-		entity           = entity,
-		slots            = slots,
-		byExternalPos    = byExternalPos,
-		inside_surface   = inside_surface,
-		pendingDeletions = {},
-		outer_acc        = outer_acc,
-		inner_acc        = inner_acc,
+		entity                  = entity,
+		slots                   = slots,
+		byExternalPos           = byExternalPos,
+		inside_surface          = inside_surface,
+		pendingDeletions        = {},
+		outer_acc               = outer_acc,
+		inner_acc               = inner_acc,
+		dimension_gate_positions = PocketDimension.defaultDimensionGatePositions(),
 	}, Mythos)
 end
 
@@ -134,6 +135,10 @@ local function finishDimensionApply(state, sourceState, destForce)
 		state.inside_x = PocketDimension.VIEW_X
 		state.inside_y = PocketDimension.VIEW_Y
 	end
+	state.dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+		sourceState.dimension_gate_positions
+	)
+	state:invalidateDimensionGateLayout()
 	state:syncElectricity()
 	state:refreshGateRenders()
 	Snapshot.restoreCustomIcons(state, sourceState.custom_icons)
@@ -165,6 +170,9 @@ local function registerPlacementShell(state, sourceState, defer_remote_view_prep
 	Snapshot.restoreCustomIcons(state, sourceState.custom_icons)
 	if sourceState.default_width then state.default_width = sourceState.default_width end
 	if sourceState.default_height then state.default_height = sourceState.default_height end
+	state.dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+		sourceState.dimension_gate_positions
+	)
 end
 
 local function finishNormalPlacement(Mythos, entity)

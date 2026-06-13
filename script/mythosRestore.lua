@@ -23,6 +23,10 @@ local function restoreCustomIcons(state, customIcons)
 	end
 end
 
+local function normalizeGatePositions(gatePositions)
+	return PocketDimension.normalizeDimensionGatePositions(gatePositions)
+end
+
 function MythosRestore.fromSaved(Mythos, entity, saved)
 	local slots, byExternalPos = Connections.buildSlots(entity.position.x, entity.position.y)
 	local outer_acc = Bridge.createOuterAccumulatorForEntity(entity)
@@ -39,13 +43,14 @@ function MythosRestore.fromSaved(Mythos, entity, saved)
 	end
 
 	local state = setmetatable({
-		entity           = entity,
-		slots            = slots,
-		byExternalPos    = byExternalPos,
-		inside_surface   = saved.surface,
-		pendingDeletions = {},
-		outer_acc        = outer_acc,
-		inner_acc        = inner_acc,
+		entity                  = entity,
+		slots                   = slots,
+		byExternalPos           = byExternalPos,
+		inside_surface          = saved.surface,
+		pendingDeletions        = {},
+		outer_acc               = outer_acc,
+		inner_acc               = inner_acc,
+		dimension_gate_positions = normalizeGatePositions(saved.dimension_gate_positions),
 	}, Mythos)
 
 	if saved.floor_bounds then

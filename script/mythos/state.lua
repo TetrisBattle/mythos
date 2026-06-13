@@ -16,6 +16,17 @@ local function destroyGateLabelRenders(state)
 	state.gateLabelRenders = nil
 end
 
+local function destroyGateSelectors(state)
+	if state.destroyGateSelectors then
+		state:destroyGateSelectors()
+	elseif state.gateSelectorEntities then
+		for _, selector in pairs(state.gateSelectorEntities) do
+			if selector and selector.valid then selector.destroy{ raise_destroy = false } end
+		end
+		state.gateSelectorEntities = nil
+	end
+end
+
 -- One instance per placed mythos entity.
 -- Stores the pocket-dimension surface, slot geometry, and all active connections.
 -- Persisted in storage.mythoi[unit_number]; metatables are restored on game load.
@@ -55,9 +66,17 @@ function Mythos.new(mythosEntity)
 		floor_bounds        = floor_bounds,
 		default_width       = PocketDimension.DEFAULT_WIDTH,
 		default_height      = PocketDimension.DEFAULT_HEIGHT,
+		dimension_gate_positions = PocketDimension.defaultDimensionGatePositions(),
 	}, Mythos)
 	state:refreshGateRenders()
 	return state
+end
+
+function Mythos:normalizeDimensionGatePositions()
+	self.dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+		self.dimension_gate_positions
+	)
+	return self.dimension_gate_positions
 end
 
 -- Returns the external-slot key for a world position, or nil.
@@ -135,15 +154,18 @@ function Mythos:save(buffer)
 	end
 
 	destroyGateLabelRenders(self)
+	destroyGateSelectors(self)
 
 	storage.saved_dimensions = storage.saved_dimensions or {}
+	self:normalizeDimensionGatePositions()
 	storage.saved_dimensions[saved_id] = {
-		surface        = self.inside_surface,
-		items          = items,
-		custom_icons   = self.custom_icons,
-		floor_bounds   = self.floor_bounds,
-		default_width  = self.default_width,
-		default_height = self.default_height,
+		surface                  = self.inside_surface,
+		items                    = items,
+		custom_icons             = self.custom_icons,
+		floor_bounds             = self.floor_bounds,
+		default_width            = self.default_width,
+		default_height           = self.default_height,
+		dimension_gate_positions = self.dimension_gate_positions,
 	}
 
 	-- Outer power bridge must be destroyed when the mythos is picked up.
@@ -157,6 +179,7 @@ function Mythos:save(buffer)
 		self:disconnect(slotKey)
 	end
 	destroyGateLabelRenders(self)
+	destroyGateSelectors(self)
 	Registry.remove(self.entity.unit_number)
 	return saved_id
 end
@@ -171,6 +194,7 @@ function Mythos:destroy()
 	end
 	self.icon_renders = nil
 	destroyGateLabelRenders(self)
+	destroyGateSelectors(self)
 	if self.entity and self.entity.valid then
 		Bridge.destroyOuterPowerBridge(self.entity.surface, self.entity.position)
 	end

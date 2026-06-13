@@ -36,17 +36,21 @@ function Snapshot.resolveSourceState(sourceEntity)
 		if not state.floor_bounds then
 			state.floor_bounds = PocketDimension.inferFloorBounds(state.inside_surface)
 		end
+		state:normalizeDimensionGatePositions()
 		return state
 	end
 
 	local surface = game.surfaces["mythos-dimension-" .. sourceEntity.unit_number]
 	if surface and surface.valid then
 		return {
-			inside_surface = surface,
-			floor_bounds   = boundsForSurface(surface, state and state.floor_bounds),
-			custom_icons   = state and state.custom_icons,
-			default_width  = state and state.default_width,
-			default_height = state and state.default_height,
+			inside_surface           = surface,
+			floor_bounds             = boundsForSurface(surface, state and state.floor_bounds),
+			custom_icons             = state and state.custom_icons,
+			default_width            = state and state.default_width,
+			default_height           = state and state.default_height,
+			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+				state and state.dimension_gate_positions
+			),
 		}
 	end
 
@@ -58,11 +62,14 @@ function Snapshot.resolveLazySourceState(saved)
 
 	if saved.surface and saved.surface.valid then
 		return {
-			inside_surface = saved.surface,
-			floor_bounds   = boundsForSurface(saved.surface, saved.floor_bounds),
-			custom_icons   = saved.custom_icons,
-			default_width  = saved.default_width,
-			default_height = saved.default_height,
+			inside_surface           = saved.surface,
+			floor_bounds             = boundsForSurface(saved.surface, saved.floor_bounds),
+			custom_icons             = saved.custom_icons,
+			default_width            = saved.default_width,
+			default_height           = saved.default_height,
+			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+				saved.dimension_gate_positions
+			),
 		}
 	end
 
@@ -72,35 +79,44 @@ function Snapshot.resolveLazySourceState(saved)
 	local live = Registry.get(unit_number)
 	if live and live.inside_surface and live.inside_surface.valid then
 		return {
-			inside_surface = live.inside_surface,
-			floor_bounds   = saved.floor_bounds or live.floor_bounds
+			inside_surface           = live.inside_surface,
+			floor_bounds             = saved.floor_bounds or live.floor_bounds
 				or PocketDimension.inferFloorBounds(live.inside_surface),
-			custom_icons   = saved.custom_icons or live.custom_icons,
-			default_width  = saved.default_width or live.default_width,
-			default_height = saved.default_height or live.default_height,
+			custom_icons             = saved.custom_icons or live.custom_icons,
+			default_width            = saved.default_width or live.default_width,
+			default_height           = saved.default_height or live.default_height,
+			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+				saved.dimension_gate_positions or live.dimension_gate_positions
+			),
 		}
 	end
 
 	local mined = storage.saved_dimensions[unit_number]
 	if mined and mined.surface and mined.surface.valid then
 		return {
-			inside_surface = mined.surface,
-			floor_bounds   = saved.floor_bounds
+			inside_surface           = mined.surface,
+			floor_bounds             = saved.floor_bounds
 				or boundsForSurface(mined.surface, mined.floor_bounds),
-			custom_icons   = saved.custom_icons or mined.custom_icons,
-			default_width  = saved.default_width or mined.default_width,
-			default_height = saved.default_height or mined.default_height,
+			custom_icons             = saved.custom_icons or mined.custom_icons,
+			default_width            = saved.default_width or mined.default_width,
+			default_height           = saved.default_height or mined.default_height,
+			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+				saved.dimension_gate_positions or mined.dimension_gate_positions
+			),
 		}
 	end
 
 	local surface = game.surfaces["mythos-dimension-" .. unit_number]
 	if surface and surface.valid then
 		return {
-			inside_surface = surface,
-			floor_bounds   = saved.floor_bounds or PocketDimension.inferFloorBounds(surface),
-			custom_icons   = saved.custom_icons,
-			default_width  = saved.default_width,
-			default_height = saved.default_height,
+			inside_surface           = surface,
+			floor_bounds             = saved.floor_bounds or PocketDimension.inferFloorBounds(surface),
+			custom_icons             = saved.custom_icons,
+			default_width            = saved.default_width,
+			default_height           = saved.default_height,
+			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+				saved.dimension_gate_positions
+			),
 		}
 	end
 
@@ -125,12 +141,15 @@ function Snapshot.snapshotForBlueprint(Mythos, sourceEntity)
 
 	storage.saved_dimensions = storage.saved_dimensions or {}
 	storage.saved_dimensions[saved_id] = {
-		source_unit_number = sourceEntity.unit_number,
-		floor_bounds       = floor_bounds,
-		custom_icons       = sourceState.custom_icons,
-		default_width      = sourceState.default_width,
-		default_height     = sourceState.default_height,
-		items              = {},
+		source_unit_number       = sourceEntity.unit_number,
+		floor_bounds             = floor_bounds,
+		custom_icons             = sourceState.custom_icons,
+		default_width            = sourceState.default_width,
+		default_height           = sourceState.default_height,
+		dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
+			sourceState.dimension_gate_positions
+		),
+		items                    = {},
 	}
 	return saved_id
 end

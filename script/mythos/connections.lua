@@ -308,22 +308,31 @@ function Connections.install(Mythos, connectionTypes)
 		return true
 	end
 
+	function Mythos:connectExistingSlot(slotKey)
+		local slot = self.slots and self.slots[slotKey]
+		if not (slot and self.entity and self.entity.valid) then return false end
+		if slot.conn then return true end
+
+		for _, candidate in pairs(self.entity.surface.find_entities_filtered{
+			area = {
+				{ slot.external.x - 0.4, slot.external.y - 0.4 },
+				{ slot.external.x + 0.4, slot.external.y + 0.4 },
+			},
+		}) do
+			if candidate.valid and connectionTypes[candidate.type] then
+				return self:connect(slotKey, candidate) == true
+			end
+		end
+
+		self:updateGateRender(slotKey)
+		return false
+	end
+
 	-- Scans every external slot position for already-placed connectable entities
 	-- and connects them.  Called once when a mythos is placed into an existing layout.
 	function Mythos:connectExistingNeighbours()
-		local surface = self.entity.surface
-		for slotKey, slot in pairs(self.slots) do
-			for _, candidate in pairs(surface.find_entities_filtered{
-				area = {
-					{ slot.external.x - 0.4, slot.external.y - 0.4 },
-					{ slot.external.x + 0.4, slot.external.y + 0.4 },
-				},
-			}) do
-				if candidate.valid and connectionTypes[candidate.type] then
-					self:connect(slotKey, candidate)
-					break
-				end
-			end
+		for slotKey in pairs(self.slots) do
+			self:connectExistingSlot(slotKey)
 		end
 		self:refreshGateRenders()
 	end

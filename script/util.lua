@@ -79,6 +79,7 @@ Util.INFRASTRUCTURE_ENTITY_NAMES = {
 	["mythos-power-link-inner"] = true,
 	["mythos-hidden-pipe"]      = true,
 	["mythos-hidden-heat-pipe"] = true,
+	["mythos-gate-selector"]    = true,
 }
 
 Util.REMOTE_VIEW_ENTITY_NAMES = {

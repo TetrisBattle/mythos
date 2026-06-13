@@ -27,6 +27,7 @@ local function applyGateRender(mythos, slotKey, slot, beltLayout, surface)
 		sprite      = "mythos-gate",
 		target      = gateTarget(beltLayout.pos),
 		surface     = surface,
+		render_layer = "lower-object",
 		orientation = beltLayout.gateOrientation,
 		y_scale     = 0.75,
 		tint        = (slot.conn or mythos:hasExternalConnection(slotKey))
@@ -51,7 +52,8 @@ end
 
 local function drawGateLabelsForBounds(mythos, bounds, surface)
 	clearGateLabelRenders(mythos)
-	for i, label in ipairs(PocketDimension.computeDimensionGateLabels(bounds)) do
+	local gatePositions = mythos:normalizeDimensionGatePositions()
+	for i, label in ipairs(PocketDimension.computeDimensionGateLabels(bounds, gatePositions)) do
 		mythos.gateLabelRenders[i] = rendering.draw_text{
 			text               = label.text,
 			target             = gateTarget(label.pos),
@@ -152,7 +154,10 @@ function DimensionResize.install(Mythos)
 		local bounds = self.floor_bounds or PocketDimension.DEFAULT_FLOOR_BOUNDS
 		local boundsKey = floorBoundsKey(bounds)
 		if not self.dimensionGateLayout or self.dimensionGateLayoutBoundsKey ~= boundsKey then
-			self.dimensionGateLayout = PocketDimension.computeDimensionSlotBeltLayout(bounds)
+			self.dimensionGateLayout = PocketDimension.computeDimensionSlotBeltLayout(
+				bounds,
+				self:normalizeDimensionGatePositions()
+			)
 			self.dimensionGateLayoutBoundsKey = boundsKey
 			self.innerPosToSlotInst = util.buildInnerPosToSlot(self.dimensionGateLayout)
 		end
@@ -188,6 +193,9 @@ function DimensionResize.install(Mythos)
 		local layout = self:getDimensionGateLayout()
 		drawGateSpritesForLayout(self, self.slots, layout, self.inside_surface)
 		drawGateLabelsForBounds(self, self.floor_bounds or PocketDimension.DEFAULT_FLOOR_BOUNDS, self.inside_surface)
+		if self.refreshGateSelectors then
+			self:refreshGateSelectors(layout)
+		end
 	end
 
 	function Mythos:updateGateRender(slotKey)
