@@ -36,7 +36,7 @@ local FRAME_CHROME_W       = 12
 local FRAME_CHROME_H       = 38
 
 local LABEL_WIDTH   = 52
-local FIELD_WIDTH   = 80
+local FIELD_WIDTH   = 52
 local CELL_SIZE     = 28
 local ROW_SPACING   = 6
 
