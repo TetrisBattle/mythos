@@ -180,13 +180,46 @@ local function pipeEntityConnectsToSlot(slot, entity)
 	return true
 end
 
+local function undergroundBeltSurfaceConnectionDirection(entity)
+	if entity.type ~= "underground-belt" then return nil end
+
+	if entity.belt_to_ground_type == "input" then
+		return oppositeDir[entity.direction]
+	elseif entity.belt_to_ground_type == "output" then
+		return entity.direction
+	end
+end
+
+local function beltEntityConnectsFromDirection(entity, connectionDir)
+	if entity.type == "underground-belt" then
+		return undergroundBeltSurfaceConnectionDirection(entity) == connectionDir
+	end
+	return true
+end
+
+local function beltEntityConnectsToExternalSlot(slot, entity)
+	local inwardDir = oppositeDir[slot.outwardDir]
+	if entity.direction ~= slot.outwardDir and entity.direction ~= inwardDir then
+		return false
+	end
+	return beltEntityConnectsFromDirection(entity, inwardDir)
+end
+
+local function beltEntityConnectsToInnerGate(slot, beltLayout, entity)
+	if not beltLayout then return false end
+	local inwardDir = oppositeDir[slot.outwardDir]
+	if entity.direction ~= slot.outwardDir and entity.direction ~= inwardDir then
+		return false
+	end
+	return beltEntityConnectsFromDirection(entity, slot.outwardDir)
+end
+
 local function externalEntityConnType(slot, entity, connectionTypes)
 	if not (entity and entity.valid) then return nil end
 	local connType = connectionTypes[entity.type]
 	if not connType then return nil end
 	if connType == "belt" or connType == "loader" then
-		local inwardDir = oppositeDir[slot.outwardDir]
-		if entity.direction ~= slot.outwardDir and entity.direction ~= inwardDir then
+		if not beltEntityConnectsToExternalSlot(slot, entity) then
 			return nil
 		end
 	elseif connType == "pipe" then
@@ -508,7 +541,10 @@ function Connections.install(Mythos, connectionTypes)
 			for _, e in pairs(self.inside_surface.find_entities_filtered{
 				area = { {ip[1] - 0.4, ip[2] - 0.4}, {ip[1] + 0.4, ip[2] + 0.4} },
 			}) do
-				if e.valid and connectionTypes[e.type] == "belt" and e.direction == entity.direction then
+				if e.valid
+						and connectionTypes[e.type] == "belt"
+						and e.direction == entity.direction
+						and beltEntityConnectsToInnerGate(slot, beltLayout, e) then
 					innerBelt = e
 					break
 				end
@@ -607,6 +643,8 @@ function Connections.install(Mythos, connectionTypes)
 		local inwardDir = oppositeDir[slot.outwardDir]
 		if externalBelt.direction ~= slot.outwardDir and externalBelt.direction ~= inwardDir then return end
 		if innerEntity.direction ~= externalBelt.direction then return end
+		local beltLayout = self:getSlotBeltLayout(slotKey)
+		if not beltLayout or not beltEntityConnectsToInnerGate(slot, beltLayout, innerEntity) then return end
 
 		local ioDirection = externalBelt.direction == inwardDir and "input" or "output"
 		slot.conn = {
