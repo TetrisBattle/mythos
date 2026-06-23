@@ -14,6 +14,7 @@ local DEFAULT_WIDTH_FIELD  = "mythos-default-width-field"
 local DEFAULT_HEIGHT_FIELD = "mythos-default-height-field"
 local WIDTH_FIELD          = "mythos-resize-width-field"
 local HEIGHT_FIELD         = "mythos-resize-height-field"
+local RESET_GATES_BUTTON   = "mythos-reset-gates-button"
 
 local buttonAction = {
 	[BTN_PREFIX .. "top"]    = { edge = "bottom", expand = false },
@@ -81,9 +82,11 @@ local function panelDimensions(player)
 	local rowWidth = LABEL_WIDTH + ROW_SPACING + FIELD_WIDTH + ROW_SPACING + CELL_SIZE * 2
 	local defaultRowWidth = LABEL_WIDTH + ROW_SPACING + FIELD_WIDTH + ROW_SPACING + 16
 		+ ROW_SPACING + FIELD_WIDTH
+	local resetRowWidth = LABEL_WIDTH + ROW_SPACING + FIELD_WIDTH * 2
 	local iconWidth = LABEL_WIDTH + ROW_SPACING + CELL_SIZE * 4 + 4 * 4
-	local contentWidth = math.max(rowWidth, defaultRowWidth, iconWidth)
-	local rowsHeight = CELL_SIZE + ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE
+	local contentWidth = math.max(rowWidth, defaultRowWidth, resetRowWidth, iconWidth)
+	local rowsHeight = CELL_SIZE + ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE
+		+ ROW_SPACING + CELL_SIZE + ROW_SPACING + CELL_SIZE
 	return scaled(player, contentWidth + FRAME_CHROME_W),
 		scaled(player, rowsHeight + FRAME_CHROME_H)
 end
@@ -202,6 +205,13 @@ local function applyTypedSize(player, state)
 	end
 end
 
+local function applyResetGates(player, state)
+	local ok, errKey = state:resetDimensionGatePositions()
+	if not ok then
+		reportError(player, errKey)
+	end
+end
+
 local function addArrowButton(parent, name, caption, tooltip, unit, width, height)
 	local btn = parent.add{
 		type    = "button",
@@ -229,6 +239,25 @@ local function addSizeField(parent, name, value, unit)
 		allow_negative        = false,
 		lose_focus_on_confirm = true,
 	}
+end
+
+local function addResetGatesRow(parent, unit)
+	local row = parent.add{ type = "flow", direction = "horizontal" }
+	row.style.vertical_align = "center"
+	row.style.horizontal_spacing = 6
+
+	local label = row.add{ type = "label", caption = "" }
+	label.style.width = LABEL_WIDTH
+
+	local button = row.add{
+		type    = "button",
+		name    = RESET_GATES_BUTTON,
+		caption = { "mythos-gui.reset-gates" },
+		tooltip = { "mythos-gui.reset-gates-tooltip" },
+		tags    = { mythos_unit = unit },
+	}
+	button.style.width = FIELD_WIDTH * 2 + ROW_SPACING + 16
+	button.style.height = CELL_SIZE
 end
 
 local function addDefaultSizeRow(parent, unit, state)
@@ -328,6 +357,7 @@ local function buildPanel(player, state)
 	}
 	rows.style.vertical_spacing = 6
 
+	addResetGatesRow(rows, unit)
 	addDefaultSizeRow(rows, unit, state)
 	addWidthRow(rows, unit, state)
 	addHeightRow(rows, unit, state)
@@ -369,14 +399,18 @@ function ResizeGui.onButtonClick(event)
 	if not (element and element.valid) then return end
 
 	local action = buttonAction[element.name]
-	if not action then return end
-
-	if not stateFromTags(element.tags) then return end
+	if not action and element.name ~= RESET_GATES_BUTTON then return end
 
 	local player, state = playerState(event.player_index)
 	if not player then return end
 
-	applyEdge(player, state, action.edge, action.expand)
+	if element.name == RESET_GATES_BUTTON then
+		if not stateFromTags(element.tags) then return end
+		applyResetGates(player, state)
+	else
+		if not stateFromTags(element.tags) then return end
+		applyEdge(player, state, action.edge, action.expand)
+	end
 end
 
 function ResizeGui.onTextConfirmed(event)

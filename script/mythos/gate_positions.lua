@@ -13,6 +13,16 @@ local function positionUsed(positions, physicalGateKey)
 	return false
 end
 
+local function orderedConnectionSlots()
+	local slots = {}
+	for _, prefix in ipairs{ "L", "T", "R", "B" } do
+		for index = 1, PocketDimension.GATES_PER_SIDE do
+			slots[#slots + 1] = prefix .. index
+		end
+	end
+	return slots
+end
+
 function GatePositions.install(Mythos)
 
 	function Mythos:assignDimensionGateSlotToNextAvailable(slotKey)
@@ -143,6 +153,43 @@ function GatePositions.install(Mythos)
 
 		self:connectExistingSlot(sourceSlotKey)
 		self:connectExistingSlot(targetSlotKey)
+		self:refreshGateRenders()
+		return true
+	end
+
+	function Mythos:resetDimensionGatePositions()
+		local physicalLayout = self.getDimensionPhysicalGateLayout
+			and self:getDimensionPhysicalGateLayout()
+			or PocketDimension.computeDimensionPhysicalGateLayout(self.floor_bounds)
+		if not physicalLayout then
+			return false, "mythos-gui.gate-position-invalid"
+		end
+
+		local connectedSlotKeys = {}
+		for _, slotKey in ipairs(orderedConnectionSlots()) do
+			local slot = self.slots and self.slots[slotKey]
+			if slot and (slot.conn or (self.hasExternalConnection and self:hasExternalConnection(slotKey))) then
+				connectedSlotKeys[#connectedSlotKeys + 1] = slotKey
+			end
+		end
+
+		local positions = {}
+		for index, slotKey in ipairs(connectedSlotKeys) do
+			local physicalGateKey = "PL" .. index
+			if not physicalLayout[physicalGateKey] then
+				return false, "mythos-gui.gate-position-failed"
+			end
+			self:disconnect(slotKey)
+			positions[slotKey] = physicalGateKey
+		end
+
+		self.dimension_gate_positions = positions
+		self:invalidateDimensionGateLayout()
+		self:refreshGateRenders()
+
+		for _, slotKey in ipairs(connectedSlotKeys) do
+			self:connectExistingSlot(slotKey)
+		end
 		self:refreshGateRenders()
 		return true
 	end
