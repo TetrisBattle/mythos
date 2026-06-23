@@ -103,20 +103,8 @@ local edgeSlots = {
 
 local RESIZE_STEP = PocketDimension.RESIZE_STEP
 
-local function axisSize(bounds, edge)
-	if edge == "right" or edge == "left" then
-		return util.floorWidth(bounds)
-	end
-	return util.floorHeight(bounds)
-end
-
--- Even-sized floors keep gate spacing symmetric; odd sizes step by 1 first.
-local function resizeStepsForEdge(bounds, edge)
-	local size = axisSize(bounds, edge)
-	if size % 2 == 0 then
-		return RESIZE_STEP
-	end
-	return 1
+local function resizeStepsForEdge()
+	return RESIZE_STEP
 end
 
 local function syncViewPosition(self)
@@ -146,9 +134,6 @@ end
 local function resizeAxis(self, edge, current, target, deferGateRefresh)
 	while current < target do
 		local steps = math.min(RESIZE_STEP, target - current)
-		if current % 2 ~= 0 then
-			steps = 1
-		end
 		local ok, err = self:expandEdge(edge, deferGateRefresh, steps)
 		if not ok then return false, err end
 		current = current + steps
@@ -156,9 +141,6 @@ local function resizeAxis(self, edge, current, target, deferGateRefresh)
 
 	while current > target do
 		local steps = math.min(RESIZE_STEP, current - target)
-		if current % 2 ~= 0 then
-			steps = 1
-		end
 		local ok, err = self:contractEdge(edge, deferGateRefresh, steps)
 		if not ok then return false, err end
 		current = current - steps
@@ -260,7 +242,7 @@ function DimensionResize.install(Mythos)
 		end
 
 		self:syncFloorBoundsFromTiles()
-		steps = steps or resizeStepsForEdge(self.floor_bounds, edge)
+		steps = steps or resizeStepsForEdge()
 		local newBounds = PocketDimension.expandEdge(
 			self.inside_surface, self.floor_bounds, edge, self.entity.force, steps
 		)
@@ -278,7 +260,7 @@ function DimensionResize.install(Mythos)
 		end
 
 		self:syncFloorBoundsFromTiles()
-		steps = steps or resizeStepsForEdge(self.floor_bounds, edge)
+		steps = steps or resizeStepsForEdge()
 		local newBounds, blocked = PocketDimension.contractEdge(
 			self.inside_surface, self.floor_bounds, edge, self.entity.force, steps
 		)
@@ -294,8 +276,8 @@ function DimensionResize.install(Mythos)
 	end
 
 	function Mythos:resizeTo(targetWidth, targetHeight)
-		targetWidth  = PocketDimension.snapSizeUpEven(targetWidth, PocketDimension.MIN_DIMENSION_WIDTH)
-		targetHeight = PocketDimension.snapSizeUpEven(targetHeight, PocketDimension.MIN_DIMENSION_HEIGHT)
+		targetWidth  = PocketDimension.normalizeSize(targetWidth, PocketDimension.MIN_DIMENSION_WIDTH)
+		targetHeight = PocketDimension.normalizeSize(targetHeight, PocketDimension.MIN_DIMENSION_HEIGHT)
 		if targetWidth < PocketDimension.MIN_DIMENSION_WIDTH
 				or targetHeight < PocketDimension.MIN_DIMENSION_HEIGHT then
 			return false, "mythos-gui.resize-invalid-size"

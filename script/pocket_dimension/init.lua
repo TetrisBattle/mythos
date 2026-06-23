@@ -16,7 +16,7 @@ return {
 	MIN_DIMENSION                   = constants.MIN_DIMENSION,
 	MIN_DIMENSION_WIDTH             = constants.MIN_DIMENSION_WIDTH,
 	MIN_DIMENSION_HEIGHT            = constants.MIN_DIMENSION_HEIGHT,
-	snapSizeUpEven                  = floor.snapSizeUpEven,
+	normalizeSize                   = floor.normalizeSize,
 	slotBeltLayout                  = layout.slotBeltLayout,
 	SLOT_KEYS                       = layout.SLOT_KEYS,
 	buildMythosSlotLayout           = layout.buildMythosSlotLayout,

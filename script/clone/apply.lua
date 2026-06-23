@@ -178,8 +178,6 @@ local function finishDimensionApply(state, sourceState, destForce)
 	state:syncElectricity()
 	state:refreshGateRenders()
 	Snapshot.restoreCustomIcons(state, sourceState.custom_icons)
-	if sourceState.default_width then state.default_width = sourceState.default_width end
-	if sourceState.default_height then state.default_height = sourceState.default_height end
 end
 
 local function resolveSourceBounds(sourceState)
@@ -200,12 +198,10 @@ local function registerPlacementShell(state, sourceState, defer_remote_view_prep
 	if not defer_remote_view_prep
 			and state.inside_surface and state.inside_surface.valid then
 		PocketDimension.syncRemoteViewInfrastructure(
-			state.inside_surface, state.floor_bounds
+			state.inside_surface, state.floor_bounds, state.entity.force
 		)
 	end
 	Snapshot.restoreCustomIcons(state, sourceState.custom_icons)
-	if sourceState.default_width then state.default_width = sourceState.default_width end
-	if sourceState.default_height then state.default_height = sourceState.default_height end
 	state.dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
 		sourceState.dimension_gate_positions
 	)

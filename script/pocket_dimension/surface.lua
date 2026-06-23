@@ -112,6 +112,17 @@ local function ensureChunksGenerated(surface, bounds)
 	end
 end
 
+local function chartBounds(surface, bounds, force)
+	if not (force and force.valid) then return end
+	local margin = constants.CHUNK_SIZE
+	pcall(function()
+		force.chart(surface, {
+			{ bounds.x_min - margin, bounds.y_min - margin },
+			{ bounds.x_max + 1 + margin, bounds.y_max + 1 + margin },
+		})
+	end)
+end
+
 local function findOrCreateHiddenLight(surface, position, force)
 	local lights = surface.find_entities_filtered{ name = "mythos-hidden-light" }
 	local light = lights[1]
@@ -129,6 +140,7 @@ local function findOrCreateHiddenLight(surface, position, force)
 end
 
 local function syncInfrastructure(surface, bounds, force)
+	chartBounds(surface, bounds, force)
 	local cx, cy = floor.floorCentre(bounds)
 	local pos = { cx, cy }
 	findOrCreateHiddenLight(surface, pos, force)
@@ -150,12 +162,13 @@ local function ensureRemoteViewReady(surface, bounds, force)
 end
 
 -- Creates the pocket-dimension surface for one mythos entity.
--- Default floor: 20x20 tiles (top-left anchored; grows down and right).
+-- Default floor: configured bounds or 20x20 tiles (top-left anchored; grows down and right).
 -- outer_surface: the LuaSurface the mythos is placed on; used to copy the
 -- solar multiplier so solar panels inside match the planet the mythos is on.
 -- Returns: surface, inner_acc
 local function create(unit_number, force, outer_surface, opts)
 	opts = opts or {}
+	local bounds = opts.floor_bounds or constants.DEFAULT_FLOOR_BOUNDS
 	---@diagnostic disable-next-line: missing-fields
 	local mapGenSettings = { default_enable_all_autoplace_controls = false, width = 0, height = 0 }
 	local surface = game.create_surface(
@@ -176,17 +189,17 @@ local function create(unit_number, force, outer_surface, opts)
 
 	-- Floor
 	local tiles = {}
-	for x = constants.DEFAULT_FLOOR_BOUNDS.x_min, constants.DEFAULT_FLOOR_BOUNDS.x_max do
-		for y = constants.DEFAULT_FLOOR_BOUNDS.y_min, constants.DEFAULT_FLOOR_BOUNDS.y_max do
+	for x = bounds.x_min, bounds.x_max do
+		for y = bounds.y_min, bounds.y_max do
 			tiles[#tiles + 1] = { name = constants.FLOOR_TILE, position = { x, y } }
 		end
 	end
 	surface.set_tiles(tiles)
 	if not opts.defer_remote_view_prep then
-		ensureRemoteViewReady(surface, constants.DEFAULT_FLOOR_BOUNDS, force)
+		ensureRemoteViewReady(surface, bounds, force)
 	end
 
-	local cx, cy = floor.floorCentre(constants.DEFAULT_FLOOR_BOUNDS)
+	local cx, cy = floor.floorCentre(bounds)
 	local centre = { cx, cy }
 
 	-- Hidden radar so the interior is revealed when remote-viewing.

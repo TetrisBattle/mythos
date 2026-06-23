@@ -61,7 +61,7 @@ function MythosRestore.fromSaved(Mythos, entity, saved)
 	if state.floor_bounds then
 		state.inside_x, state.inside_y = PocketDimension.floorCentre(state.floor_bounds)
 		PocketDimension.syncRemoteViewInfrastructure(
-			state.inside_surface, state.floor_bounds
+			state.inside_surface, state.floor_bounds, entity.force
 		)
 	else
 		state.inside_x = PocketDimension.VIEW_X
@@ -69,8 +69,6 @@ function MythosRestore.fromSaved(Mythos, entity, saved)
 	end
 
 	restoreCustomIcons(state, saved.custom_icons)
-	if saved.default_width then state.default_width = saved.default_width end
-	if saved.default_height then state.default_height = saved.default_height end
 	state:syncElectricity()
 
 	return state

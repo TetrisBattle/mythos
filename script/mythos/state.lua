@@ -4,6 +4,7 @@ local Connections      = require("script.mythos.connections")
 local Bridge           = require("script.power.bridge")
 local connectionTypes  = require("script.mythos.connection_types")
 local Registry         = require("script.mythos.registry")
+local Config           = require("script.config")
 
 local positionKey      = util.positionKey
 
@@ -65,31 +66,30 @@ function Mythos.new(mythosEntity)
 
 	local slots, byExternalPos = Connections.buildSlots(cx, cy)
 
-	local dim, inner_acc = PocketDimension.create(mythosEntity.unit_number, mythosEntity.force, mythosEntity.surface)
+	local floor_bounds = Config.defaultDimensionBounds()
+	local dim, inner_acc = PocketDimension.create(
+		mythosEntity.unit_number,
+		mythosEntity.force,
+		mythosEntity.surface,
+		{ floor_bounds = floor_bounds }
+	)
 
 	-- Hidden accumulator on the placement surface (skipped when nested inside
 	-- another mythos; nested mythoi draw from the parent inner accumulator).
 	local outer_acc = Bridge.createOuterAccumulatorForEntity(mythosEntity)
+	local inside_x, inside_y = PocketDimension.floorCentre(floor_bounds)
 
-	local floor_bounds = {
-		x_min = PocketDimension.DEFAULT_FLOOR_BOUNDS.x_min,
-		x_max = PocketDimension.DEFAULT_FLOOR_BOUNDS.x_max,
-		y_min = PocketDimension.DEFAULT_FLOOR_BOUNDS.y_min,
-		y_max = PocketDimension.DEFAULT_FLOOR_BOUNDS.y_max,
-	}
 	local state = setmetatable({
 		entity              = mythosEntity,
 		slots               = slots,
 		byExternalPos       = byExternalPos,
 		inside_surface      = dim,
-		inside_x            = PocketDimension.VIEW_X,
-		inside_y            = PocketDimension.VIEW_Y,
+		inside_x            = inside_x,
+		inside_y            = inside_y,
 		pendingDeletions    = {},
 		outer_acc           = outer_acc,
 		inner_acc           = inner_acc,
 		floor_bounds        = floor_bounds,
-		default_width       = PocketDimension.DEFAULT_WIDTH,
-		default_height      = PocketDimension.DEFAULT_HEIGHT,
 		dimension_gate_positions = PocketDimension.defaultDimensionGatePositions(),
 	}, Mythos)
 	state:refreshGateRenders()
@@ -189,8 +189,6 @@ function Mythos:save(buffer)
 		items                    = items,
 		custom_icons             = self.custom_icons,
 		floor_bounds             = self.floor_bounds,
-		default_width            = self.default_width,
-		default_height           = self.default_height,
 		dimension_gate_positions = self.dimension_gate_positions,
 	}
 

@@ -163,7 +163,7 @@ function Bridge.refreshPowerLinks(state)
 			local cx, cy = PocketDimension.floorCentre(state.floor_bounds)
 			recreateHubPole(state.inside_surface, { cx, cy }, state.entity.force)
 			PocketDimension.syncRemoteViewInfrastructure(
-				state.inside_surface, state.floor_bounds
+				state.inside_surface, state.floor_bounds, state.entity.force
 			)
 		end
 	end

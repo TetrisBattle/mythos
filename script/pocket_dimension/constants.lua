@@ -27,9 +27,8 @@ local CHUNK_MARGIN = 2
 
 local FLOOR_TILE = "mythos-dimension-floor"
 
--- Arrow buttons resize in 8-tile steps; typed sizes snap to 2-tile (even) accuracy.
+-- Arrow buttons resize in 10-tile steps; typed sizes are accepted per tile.
 local RESIZE_STEP   = 10
-local FLOOR_SNAP    = 2
 local MIN_DIMENSION_WIDTH  = 20
 local MIN_DIMENSION_HEIGHT = 20
 
@@ -48,7 +47,6 @@ return {
 	CHUNK_MARGIN          = CHUNK_MARGIN,
 	FLOOR_TILE            = FLOOR_TILE,
 	RESIZE_STEP           = RESIZE_STEP,
-	FLOOR_SNAP            = FLOOR_SNAP,
 	MIN_DIMENSION         = MIN_DIMENSION_WIDTH,
 	MIN_DIMENSION_WIDTH   = MIN_DIMENSION_WIDTH,
 	MIN_DIMENSION_HEIGHT  = MIN_DIMENSION_HEIGHT,

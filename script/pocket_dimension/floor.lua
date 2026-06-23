@@ -6,13 +6,11 @@ local function floorCentre(bounds)
 		(bounds.y_min + bounds.y_max + 1) / 2
 end
 
--- Rounds a typed size up to the nearest even value.
-local function snapSizeUpEven(size, minSize)
+-- Converts typed size input to a whole tile count and enforces the minimum.
+local function normalizeSize(size, minSize)
 	size = math.floor(tonumber(size) or 0)
 	minSize = minSize or constants.MIN_DIMENSION
 	if size < minSize then return minSize end
-	local rem = size % constants.FLOOR_SNAP
-	if rem ~= 0 then size = size + (constants.FLOOR_SNAP - rem) end
 	return size
 end
 
@@ -164,7 +162,7 @@ end
 
 return {
 	floorCentre          = floorCentre,
-	snapSizeUpEven      = snapSizeUpEven,
+	normalizeSize       = normalizeSize,
 	inferFloorBounds    = inferFloorBounds,
 	expandEdge          = expandEdge,
 	contractEdge        = contractEdge,

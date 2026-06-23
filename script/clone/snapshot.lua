@@ -46,8 +46,6 @@ function Snapshot.resolveSourceState(sourceEntity)
 			inside_surface           = surface,
 			floor_bounds             = boundsForSurface(surface, state and state.floor_bounds),
 			custom_icons             = state and state.custom_icons,
-			default_width            = state and state.default_width,
-			default_height           = state and state.default_height,
 			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
 				state and state.dimension_gate_positions
 			),
@@ -65,8 +63,6 @@ function Snapshot.resolveLazySourceState(saved)
 			inside_surface           = saved.surface,
 			floor_bounds             = boundsForSurface(saved.surface, saved.floor_bounds),
 			custom_icons             = saved.custom_icons,
-			default_width            = saved.default_width,
-			default_height           = saved.default_height,
 			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
 				saved.dimension_gate_positions
 			),
@@ -83,8 +79,6 @@ function Snapshot.resolveLazySourceState(saved)
 			floor_bounds             = saved.floor_bounds or live.floor_bounds
 				or PocketDimension.inferFloorBounds(live.inside_surface),
 			custom_icons             = saved.custom_icons or live.custom_icons,
-			default_width            = saved.default_width or live.default_width,
-			default_height           = saved.default_height or live.default_height,
 			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
 				saved.dimension_gate_positions or live.dimension_gate_positions
 			),
@@ -98,8 +92,6 @@ function Snapshot.resolveLazySourceState(saved)
 			floor_bounds             = saved.floor_bounds
 				or boundsForSurface(mined.surface, mined.floor_bounds),
 			custom_icons             = saved.custom_icons or mined.custom_icons,
-			default_width            = saved.default_width or mined.default_width,
-			default_height           = saved.default_height or mined.default_height,
 			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
 				saved.dimension_gate_positions or mined.dimension_gate_positions
 			),
@@ -112,8 +104,6 @@ function Snapshot.resolveLazySourceState(saved)
 			inside_surface           = surface,
 			floor_bounds             = saved.floor_bounds or PocketDimension.inferFloorBounds(surface),
 			custom_icons             = saved.custom_icons,
-			default_width            = saved.default_width,
-			default_height           = saved.default_height,
 			dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
 				saved.dimension_gate_positions
 			),
@@ -144,8 +134,6 @@ function Snapshot.snapshotForBlueprint(Mythos, sourceEntity)
 		source_unit_number       = sourceEntity.unit_number,
 		floor_bounds             = floor_bounds,
 		custom_icons             = sourceState.custom_icons,
-		default_width            = sourceState.default_width,
-		default_height           = sourceState.default_height,
 		dimension_gate_positions = PocketDimension.normalizeDimensionGatePositions(
 			sourceState.dimension_gate_positions
 		),
