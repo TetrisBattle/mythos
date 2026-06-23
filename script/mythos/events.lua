@@ -105,35 +105,16 @@ function MythosEvents.install(Mythos, connectionTypes)
 		end
 	end
 
-	local function rejectNestedMythos(entity, event)
-		local state = Registry.get(entity.unit_number)
-		if state then
-			state:destroy()
-		end
-
-		local surface = entity.surface
-		local pos     = entity.position
-		local force   = entity.force
-		entity.destroy{ raise_destroy = false }
-		surface.spill_item_stack{
-			position = pos,
-			stack    = { name = "mythos", count = 1 },
-			force    = force,
-		}
-
-		if event.player_index then
-			local player = game.get_player(event.player_index)
-			if player then
-				player.print({ "mythos.nested-mythos-forbidden" })
-			end
-		end
-	end
-
 	function Mythos.onEntityBuilt(event)
 		if MythosClone.isBulkCloning() then return end
 
 		local entity = event.entity
 		if not (entity and entity.valid) then return end
+
+		if entity.name == "mythos" then
+			initPlacedMythos(entity, event)
+			return
+		end
 
 		if entity.name == VirtualChest.PROTOTYPE then
 			if Config.hideVirtualInventory() then
@@ -150,13 +131,10 @@ function MythosEvents.install(Mythos, connectionTypes)
 
 		local unitNum = util.parseDimensionUnitNumber(entity.surface)
 		if unitNum then
-			if entity.name == "mythos" then
-				rejectNestedMythos(entity, event)
-				return
-			end
-
 			local state = Registry.get(unitNum)
-			if state and state.entity.valid and connectionTypes[entity.type] == "belt" then
+			if state and state.entity.valid and Config.noCost() and entity.type == "entity-ghost" then
+				state:buildGhostFree(entity)
+			elseif state and state.entity.valid and connectionTypes[entity.type] == "belt" then
 				local slotKey = state:findInnerSlotAt(entity.position)
 				if slotKey then
 					if state:connectFromInner(slotKey, entity) then
@@ -165,12 +143,9 @@ function MythosEvents.install(Mythos, connectionTypes)
 						state:refreshGateRenders()
 					end
 				end
+			elseif state and state.entity.valid and entity.type == "electric-pole" then
+				state:syncInsideElectricNetwork()
 			end
-			return
-		end
-
-		if entity.name == "mythos" then
-			initPlacedMythos(entity, event)
 			return
 		end
 

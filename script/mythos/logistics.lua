@@ -64,12 +64,23 @@ end
 
 function Logistics.install(Mythos)
 
+	function Mythos:buildGhostFree(ghost)
+		if not (ghost and ghost.valid and ghost.type == "entity-ghost") then return false end
+
+		local requests = VirtualChest.ghostRequests(ghost)
+		if not (requests and #requests > 0) then return false end
+
+		return materializeGhostFree(ghost)
+	end
+
 	function Mythos:buildGhosts()
 		if not (self.entity.valid and self.inside_surface and self.inside_surface.valid) then return end
 
-		local inventories = VirtualChest.sortedInventoriesForMythos(self)
 		local ghosts = self.inside_surface.find_entities_filtered{ type = "entity-ghost" }
+		if #ghosts == 0 then return end
+
 		local no_cost = Config.noCost()
+		local inventories = no_cost and nil or VirtualChest.sortedInventoriesForMythos(self)
 
 		for _, ghost in pairs(ghosts) do
 			if ghost.valid then

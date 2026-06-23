@@ -36,6 +36,21 @@ local function destroyGateSelectors(state)
 	end
 end
 
+local function destroyNestedMythoi(state)
+	if not (state.inside_surface and state.inside_surface.valid) then return end
+	for _, entity in pairs(state.inside_surface.find_entities_filtered{ name = "mythos" }) do
+		if entity.valid then
+			local child = entity.unit_number and Registry.get(entity.unit_number)
+			if child and child ~= state then
+				child:destroy()
+			end
+			if entity.valid then
+				entity.destroy{ raise_destroy = false }
+			end
+		end
+	end
+end
+
 -- One instance per placed mythos entity.
 -- Stores the pocket-dimension surface, slot geometry, and all active connections.
 -- Persisted in storage.mythoi[unit_number]; metatables are restored on game load.
@@ -217,6 +232,7 @@ function Mythos:destroy()
 	end
 	destroyGateLabelRenders(self)
 	destroyPhysicalGateRenders(self)
+	destroyNestedMythoi(self)
 	if self.inside_surface and self.inside_surface.valid then
 		game.delete_surface(self.inside_surface)
 	end

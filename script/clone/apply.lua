@@ -35,10 +35,46 @@ local function needsDeepCopy(state)
 	return not dimensionHasPlayerContent(state.inside_surface)
 end
 
-local function clearPlayerContent(surface)
+local function dropMythosItem(targetEntity, saved_id)
+	if not (targetEntity and targetEntity.valid and targetEntity.surface and targetEntity.surface.valid) then
+		return
+	end
+
+	local dropped = targetEntity.surface.create_entity{
+		name     = "item-on-ground",
+		position = targetEntity.position,
+		stack    = {
+			name  = saved_id and "mythos-with-contents" or "mythos",
+			count = 1,
+		},
+	}
+	if dropped and dropped.valid and saved_id then
+		dropped.stack.tags = { saved_id = saved_id }
+	end
+end
+
+local function preserveMythosBeforeClear(entity, targetEntity)
+	local state = entity.unit_number and Registry.get(entity.unit_number)
+	if state then
+		local saved_id = state:save()
+		dropMythosItem(targetEntity, saved_id)
+	elseif targetEntity and targetEntity.valid then
+		dropMythosItem(targetEntity, nil)
+	end
+
+	if entity.valid then
+		entity.destroy{ raise_destroy = false }
+	end
+end
+
+local function clearPlayerContent(surface, targetEntity)
 	for _, entity in pairs(surface.find_entities()) do
 		if entity.valid and not util.isInfrastructureEntityName(entity.name) then
-			entity.destroy{ raise_destroy = false }
+			if entity.name == "mythos" then
+				preserveMythosBeforeClear(entity, targetEntity)
+			else
+				entity.destroy{ raise_destroy = false }
+			end
 		end
 	end
 	for _, entity in pairs(surface.find_entities_filtered { type = "entity-ghost" }) do
@@ -199,7 +235,7 @@ local function cloneToEntity(Mythos, destEntity, sourceState, opts)
 	if reusing then
 		state = existing
 		inside_surface = state.inside_surface
-		clearPlayerContent(inside_surface)
+		clearPlayerContent(inside_surface, destEntity)
 		local outer_surface = destEntity.surface
 		if outer_surface and outer_surface.valid then
 			inside_surface.solar_power_multiplier = outer_surface.solar_power_multiplier

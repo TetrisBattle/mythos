@@ -96,8 +96,6 @@ function Transport.install(Mythos)
 					transferConnection(slot.conn)
 				end
 			end
-
-			state:buildGhosts()
 		end)
 	end
 
@@ -105,7 +103,8 @@ function Transport.install(Mythos)
 		Registry.forEach(function(state)
 			if state.entity.valid then
 				state:flushPendingDeletions()
-				state:syncElectricity()
+				state:transferElectricity()
+				state:buildGhosts()
 			end
 		end)
 

@@ -10,12 +10,6 @@ local mythosEntity = {
 	max_health        = 500,
 	collision_box     = { { -1.7, -1.7 }, { 1.7, 1.7 } },
 	selection_box     = { { -2, -2 }, { 2, 2 } },
-	tile_buildability_rules = {
-		{
-			area            = { { -2, -2 }, { 2, 2 } },
-			colliding_tiles = { layers = { mythos_dimension_floor = true } },
-		},
-	},
 	picture           = {
 		layers = {
 			{

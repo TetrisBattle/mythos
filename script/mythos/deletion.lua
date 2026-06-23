@@ -10,8 +10,23 @@ local DimensionDeletion = {}
 
 function DimensionDeletion.install(Mythos, connectionTypes)
 
+	local function deleteNestedMythos(entity)
+		local state = entity.unit_number and Registry.get(entity.unit_number)
+		if state then
+			state:destroy()
+		end
+		if entity.valid then
+			entity.destroy{ raise_destroy = false }
+		end
+		return true
+	end
+
 	function Mythos:tryDeleteEntity(entity)
 		if not (entity and entity.valid) then return true end
+
+		if entity.name == "mythos" then
+			return deleteNestedMythos(entity)
+		end
 
 		local isBelt    = connectionTypes[entity.type] == "belt"
 		local entityPos = isBelt and { x = entity.position.x, y = entity.position.y } or nil

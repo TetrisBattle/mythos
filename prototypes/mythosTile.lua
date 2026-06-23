@@ -1,5 +1,5 @@
--- Pocket-dimension floor tile.  Carries a dedicated collision layer so mythos
--- entities can be blocked from building inside other mythoi via tile_buildability_rules.
+-- Pocket-dimension floor tile.  Carries a dedicated collision layer so selected
+-- entities can opt out of being built inside mythoi via tile_buildability_rules.
 local floor = table.deepcopy(data.raw.tile["lab-dark-2"])
 floor.name = "mythos-dimension-floor"
 floor.localised_name = { "" }

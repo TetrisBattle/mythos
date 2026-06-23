@@ -1,5 +1,4 @@
 local PocketDimension = require("script.pocket_dimension.init")
-local Registry        = require("script.mythos.registry")
 local util            = require("script.util")
 
 local Bridge = {}
@@ -49,7 +48,7 @@ end
 function Bridge.createOuterAccumulatorForEntity(entity)
 	if not (entity and entity.valid) then return nil end
 	local parentUnit = util.parseDimensionUnitNumber(entity.surface)
-	if parentUnit and Registry.get(parentUnit) then
+	if parentUnit then
 		-- Nested mythoi must not keep a placement-surface outer link; remove
 		-- any overlapping outer bridge that should not exist in a dimension.
 		Bridge.destroyStrayOuterAccumulators(entity.surface, entity.position)
