@@ -17,6 +17,8 @@ local function clearRemoteView(player_index, player)
 	GatePositionGui.clearHover(player_index)
 	storage.viewing = storage.viewing or {}
 	storage.viewing[player_index] = nil
+	storage.remote_view_returns = storage.remote_view_returns or {}
+	storage.remote_view_returns[player_index] = nil
 end
 
 local function tryOpenResizeGui(player_index, unit_number)
@@ -84,6 +86,58 @@ local function findMythosAtCursor(player, position)
 	return best
 end
 
+local function currentViewUnitNumber(player)
+	if not (player and player.surface and player.surface.valid) then return nil end
+	local state = Registry.findByInsideSurfaceIndex(player.surface.index)
+	return state and state.entity and state.entity.valid and state.entity.unit_number or nil
+end
+
+local function pushRemoteReturn(player_index, player)
+	if not (player and player.controller_type == defines.controllers.remote) then return end
+	storage.remote_view_returns = storage.remote_view_returns or {}
+	local stack = storage.remote_view_returns[player_index] or {}
+	stack[#stack + 1] = {
+		surface     = player.surface,
+		position    = { x = player.position.x, y = player.position.y },
+		unit_number = currentViewUnitNumber(player),
+	}
+	storage.remote_view_returns[player_index] = stack
+end
+
+local function popRemoteReturn(player_index)
+	storage.remote_view_returns = storage.remote_view_returns or {}
+	local stack = storage.remote_view_returns[player_index]
+	if not (stack and #stack > 0) then return nil end
+	local target = stack[#stack]
+	stack[#stack] = nil
+	if #stack == 0 then
+		storage.remote_view_returns[player_index] = nil
+	end
+	return target
+end
+
+local function returnToPreviousRemoteView(player_index, player)
+	local target = popRemoteReturn(player_index)
+	if not (target and target.surface and target.surface.valid) then return false end
+
+	ResizeGui.close(player)
+	GatePositionGui.close(player)
+	GatePositionGui.clearHover(player_index)
+	storage.viewing = storage.viewing or {}
+	storage.viewing[player_index] = target.unit_number
+
+	player.set_controller{
+		type     = defines.controllers.remote,
+		position = target.position,
+		surface  = target.surface,
+	}
+
+	if target.unit_number then
+		scheduleResizeGui(player_index, target.unit_number)
+	end
+	return true
+end
+
 function RemoteView.resolveMythosEntity(player, cursor_position, event)
 	if not player then return nil end
 	if shouldIgnoreOpenInput(player, event) then return nil end
@@ -112,6 +166,7 @@ function RemoteView.openForEntity(player_index, entity)
 	state:syncElectricity()
 
 	storage.viewing = storage.viewing or {}
+	pushRemoteReturn(player_index, player)
 	storage.viewing[player_index] = entity.unit_number
 
 	player.set_controller{
@@ -164,6 +219,7 @@ function RemoteView.onPlayerControllerChanged(event)
 	if not player then return end
 
 	if player.controller_type ~= defines.controllers.remote then
+		if returnToPreviousRemoteView(player_index, player) then return end
 		clearRemoteView(player_index, player)
 		return
 	end
