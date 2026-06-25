@@ -40,10 +40,31 @@ local function cursorOnSelectionBox(entity, position)
 		and y >= box.left_top.y and y <= box.right_bottom.y
 end
 
+local function isBlueprintCursorStack(stack)
+	return stack and stack.valid_for_read
+		and (
+			stack.name == "blueprint"
+			or stack.name == "blueprint-book"
+			or stack.name == "copy-paste-tool"
+			or stack.name == "cut-paste-tool"
+		)
+end
+
+local function hasGhostPlacementCursor(player)
+	if not player then return false end
+
+	local ghost = player.cursor_ghost
+	if ghost and ghost.valid then return true end
+
+	return isBlueprintCursorStack(player.cursor_stack)
+end
+
 local function shouldIgnoreOpenInput(player, event)
 	if not player then return true end
 	if event and event.cursor_over_gui then return true end
 	if event and event.cursor_gui_element and event.cursor_gui_element.valid then return true end
+
+	if hasGhostPlacementCursor(player) then return false end
 
 	-- Quickbar / inventory clicks expose items; ignore only those, not tiles under mythos edges.
 	if event and event.selected_prototype and event.selected_prototype.base_type == "item" then
@@ -52,9 +73,6 @@ local function shouldIgnoreOpenInput(player, event)
 
 	local stack = player.cursor_stack
 	if stack and stack.valid_for_read then return true end
-
-	local ghost = player.cursor_ghost
-	if ghost and ghost.valid then return true end
 
 	return false
 end
