@@ -1,4 +1,5 @@
 local PocketDimension = require("script.pocket_dimension.init")
+local Bridge          = require("script.power.bridge")
 local util            = require("script.util")
 
 local DimensionResize = {}
@@ -118,6 +119,8 @@ local function finalizeFloorBounds(self, refreshGates)
 		PocketDimension.ensureRemoteViewReady(
 			self.inside_surface, self.floor_bounds, self.entity.force
 		)
+		Bridge.ensureHubPole(self)
+		if self.syncElectricity then self:syncElectricity() end
 	end
 	if refreshGates ~= false then
 		self:invalidateDimensionGateLayout()

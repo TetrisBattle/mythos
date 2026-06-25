@@ -173,6 +173,7 @@ local function finishDimensionApply(state, sourceState, destForce)
 		sourceState.dimension_gate_positions
 	)
 	state:invalidateDimensionGateLayout()
+	Bridge.ensureHubPole(state)
 	state:syncElectricity()
 	state:refreshGateRenders()
 	Snapshot.restoreCustomIcons(state, sourceState.custom_icons)

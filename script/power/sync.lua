@@ -48,13 +48,6 @@ local function connectPoleCopper(pole_a, pole_b)
 	connector_a.connect_to(connector_b, false, defines.wire_origin.script)
 end
 
-local function findBridgePole(surface, name, position)
-	local filters = { name = name }
-	if position then filters.position = position end
-	local poles = surface.find_entities_filtered(filters)
-	return poles[1]
-end
-
 function Sync.install(Mythos)
 
 	-- World mythoi draw from their hidden outer accumulator on the placement
@@ -88,18 +81,41 @@ function Sync.install(Mythos)
 		Bridge.destroyOuterPoles(self.entity.surface, self.entity.position)
 	end
 
-	-- Wires the hidden hub pole to every player pole in the pocket dimension.
-	-- Player medium poles only reach ~9 tiles, so pole networks at the edges
-	-- would otherwise stay isolated from the hub even with a large supply area.
+	-- Wires every hub pole to its neighboring hubs and copper-wires each
+	-- player pole to the nearest hub. Hub poles are arranged in a grid; without
+	-- chaining them, each hub forms an isolated electric network and only one
+	-- ends up sharing the inner accumulator. Player medium poles also can't
+	-- reach distant hubs by themselves, so they must be connected explicitly.
 	function Mythos:syncInsideElectricNetwork()
 		if not (self.inside_surface and self.inside_surface.valid) then return end
 
-		local hub = findBridgePole(self.inside_surface, "mythos-power-hub-pole")
-		if not (hub and hub.valid) then return end
+		local hubs = self.inside_surface.find_entities_filtered{ name = "mythos-power-hub-pole" }
+		if #hubs == 0 then return end
+
+		local hub_wire = 64
+
+		for i = 1, #hubs do
+			for j = i + 1, #hubs do
+				local dx = hubs[i].position.x - hubs[j].position.x
+				local dy = hubs[i].position.y - hubs[j].position.y
+				if dx * dx + dy * dy <= hub_wire * hub_wire then
+					connectPoleCopper(hubs[i], hubs[j])
+				end
+			end
+		end
 
 		for _, pole in ipairs(self.inside_surface.find_entities_filtered{ type = "electric-pole" }) do
 			if isPlayerPole(pole) then
-				connectPoleCopper(hub, pole)
+				local best, best_d2
+				for _, hub in ipairs(hubs) do
+					local dx = hub.position.x - pole.position.x
+					local dy = hub.position.y - pole.position.y
+					local d2 = dx * dx + dy * dy
+					if not best_d2 or d2 < best_d2 then
+						best, best_d2 = hub, d2
+					end
+				end
+				if best then connectPoleCopper(best, pole) end
 			end
 		end
 	end

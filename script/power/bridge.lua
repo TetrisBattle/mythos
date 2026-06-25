@@ -84,18 +84,56 @@ function Bridge.findOrCreateInnerAccumulator(surface, force, centre)
 	return inner_acc
 end
 
-local function recreateHubPole(surface, centre, force)
+local HUB_SPACING = 60
+
+local function hubGridPositions(bounds)
+	local positions = {}
+	local function axisPositions(lo, hi)
+		local span = hi - lo
+		local count = math.max(1, math.ceil(span / HUB_SPACING) + 1)
+		local out = {}
+		if count == 1 then
+			out[1] = (lo + hi) / 2
+		else
+			local step = span / (count - 1)
+			for i = 0, count - 1 do
+				out[i + 1] = lo + i * step
+			end
+		end
+		return out
+	end
+	local xs = axisPositions(bounds.x_min, bounds.x_max + 1)
+	local ys = axisPositions(bounds.y_min, bounds.y_max + 1)
+	for _, x in ipairs(xs) do
+		for _, y in ipairs(ys) do
+			positions[#positions + 1] = { x, y }
+		end
+	end
+	return positions
+end
+
+local function destroyAllHubPoles(surface)
 	for _, pole in ipairs(surface.find_entities_filtered{ name = "mythos-power-hub-pole" }) do
 		if pole.valid then pole.destroy() end
 	end
-	local pole = surface.create_entity{
-		name        = "mythos-power-hub-pole",
-		position    = centre,
-		force       = force,
-		raise_built = false,
-	}
-	if pole then pole.destructible = false end
-	return pole
+end
+
+local function recreateHubPoles(surface, bounds, force)
+	destroyAllHubPoles(surface)
+	local poles = {}
+	for _, pos in ipairs(hubGridPositions(bounds)) do
+		local pole = surface.create_entity{
+			name        = "mythos-power-hub-pole",
+			position    = pos,
+			force       = force,
+			raise_built = false,
+		}
+		if pole then
+			pole.destructible = false
+			poles[#poles + 1] = pole
+		end
+	end
+	return poles
 end
 
 function Bridge.ensureHubPole(state)
@@ -104,8 +142,7 @@ function Bridge.ensureHubPole(state)
 			and state.floor_bounds) then
 		return
 	end
-	local cx, cy = PocketDimension.floorCentre(state.floor_bounds)
-	recreateHubPole(state.inside_surface, { cx, cy }, state.entity.force)
+	recreateHubPoles(state.inside_surface, state.floor_bounds, state.entity.force)
 end
 
 function Bridge.ensureOuterPowerBridge(entity)
@@ -160,8 +197,7 @@ function Bridge.refreshPowerLinks(state)
 			end
 		end
 		if state.floor_bounds then
-			local cx, cy = PocketDimension.floorCentre(state.floor_bounds)
-			recreateHubPole(state.inside_surface, { cx, cy }, state.entity.force)
+			recreateHubPoles(state.inside_surface, state.floor_bounds, state.entity.force)
 			PocketDimension.syncRemoteViewInfrastructure(
 				state.inside_surface, state.floor_bounds, state.entity.force
 			)

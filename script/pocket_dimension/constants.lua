@@ -29,8 +29,8 @@ local FLOOR_TILE = "mythos-dimension-floor"
 
 -- Arrow buttons resize in 10-tile steps; typed sizes are accepted per tile.
 local RESIZE_STEP   = 10
-local MIN_DIMENSION_WIDTH  = 20
-local MIN_DIMENSION_HEIGHT = 20
+local MIN_DIMENSION_WIDTH  = 10
+local MIN_DIMENSION_HEIGHT = 10
 
 return {
 	DEFAULT_WIDTH         = DEFAULT_WIDTH,

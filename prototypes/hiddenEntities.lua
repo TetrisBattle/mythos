@@ -94,11 +94,12 @@ hiddenLight.circuit_wire_connection_points = nil
 hiddenLight.draw_circuit_wires         = false
 hiddenLight.draw_copper_wires          = false
 
--- Hidden electric pole placed at the centre of the pocket dimension.
--- supply_area_distance = 64 covers resized floors up to 128 tiles across from centre.
--- maximum_wire_distance matches supply so player poles anywhere on the floor
--- auto-wire into the same network as the inner accumulator (wire_distance = 0
--- left player pole networks isolated so accumulators never received power).
+-- Hidden electric pole placed in a grid across the pocket dimension floor.
+-- Maximum supply / wire distance is 64 (engine cap on electric poles), so the
+-- runtime places multiple hub poles spaced within reach of each other to cover
+-- arbitrarily large resized floors. The script also copper-wires every player
+-- pole to its nearest hub so pole networks never end up isolated from the
+-- inner accumulator.
 ---@type table
 local hiddenHubPole                      = table.deepcopy(data.raw["electric-pole"]["substation"])
 hiddenHubPole.name                       = "mythos-power-hub-pole"

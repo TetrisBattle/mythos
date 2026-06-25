@@ -98,6 +98,20 @@ local function tileBlockedByPlayerEntity(surface, tx, ty)
 	return false
 end
 
+local function columnBlocked(surface, x, y_min, y_max)
+	for y = y_min, y_max do
+		if tileBlockedByPlayerEntity(surface, x, y) then return true end
+	end
+	return false
+end
+
+local function rowBlocked(surface, y, x_min, x_max)
+	for x = x_min, x_max do
+		if tileBlockedByPlayerEntity(surface, x, y) then return true end
+	end
+	return false
+end
+
 -- Reverts floor tiles to the same hidden void used at surface creation.
 local function removeFloorTiles(surface, positions)
 	local tiles = {}
@@ -127,6 +141,13 @@ local function contractEdge(surface, bounds, edge, force, steps)
 		local max_steps = x_max - x_min + 1 - constants.MIN_DIMENSION_WIDTH
 		if max_steps < 1 then return nil end
 		steps = math.min(steps, max_steps)
+		local safe = 0
+		for k = 1, steps do
+			if columnBlocked(surface, x_max - k + 1, y_min, y_max) then break end
+			safe = k
+		end
+		if safe < 1 then return nil, "blocked" end
+		steps = safe
 		local new_x_max = x_max - steps
 		for x = x_max, new_x_max + 1, -1 do
 			for y = y_min, y_max do
@@ -138,6 +159,13 @@ local function contractEdge(surface, bounds, edge, force, steps)
 		local max_steps = y_max - y_min + 1 - constants.MIN_DIMENSION_HEIGHT
 		if max_steps < 1 then return nil end
 		steps = math.min(steps, max_steps)
+		local safe = 0
+		for k = 1, steps do
+			if rowBlocked(surface, y_max - k + 1, x_min, x_max) then break end
+			safe = k
+		end
+		if safe < 1 then return nil, "blocked" end
+		steps = safe
 		local new_y_max = y_max - steps
 		for y = new_y_max + 1, y_max do
 			for x = x_min, x_max do
@@ -147,12 +175,6 @@ local function contractEdge(surface, bounds, edge, force, steps)
 		y_max = new_y_max
 	else
 		return nil
-	end
-
-	for _, pos in ipairs(removeTiles) do
-		if tileBlockedByPlayerEntity(surface, pos[1], pos[2]) then
-			return nil, "blocked"
-		end
 	end
 
 	removeFloorTiles(surface, removeTiles)
