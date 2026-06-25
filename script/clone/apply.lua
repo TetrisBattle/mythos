@@ -119,9 +119,7 @@ local function buildState(Mythos, entity, inside_surface, inner_acc)
 	local outer_acc = Bridge.createOuterAccumulatorForEntity(entity)
 
 	local outer_surface = entity.surface
-	if outer_surface and outer_surface.valid and inside_surface.valid then
-		inside_surface.solar_power_multiplier = outer_surface.solar_power_multiplier
-	end
+	PocketDimension.syncSurfaceProperties(inside_surface, outer_surface)
 
 	return setmetatable({
 		entity                  = entity,
@@ -232,10 +230,7 @@ local function cloneToEntity(Mythos, destEntity, sourceState, opts)
 		state = existing
 		inside_surface = state.inside_surface
 		clearPlayerContent(inside_surface, destEntity)
-		local outer_surface = destEntity.surface
-		if outer_surface and outer_surface.valid then
-			inside_surface.solar_power_multiplier = outer_surface.solar_power_multiplier
-		end
+		PocketDimension.syncSurfaceProperties(inside_surface, destEntity.surface)
 	else
 		local inner_acc
 		inside_surface, inner_acc = PocketDimension.create(

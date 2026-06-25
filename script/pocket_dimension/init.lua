@@ -6,6 +6,7 @@ local surface   = require("script.pocket_dimension.surface")
 return {
 	create                          = surface.create,
 	syncRemoteViewInfrastructure    = surface.syncInfrastructure,
+	syncSurfaceProperties           = surface.syncSurfaceProperties,
 	DEFAULT_WIDTH                   = constants.DEFAULT_WIDTH,
 	DEFAULT_HEIGHT                  = constants.DEFAULT_HEIGHT,
 	DEFAULT_FLOOR_BOUNDS            = constants.DEFAULT_FLOOR_BOUNDS,

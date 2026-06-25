@@ -37,10 +37,7 @@ function MythosRestore.fromSaved(Mythos, entity, saved)
 	end
 	local inner_acc = Bridge.findOrCreateInnerAccumulator(saved.surface, entity.force, centre)
 
-	local outer_surface = entity.surface
-	if outer_surface and outer_surface.valid and saved.surface.valid then
-		saved.surface.solar_power_multiplier = outer_surface.solar_power_multiplier
-	end
+	PocketDimension.syncSurfaceProperties(saved.surface, entity.surface)
 
 	local state = setmetatable({
 		entity                  = entity,

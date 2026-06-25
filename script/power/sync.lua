@@ -13,10 +13,12 @@
 --
 -- Solar panels inside the pocket dimension use the surface's
 -- solar_power_multiplier, which is synced to the outer surface so the
--- effective solar output matches the planet the mythos is placed on.
+-- effective solar output matches the planet the mythos is placed on. Surface
+-- properties such as gravity are synced for the same reason.
 
 local Registry = require("script.mythos.registry")
 local Bridge   = require("script.power.bridge")
+local PocketDimension = require("script.pocket_dimension.init")
 local util     = require("script.util")
 
 local Sync = {}
@@ -152,15 +154,12 @@ function Sync.install(Mythos)
 		self:syncInnerPowerOutput()
 	end
 
-	-- Copies the outer surface's solar_power_multiplier onto the pocket
-	-- dimension surface so solar panels inside produce the correct amount for
-	-- the planet the mythos is located on.  Called every 300 ticks.
+	-- Copies outer-surface properties onto the pocket dimension so build
+	-- conditions and solar output match where the mythos is located. Called
+	-- every 300 ticks.
 	function Mythos:syncSolar()
 		if not (self.entity.valid and self.inside_surface and self.inside_surface.valid) then return end
-		local outer_surface = self.entity.surface
-		if outer_surface and outer_surface.valid then
-			self.inside_surface.solar_power_multiplier = outer_surface.solar_power_multiplier
-		end
+		PocketDimension.syncSurfaceProperties(self.inside_surface, self.entity.surface)
 	end
 
 end

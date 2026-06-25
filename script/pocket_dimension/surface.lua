@@ -161,10 +161,21 @@ local function ensureRemoteViewReady(surface, bounds, force)
 	return syncInfrastructure(surface, bounds, force)
 end
 
+local function syncSurfaceProperties(inner_surface, outer_surface)
+	if not (inner_surface and inner_surface.valid
+			and outer_surface and outer_surface.valid) then return end
+
+	inner_surface.solar_power_multiplier = outer_surface.solar_power_multiplier
+	pcall(function()
+		inner_surface.set_property("gravity", outer_surface.get_property("gravity"))
+	end)
+end
+
 -- Creates the pocket-dimension surface for one mythos entity.
 -- Default floor: configured bounds or 20x20 tiles (top-left anchored; grows down and right).
 -- outer_surface: the LuaSurface the mythos is placed on; used to copy the
--- solar multiplier so solar panels inside match the planet the mythos is on.
+-- solar multiplier and gravity so build conditions match the surface the
+-- mythos is on.
 -- Returns: surface, inner_acc
 local function create(unit_number, force, outer_surface, opts)
 	opts = opts or {}
@@ -211,10 +222,7 @@ local function create(unit_number, force, outer_surface, opts)
 	}
 	if radar then radar.destructible = false end
 
-	-- Sync solar output to the planet the mythos is placed on.
-	if outer_surface and outer_surface.valid then
-		surface.solar_power_multiplier = outer_surface.solar_power_multiplier
-	end
+	syncSurfaceProperties(surface, outer_surface)
 
 	-- Hidden electric pole: creates the electric network from the floor centre.
 	-- Without this, the inner accumulator has no network to distribute into.
@@ -242,6 +250,7 @@ end
 return {
 	create                 = create,
 	syncInfrastructure     = syncInfrastructure,
+	syncSurfaceProperties  = syncSurfaceProperties,
 	ensureRemoteViewReady  = ensureRemoteViewReady,
 	voidFillGeneratedChunk = voidFillGeneratedChunk,
 }
