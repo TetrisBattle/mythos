@@ -211,12 +211,14 @@ function RemoteView.openSelectedDimension(event)
 	local player = game.get_player(e.player_index)
 	if not player then return end
 
-	if GatePositionGui.tryOpenFromInput(e) then return end
-
 	local entity = RemoteView.resolveMythosEntity(player, e.cursor_position, e)
 	if entity then
 		RemoteView.openForEntity(e.player_index, entity)
 	end
+end
+
+function RemoteView.openSelectedGateGui(event)
+	GatePositionGui.tryOpenFromInput(event --[[@as EventData.CustomInputEvent]])
 end
 
 function RemoteView.openPendingResizeGuis()

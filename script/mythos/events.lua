@@ -134,6 +134,7 @@ function MythosEvents.install(Mythos, connectionTypes)
 			local state = Registry.get(unitNum)
 			if state and state.entity.valid and Config.noCost() and entity.type == "entity-ghost" then
 				state:buildGhostFree(entity)
+				return
 			elseif state and state.entity.valid and connectionTypes[entity.type] == "belt" then
 				local slotKey = state:findInnerSlotAt(entity.position)
 				if slotKey then
@@ -142,11 +143,13 @@ function MythosEvents.install(Mythos, connectionTypes)
 					else
 						state:refreshGateRenders()
 					end
+					return
 				end
 			elseif state and state.entity.valid and entity.type == "electric-pole" then
 				state:syncInsideElectricNetwork()
 			end
-			return
+			-- Fall through so sub-Mythoses on this dimension surface can still
+			-- claim adjacent belts/pipes via their own external slots.
 		end
 
 		if not connectionTypes[entity.type] then return end
@@ -207,10 +210,12 @@ function MythosEvents.install(Mythos, connectionTypes)
 
 		local state = Registry.findByInsideSurfaceIndex(entity.surface_index)
 		if state then
+			local claimedByParent = false
 			if connectionTypes[entity.type] == "belt" then
 				local slotKey = state:findInnerSlotAt(entity.position)
 				if slotKey then
 					state:disconnect(slotKey)
+					claimedByParent = true
 				end
 				state:refreshGateRenders()
 			end
@@ -218,7 +223,9 @@ function MythosEvents.install(Mythos, connectionTypes)
 			if event.buffer then
 				moveRemovalBufferToInventory(state, event.buffer)
 			end
-			return
+			if claimedByParent then return end
+			-- Fall through so a sub-Mythos on this dimension surface can release
+			-- its own external connection to this entity.
 		end
 
 		if not connectionTypes[entity.type] then return end

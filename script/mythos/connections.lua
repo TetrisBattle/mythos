@@ -427,6 +427,7 @@ local function collectExternalSlotKeysForEntity(state, entity, connectionTypes)
 	local slotKeys = {}
 	local seen = {}
 	if not (state and state.entity and state.entity.valid) then return slotKeys end
+	if entity.surface_index ~= state.entity.surface_index then return slotKeys end
 
 	local exactSlotKey = state:findSlotAt(entity.position)
 	if exactSlotKey then

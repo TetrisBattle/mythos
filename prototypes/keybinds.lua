@@ -8,6 +8,13 @@ data:extend({
 	},
 	{
 		type = "custom-input",
+		name = "mythos-open-gate-gui",
+		key_sequence = "mouse-button-1",
+		consuming = "none",
+		include_selected_prototype = true,
+	},
+	{
+		type = "custom-input",
 		name = "mythos-resize-up",
 		key_sequence = "UP",
 		consuming = "none",

@@ -49,6 +49,8 @@ function RuntimeEvents.register()
 
 	script.on_event("mythos-open-dimension", RemoteView.openSelectedDimension)
 
+	script.on_event("mythos-open-gate-gui", RemoteView.openSelectedGateGui)
+
 	script.on_nth_tick(1, Ticks.onTick)
 
 	script.on_event(defines.events.on_player_controller_changed, RemoteView.onPlayerControllerChanged)
