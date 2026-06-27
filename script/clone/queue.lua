@@ -55,16 +55,20 @@ function Queue.queuePendingEntityClone(source, dest)
 	}
 end
 
-local function processPendingEntityClones(Mythos)
+local function processPendingEntityClones(Mythos, opts)
 	while #pending_entity_clones > 0 do
 		local batch = pending_entity_clones
 		pending_entity_clones = {}
 		for _, pair in ipairs(batch) do
 			if pair.source.valid and pair.dest.valid then
-				handlers.cloneFromEntity(Mythos, pair.source, pair.dest)
+				handlers.cloneFromEntity(Mythos, pair.source, pair.dest, opts)
 			end
 		end
 	end
+end
+
+function Queue.processPendingEntityClones(Mythos, opts)
+	processPendingEntityClones(Mythos, opts)
 end
 
 local function tryCompleteApplyJob(job)

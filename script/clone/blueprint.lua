@@ -4,8 +4,19 @@ local Blueprint = {}
 
 local PASTE_TTL = 3600
 
-local function isRobotBuiltEvent(event)
-	return event and event.name == defines.events.on_robot_built_entity
+local function isBlueprintCursorStack(stack)
+	return stack and stack.valid_for_read
+		and (
+			stack.name == "blueprint"
+			or stack.name == "blueprint-book"
+			or stack.name == "copy-paste-tool"
+		)
+end
+
+local function playerStillPasting(player_index)
+	if not player_index then return false end
+	local player = game.get_player(player_index)
+	return player and isBlueprintCursorStack(player.cursor_stack)
 end
 
 function Blueprint.setPendingPaste(player_index, saved_ids)
@@ -29,8 +40,11 @@ function Blueprint.pendingPasteAllowed(event)
 		return false
 	end
 	local built_by = event and event.player_index
-	if pending.player_index and built_by and pending.player_index ~= built_by
-			and not isRobotBuiltEvent(event) then
+	if pending.player_index and pending.player_index ~= built_by then
+		return false
+	end
+	if not playerStillPasting(pending.player_index) then
+		storage.mythos_pending_paste = nil
 		return false
 	end
 	return true

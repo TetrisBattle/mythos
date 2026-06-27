@@ -52,7 +52,8 @@ These names define current save data and runtime contracts:
   `storage.mythos_next_snapshot_id`, and `storage.mythos_pending_paste`.
 - Virtual chest storage key: `storage.virtual_chest_storage_anchors`.
 - Surface naming: `mythos-dimension-<unit_number>`, parsed by
-  `script/util.lua`.
+  `script/util.lua`; blueprint snapshots use hidden
+  `mythos-blueprint-snapshot-<snapshot_id>` surfaces.
 - Prototype and item names: `mythos`, `mythos-with-contents`, `virtual-chest`,
   `mythos-dimension-floor`, `mythos-hidden-pipe`,
   `mythos-hidden-heat-pipe`, `mythos-hidden-radar`,

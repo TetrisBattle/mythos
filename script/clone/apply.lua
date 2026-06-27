@@ -267,30 +267,25 @@ local function extractPlacementSavedId(Mythos, entity, event)
 	return nil, false
 end
 
-local function tryCloneFromPlayerCopySource(Mythos, entity, event)
-	if not (event and event.player_index) then return false end
-	local player = game.get_player(event.player_index)
-	if not player then return false end
+local function eventItemName(event)
+	if not event then return nil end
+	local item = event.item
+	if type(item) == "string" then return item end
+	if item and item.name then return item.name end
 
-	local source = player.entity_copy_source
-	if not (source and source.valid and source.name == "mythos") then return false end
-	if source.unit_number == entity.unit_number then return false end
-
-	Apply.cloneFromEntity(Mythos, source, entity, { immediate = true })
-	return Registry.get(entity.unit_number) ~= nil
+	local stack = event.stack
+	if stack and stack.valid_for_read then
+		return stack.name
+	end
+	return nil
 end
 
-local function capturePlacementIntent(Mythos, entity, event)
-	if Blueprint.pendingPasteAllowed(event) then
-		return {
-			kind     = "saved_id",
-			Mythos   = Mythos,
-			entity   = entity,
-			saved_id = Blueprint.consumePendingPaste(event),
-			consume  = false,
-		}
-	end
+local function isDirectMythosItemPlacement(event)
+	local name = eventItemName(event)
+	return name == "mythos" or name == "mythos-with-contents"
+end
 
+local function resolvePlacementIntent(Mythos, entity, event)
 	local saved_id, consume = extractPlacementSavedId(Mythos, entity, event)
 	if saved_id then
 		return {
@@ -299,6 +294,20 @@ local function capturePlacementIntent(Mythos, entity, event)
 			entity   = entity,
 			saved_id = saved_id,
 			consume  = consume,
+		}
+	end
+
+	if isDirectMythosItemPlacement(event) then
+		return nil
+	end
+
+	if Blueprint.pendingPasteAllowed(event) then
+		return {
+			kind     = "saved_id",
+			Mythos   = Mythos,
+			entity   = entity,
+			saved_id = Blueprint.consumePendingPaste(event),
+			consume  = false,
 		}
 	end
 
@@ -319,49 +328,12 @@ local function capturePlacementIntent(Mythos, entity, event)
 	return nil
 end
 
-local function placementNeedsClone(Mythos, entity, event, existing)
-	if existing and not needsDeepCopy(existing) then return false end
-	if existing and Queue.hasDeferredApplyFor(existing) then return false end
-	if Blueprint.pendingPasteAllowed(event) then return true end
-	local saved_id = select(1, extractPlacementSavedId(Mythos, entity, event))
-	if saved_id then return true end
-	if event and event.player_index then
-		local player = game.get_player(event.player_index)
-		local source = player and player.entity_copy_source
-		if source and source.valid and source.name == "mythos"
-				and source.unit_number ~= entity.unit_number then
-			return true
-		end
-	end
-	return false
-end
-
-local function runPlacement(Mythos, entity, event)
-	local paste_saved_id = Blueprint.consumePendingPaste(event)
-	if paste_saved_id then
-		Apply.cloneFromSavedId(Mythos, entity, paste_saved_id, false)
-		return
-	end
-
-	local saved_id, consume = extractPlacementSavedId(Mythos, entity, event)
-	if saved_id then
-		Apply.cloneFromSavedId(Mythos, entity, saved_id, consume)
-		return
-	end
-
-	if tryCloneFromPlayerCopySource(Mythos, entity, event) then
-		return
-	end
-
-	if Registry.get(entity.unit_number) then return end
-
-	finishNormalPlacement(Mythos, entity)
-end
-
 function Apply.schedulePlacement(Mythos, entity, event)
 	local existing = Registry.get(entity.unit_number)
 	if existing and not needsDeepCopy(existing) then
-		Blueprint.discardPendingPasteSlot(event)
+		if not isDirectMythosItemPlacement(event) then
+			Blueprint.discardPendingPasteSlot(event)
+		end
 		return
 	end
 
@@ -374,15 +346,16 @@ function Apply.schedulePlacement(Mythos, entity, event)
 		return
 	end
 
-	if placementNeedsClone(Mythos, entity, event, existing) then
-		local intent = capturePlacementIntent(Mythos, entity, event)
-		if intent then
-			Queue.queueClonePlacement(intent)
-			return
-		end
+	local intent = resolvePlacementIntent(Mythos, entity, event)
+	if intent then
+		Queue.queueClonePlacement(intent)
+		return
 	end
 
-	runPlacement(Mythos, entity, event)
+	if isDirectMythosItemPlacement(event) then
+		Blueprint.clearPendingPaste(event and event.player_index)
+	end
+	finishNormalPlacement(Mythos, entity)
 end
 
 function Apply.cloneFromSavedId(Mythos, entity, saved_id, consume)

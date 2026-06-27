@@ -6,6 +6,15 @@ local util            = require("script.util")
 
 local MythosEvents = {}
 
+local function isBlueprintCursorStack(stack)
+	return stack and stack.valid_for_read
+		and (
+			stack.name == "blueprint"
+			or stack.name == "blueprint-book"
+			or stack.name == "copy-paste-tool"
+		)
+end
+
 local function playConnectSound(surface, position)
 	surface.play_sound { path = "entity-close/assembling-machine-3", position = position }
 end
@@ -284,6 +293,9 @@ function MythosEvents.install(Mythos, connectionTypes)
 			storage.pending_player_restore[event.player_index] = nil
 		end
 
+		if not isBlueprintCursorStack(stack) then
+			MythosClone.clearPendingPaste(event.player_index)
+		end
 	end
 
 end
