@@ -102,7 +102,7 @@ function M.run()
 			print("ok - " .. entry.name)
 		else
 			failed = failed + 1
-			io.stderr:write("not ok - " .. entry.name .. "\n" .. tostring(err) .. "\n")
+			io.stderr:write("not ok - " .. entry.name .. "\n" .. tostring(err) .. "\n") ---@diagnostic disable-line: undefined-global
 		end
 	end
 

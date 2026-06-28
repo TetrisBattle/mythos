@@ -19,7 +19,8 @@ require("tests.util_test")
 require("tests.pocket_dimension_layout_test")
 require("tests.pocket_dimension_floor_test")
 require("tests.register_events_test")
+require("tests.mythos_no_cost_ghost_test")
 
 if not test.run() then
-	os.exit(1)
+	os.exit(1) ---@diagnostic disable-line: undefined-global
 end
