@@ -10,6 +10,9 @@ end
 Util.SLOT_POS_TOLERANCE = 0.4
 
 function Util.nearPosition(pos, target, tolerance)
+	if not (pos and target) then
+		return false
+	end
 	tolerance = tolerance or Util.SLOT_POS_TOLERANCE
 	return math.abs(pos.x - target.x) <= tolerance and math.abs(pos.y - target.y) <= tolerance
 end
@@ -32,15 +35,20 @@ function Util.copyBounds(bounds)
 end
 
 function Util.parseDimensionUnitNumber(surfaceOrName)
-	local name = type(surfaceOrName) == "string" and surfaceOrName or surfaceOrName.name
+	local name = type(surfaceOrName) == "string" and surfaceOrName or surfaceOrName and surfaceOrName.name
+	if type(name) ~= "string" then
+		return nil
+	end
 	return tonumber(name:match("^mythos%-dimension%-(%d+)$"))
 end
 
 function Util.buildInnerPosToSlot(layout)
 	local byPosition = {}
-	for slotKey, beltLayout in pairs(layout) do
+	for slotKey, beltLayout in pairs(layout or {}) do
 		local pos = beltLayout.innerBeltPos
-		byPosition[Util.positionKey(pos[1], pos[2])] = slotKey
+		if pos then
+			byPosition[Util.positionKey(pos[1], pos[2])] = slotKey
+		end
 	end
 	return byPosition
 end
@@ -68,7 +76,7 @@ local CONTENT_ITEM_NAMES = {
 }
 
 function Util.isStoredChestItem(stack)
-	return stack.valid_for_read and not CONTENT_ITEM_NAMES[stack.name]
+	return stack and stack.valid_for_read and not CONTENT_ITEM_NAMES[stack.name]
 end
 
 Util.INFRASTRUCTURE_ENTITY_NAMES = {

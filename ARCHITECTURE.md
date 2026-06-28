@@ -9,7 +9,8 @@ old-save migration support has been intentionally removed.
 - `data.lua` loads prototypes: hidden entities, collision layers, the dimension
   tile, Mythos entities, virtual chest, recipes, keybinds, and GUI styles.
 - `settings.lua` defines runtime-global settings:
-  `mythos-no-cost` and `mythos-no-virtual-inventory`.
+  `mythos-no-cost`, `mythos-no-virtual-inventory`,
+  `mythos-default-width`, and `mythos-default-height`.
 - `control.lua` wires the runtime: initializes `storage`, applies settings,
   restores metatables on load, delegates configuration changes to repair steps,
   and registers all event handlers.
@@ -48,6 +49,7 @@ These names define current save data and runtime contracts:
 
 - Runtime storage keys: `storage.mythoi`, `storage.saved_dimensions`,
   `storage.pending_player_restore`, `storage.viewing`,
+  `storage.remote_view_returns`, `storage.gate_hover_borders`,
   `storage.pending_resize_gui`, `storage.virtualChests`,
   `storage.mythos_next_snapshot_id`, and `storage.mythos_pending_paste`.
 - Virtual chest storage key: `storage.virtual_chest_storage_anchors`.
@@ -60,9 +62,16 @@ These names define current save data and runtime contracts:
   `mythos-power-hub-pole`, `mythos-power-outer-pole`,
   `mythos-power-link-outer`, `mythos-power-link-inner`, and `mythos-gate`.
 - Runtime setting names and controls: `mythos-no-cost`,
-  `mythos-no-virtual-inventory`, `mythos-open-dimension`,
-  `mythos-resize-up`, `mythos-resize-down`, `mythos-resize-left`, and
-  `mythos-resize-right`.
+  `mythos-no-virtual-inventory`, `mythos-default-width`,
+  `mythos-default-height`, `mythos-open-dimension`,
+  `mythos-open-gate-gui`, `mythos-resize-up`, `mythos-resize-down`,
+  `mythos-resize-left`, and `mythos-resize-right`.
+
+## Automated Checks
+
+- Lua unit tests: `lua tests/run.lua`
+- Node source-regression tests: `node --test tests/*.test.js`
+- Formatting: `.tools/stylua/stylua.exe .`
 
 ## Manual Smoke-Test Matrix
 

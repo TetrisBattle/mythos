@@ -12,11 +12,66 @@ end
 
 local SLOT_KEYS = orderedSlotKeys()
 
+local function floorHeight(bounds)
+	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
+	return bounds.y_max - bounds.y_min + 1
+end
+
+local function floorWidth(bounds)
+	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
+	return bounds.x_max - bounds.x_min + 1
+end
+
+local function topGatePosition(bounds, index)
+	local x = bounds.x_min + index - 0.5
+	return { x, bounds.y_min - 0.5 }, { x, bounds.y_min + 0.5 }
+end
+
+local function rightGatePosition(bounds, index)
+	local y = bounds.y_min + index - 0.5
+	return { bounds.x_max + 1.5, y }, { bounds.x_max + 0.5, y }
+end
+
+local function bottomGatePosition(bounds, index)
+	local x = bounds.x_min + index - 0.5
+	return { x, bounds.y_max + 1.5 }, { x, bounds.y_max + 0.5 }
+end
+
+local function leftGatePosition(bounds, index)
+	local y = bounds.y_min + index - 0.5
+	return { bounds.x_min - 0.5, y }, { bounds.x_min + 0.5, y }
+end
+
 local PHYSICAL_GATE_SIDES = {
-	{ edge = "top",    prefix = "PT", orientation = 0,    axis = "x" },
-	{ edge = "right",  prefix = "PR", orientation = 0.25, axis = "y" },
-	{ edge = "bottom", prefix = "PB", orientation = 0.5,  axis = "x" },
-	{ edge = "left",   prefix = "PL", orientation = 0.75, axis = "y" },
+	{
+		edge = "top",
+		prefix = "PT",
+		orientation = 0,
+		count = floorWidth,
+		position = topGatePosition,
+	},
+	{
+		edge = "right",
+		prefix = "PR",
+		orientation = 0.25,
+		count = floorHeight,
+		position = rightGatePosition,
+	},
+	{
+		edge = "bottom",
+		prefix = "PB",
+		orientation = 0.5,
+		count = floorWidth,
+		position = bottomGatePosition,
+	},
+	{
+		edge = "left",
+		prefix = "PL",
+		orientation = 0.75,
+		count = floorHeight,
+		position = leftGatePosition,
+		labelXOffset = 0.05,
+	},
 }
 
 local PHYSICAL_GATE_SIDE_BY_PREFIX = {}
@@ -29,32 +84,29 @@ local function physicalGateKey(side, index)
 end
 
 local function physicalGateParts(key)
-	if type(key) ~= "string" then return nil end
+	if type(key) ~= "string" then
+		return nil
+	end
 	local prefix, index = key:match("^(P[TRBL])(%d+)$")
 	index = tonumber(index)
 	local side = PHYSICAL_GATE_SIDE_BY_PREFIX[prefix]
-	if side and index and index >= 1 and index % 1 == 0 then return side, index end
-end
-
-local function floorHeight(bounds)
-	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
-	return bounds.y_max - bounds.y_min + 1
-end
-
-local function floorWidth(bounds)
-	bounds = bounds or constants.DEFAULT_FLOOR_BOUNDS
-	return bounds.x_max - bounds.x_min + 1
+	if side and index and index >= 1 and index % 1 == 0 then
+		return side, index
+	end
 end
 
 local function physicalGateCount(side, bounds)
-	local size = side.axis == "x" and floorWidth(bounds) or floorHeight(bounds)
-	return math.max(size, 0)
+	return math.max(side.count(bounds), 0)
 end
 
 local function validPhysicalGateKey(key, bounds)
 	local side, index = physicalGateParts(key)
-	if not side then return nil end
-	if index > physicalGateCount(side, bounds) then return nil end
+	if not side then
+		return nil
+	end
+	if index > physicalGateCount(side, bounds) then
+		return nil
+	end
 	return physicalGateKey(side, index)
 end
 
@@ -84,10 +136,14 @@ local function buildMythosSlotLayout()
 	local layout = {}
 	for i = 1, constants.GATES_PER_SIDE do
 		local off = constants.GATE_OFFSETS[i]
-		layout["L" .. i] = { externalX = -2.5, externalY = off,  innerX = -1.5, innerY = off,  outwardDir = defines.direction.west  }
-		layout["R" .. i] = { externalX =  2.5, externalY = off,  innerX =  1.5, innerY = off,  outwardDir = defines.direction.east  }
-		layout["T" .. i] = { externalX = off,  externalY = -2.5, innerX = off,  innerY = -1.5, outwardDir = defines.direction.north }
-		layout["B" .. i] = { externalX = off,  externalY =  2.5, innerX = off,  innerY =  1.5, outwardDir = defines.direction.south }
+		layout["L" .. i] =
+			{ externalX = -2.5, externalY = off, innerX = -1.5, innerY = off, outwardDir = defines.direction.west }
+		layout["R" .. i] =
+			{ externalX = 2.5, externalY = off, innerX = 1.5, innerY = off, outwardDir = defines.direction.east }
+		layout["T" .. i] =
+			{ externalX = off, externalY = -2.5, innerX = off, innerY = -1.5, outwardDir = defines.direction.north }
+		layout["B" .. i] =
+			{ externalX = off, externalY = 2.5, innerX = off, innerY = 1.5, outwardDir = defines.direction.south }
 	end
 	return layout
 end
@@ -98,35 +154,15 @@ local function computeDimensionPhysicalGateLayout(bounds)
 	for _, side in ipairs(PHYSICAL_GATE_SIDES) do
 		for index = 1, physicalGateCount(side, bounds) do
 			local key = physicalGateKey(side, index)
-			local pos, innerBeltPos, labelXOffset
-			if side.edge == "top" then
-				local x = bounds.x_min + index - 0.5
-				pos = { x, bounds.y_min - 0.5 }
-				innerBeltPos = { x, bounds.y_min + 0.5 }
-				labelXOffset = 0
-			elseif side.edge == "right" then
-				local y = bounds.y_min + index - 0.5
-				pos = { bounds.x_max + 1.5, y }
-				innerBeltPos = { bounds.x_max + 0.5, y }
-				labelXOffset = 0
-			elseif side.edge == "bottom" then
-				local x = bounds.x_min + index - 0.5
-				pos = { x, bounds.y_max + 1.5 }
-				innerBeltPos = { x, bounds.y_max + 0.5 }
-				labelXOffset = 0
-			else
-				local y = bounds.y_min + index - 0.5
-				pos = { bounds.x_min - 0.5, y }
-				innerBeltPos = { bounds.x_min + 0.5, y }
-				labelXOffset = 0.05
-			end
+			local pos, innerBeltPos = side.position(bounds, index)
+			local labelXOffset = side.labelXOffset or 0
 			layout[key] = {
-				pos             = pos,
-				innerBeltPos    = innerBeltPos,
-				labelPos        = { pos[1] + labelXOffset, pos[2] + 0.25 },
+				pos = pos,
+				innerBeltPos = innerBeltPos,
+				labelPos = { pos[1] + labelXOffset, pos[2] + 0.25 },
 				gateOrientation = side.orientation,
 				physicalGateKey = key,
-				edge            = side.edge,
+				edge = side.edge,
 			}
 		end
 	end
@@ -145,12 +181,12 @@ local function computeDimensionSlotBeltLayout(bounds, gatePositions)
 		local physical = physicalLayout[physicalGate]
 		if physical then
 			layout[slotKey] = {
-				pos             = { physical.pos[1], physical.pos[2] },
-				innerBeltPos    = { physical.innerBeltPos[1], physical.innerBeltPos[2] },
-				labelPos        = { physical.labelPos[1], physical.labelPos[2] },
+				pos = { physical.pos[1], physical.pos[2] },
+				innerBeltPos = { physical.innerBeltPos[1], physical.innerBeltPos[2] },
+				labelPos = { physical.labelPos[1], physical.labelPos[2] },
 				gateOrientation = physical.gateOrientation,
 				physicalGateKey = physicalGate,
-				edge            = physical.edge,
+				edge = physical.edge,
 			}
 		end
 	end
@@ -158,10 +194,10 @@ local function computeDimensionSlotBeltLayout(bounds, gatePositions)
 end
 
 return {
-	slotBeltLayout                 = computeDimensionSlotBeltLayout(constants.DEFAULT_FLOOR_BOUNDS),
-	SLOT_KEYS                      = SLOT_KEYS,
-	buildMythosSlotLayout          = buildMythosSlotLayout,
-	defaultDimensionGatePositions  = defaultDimensionGatePositions,
+	slotBeltLayout = computeDimensionSlotBeltLayout(constants.DEFAULT_FLOOR_BOUNDS),
+	SLOT_KEYS = SLOT_KEYS,
+	buildMythosSlotLayout = buildMythosSlotLayout,
+	defaultDimensionGatePositions = defaultDimensionGatePositions,
 	normalizeDimensionGatePositions = normalizeDimensionGatePositions,
 	computeDimensionPhysicalGateLayout = computeDimensionPhysicalGateLayout,
 	computeDimensionSlotBeltLayout = computeDimensionSlotBeltLayout,

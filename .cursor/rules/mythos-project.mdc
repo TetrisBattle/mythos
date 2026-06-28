@@ -43,13 +43,13 @@ floor-tile migrations unless the user explicitly asks for old-save support.
 
 ## Verification
 
-There is no automated test suite or test scaffolding in this repo. Do not create
-or request automated tests, test frameworks, migration tests, CI, or new test
-infrastructure unless the user explicitly asks for them. Keep verification to
-lightweight checks that fit the current prototype, such as `git diff --check`,
-focused searches, and IDE diagnostics. Do not require `lua`, `luac`, Lua lint
-tools, or Factorio load checks for normal work; if those tools are unavailable,
-do not treat that as a verification gap. Use manual Factorio smoke checks only
-when Factorio is already available or the user explicitly asks for in-game
-verification. Use the smoke-test matrix in `ARCHITECTURE.md` only as a manual
-checklist for gameplay-sensitive changes.
+This repo has lightweight automated checks for pure Lua helpers and source
+regressions. Prefer focused tests for deterministic logic and avoid trying to
+simulate the Factorio engine in unit tests. Keep verification to checks that fit
+the current prototype, such as `lua tests/run.lua`, `node --test tests/*.test.js`,
+`git diff --check`, focused searches, and IDE diagnostics. Do not require
+Factorio load checks for normal work; if Factorio is unavailable, do not treat
+that as a verification gap. Use manual Factorio smoke checks only when Factorio
+is already available or the user explicitly asks for in-game verification. Use
+the smoke-test matrix in `ARCHITECTURE.md` only as a manual checklist for
+gameplay-sensitive changes.

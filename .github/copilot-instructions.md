@@ -6,17 +6,18 @@ module boundaries, persisted names, and the manual smoke-test matrix.
 
 ## Prototype Workflow
 
-- There is no automated test suite or test scaffolding in this repo.
-- Do not create or request automated tests, test frameworks, migration tests,
-  CI, or new test infrastructure unless the user explicitly asks for them.
-- Keep verification lightweight and local to the change: focused searches, IDE
+- This repo has lightweight automated checks for pure Lua helpers and source
+  regressions. Prefer adding focused tests for deterministic logic and avoid
+  trying to simulate the Factorio engine in unit tests.
+- Keep verification local to the change: focused searches, unit tests, IDE
   diagnostics, and targeted checks only when they are specifically useful or
   requested.
 - Do not require `lua`, `luac`, Lua lint tools, or Factorio load checks for
   normal work; if those tools are unavailable, do not treat that as a
   verification gap. Run manual Factorio smoke checks only when Factorio is
   already available or the user explicitly asks for in-game verification.
-- Do not present missing automated tests as a blocker for normal prototype work.
+- Do not present missing integration tests as a blocker for normal prototype
+  work.
 
 ## Save Compatibility
 

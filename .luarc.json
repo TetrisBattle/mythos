@@ -1,0 +1,20 @@
+{
+  "runtime.version": "Lua 5.4",
+  "diagnostics.globals": [
+    "defines",
+    "script",
+    "game",
+    "storage",
+    "settings",
+    "remote",
+    "rendering",
+    "prototypes",
+    "log",
+    "serpent",
+    "localised_print"
+  ],
+  "workspace.library": [],
+  "workspace.ignoreFiles": [
+    "tests/**"
+  ]
+}
