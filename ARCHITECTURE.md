@@ -70,7 +70,6 @@ These names define current save data and runtime contracts:
 ## Automated Checks
 
 - Lua unit tests: `lua tests/run.lua`
-- Node source-regression tests: `node --test tests/*.test.js`
 - Formatting: `.tools/stylua/stylua.exe .`
 
 ## Manual Smoke-Test Matrix

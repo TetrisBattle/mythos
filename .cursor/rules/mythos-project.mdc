@@ -46,7 +46,7 @@ floor-tile migrations unless the user explicitly asks for old-save support.
 This repo has lightweight automated checks for pure Lua helpers and source
 regressions. Prefer focused tests for deterministic logic and avoid trying to
 simulate the Factorio engine in unit tests. Keep verification to checks that fit
-the current prototype, such as `lua tests/run.lua`, `node --test tests/*.test.js`,
+the current prototype, such as `lua tests/run.lua`,
 `git diff --check`, focused searches, and IDE diagnostics. Do not require
 Factorio load checks for normal work; if Factorio is unavailable, do not treat
 that as a verification gap. Use manual Factorio smoke checks only when Factorio
