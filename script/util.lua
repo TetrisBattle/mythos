@@ -11,8 +11,7 @@ Util.SLOT_POS_TOLERANCE = 0.4
 
 function Util.nearPosition(pos, target, tolerance)
 	tolerance = tolerance or Util.SLOT_POS_TOLERANCE
-	return math.abs(pos.x - target.x) <= tolerance
-		and math.abs(pos.y - target.y) <= tolerance
+	return math.abs(pos.x - target.x) <= tolerance and math.abs(pos.y - target.y) <= tolerance
 end
 
 function Util.floorWidth(bounds)
@@ -47,9 +46,9 @@ function Util.buildInnerPosToSlot(layout)
 end
 
 local EDGE_SLOT_PREFIXES = {
-	left   = "L",
-	right  = "R",
-	top    = "T",
+	left = "L",
+	right = "R",
+	top = "T",
 	bottom = "B",
 }
 
@@ -73,19 +72,18 @@ function Util.isStoredChestItem(stack)
 end
 
 Util.INFRASTRUCTURE_ENTITY_NAMES = {
-	["mythos-hidden-radar"]     = true,
-	["mythos-hidden-light"]     = true,
-	["mythos-power-hub-pole"]   = true,
+	["mythos-hidden-radar"] = true,
+	["mythos-hidden-light"] = true,
+	["mythos-power-hub-pole"] = true,
 	["mythos-power-link-inner"] = true,
-	["mythos-hidden-pipe"]      = true,
+	["mythos-hidden-pipe"] = true,
 	["mythos-hidden-heat-pipe"] = true,
-	["mythos-gate-selector"]    = true,
+	["mythos-gate-selector"] = true,
 }
 
 Util.REMOTE_VIEW_ENTITY_NAMES = {
-	["mythos-hidden-radar"]     = true,
-	["mythos-hidden-light"]     = true,
-	["mythos-power-hub-pole"]   = true,
+	["mythos-hidden-radar"] = true,
+	["mythos-hidden-light"] = true,
 	["mythos-power-link-inner"] = true,
 }
 

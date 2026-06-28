@@ -100,6 +100,9 @@ function Migrations.refreshPowerLinkEntitiesIfNeeded()
 			if state.entity and state.entity.valid then
 				Bridge.ensureOuterPowerBridge(state.entity)
 			end
+			if state.syncElectricity then
+				state:syncElectricity()
+			end
 		end
 	end)
 end
