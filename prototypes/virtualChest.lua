@@ -1,8 +1,7 @@
 local modName = "__mythos__"
 
--- Half-tile west / south offset so the 2x2 hover footprint matches the sprite.
-local OFFSET_X = -0.5
-local OFFSET_Y = 0.5
+local OFFSET_X = 0
+local OFFSET_Y = 0
 
 -- Virtual chest: linked storage shared across every chest on a force.
 local virtualChestEntity = {
@@ -15,19 +14,19 @@ local virtualChestEntity = {
 	flags                     = { "placeable-player", "player-creation", "hide-alt-info" },
 	minable                   = { mining_time = 0.5, result = "virtual-chest" },
 	max_health                = 500,
-	tile_width                = 2,
-	tile_height               = 2,
+	tile_width                = 1,
+	tile_height               = 1,
 	collision_box             = {
-		{ -0.9 + OFFSET_X, -0.9 + OFFSET_Y },
-		{  0.9 + OFFSET_X,  0.9 + OFFSET_Y },
+		{ -0.35 + OFFSET_X, -0.35 + OFFSET_Y },
+		{  0.35 + OFFSET_X,  0.35 + OFFSET_Y },
 	},
 	selection_box             = {
-		{ -1 + OFFSET_X, -1 + OFFSET_Y },
-		{  1 + OFFSET_X,  1 + OFFSET_Y },
+		{ -0.5 + OFFSET_X, -0.5 + OFFSET_Y },
+		{  0.5 + OFFSET_X,  0.5 + OFFSET_Y },
 	},
 	tile_buildability_rules   = {
 		{
-			area            = { { -1, -1 }, { 1, 1 } },
+			area            = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 			colliding_tiles = { layers = { mythos_dimension_floor = true } },
 		},
 	},
@@ -43,7 +42,7 @@ local virtualChestEntity = {
 				filename = modName .. "/graphics/virtual_chest.png",
 				width    = 256,
 				height   = 256,
-				scale    = 0.32,
+				scale    = 0.16,
 				shift    = { OFFSET_X, OFFSET_Y },
 				priority = "extra-high",
 			},
