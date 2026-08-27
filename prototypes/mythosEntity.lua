@@ -8,6 +8,7 @@ local mythosEntity = {
 	flags             = { "placeable-player", "player-creation", "hide-alt-info" },
 	minable           = { mining_time = 0.5, result = "mythos" },
 	max_health        = 500,
+	destructible      = false,
 	collision_box     = { { -1.7, -1.7 }, { 1.7, 1.7 } },
 	selection_box     = { { -2, -2 }, { 2, 2 } },
 	picture           = {
